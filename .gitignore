@@ -1,0 +1,24 @@
+# --- Seguridad (CRÍTICO) ---
+# Ignora el archivo con tus tokens y claves secretas
+.env
+
+# --- Python ---
+# Archivos compilados que se generan automáticamente (esas carpetas __pycache__)
+__pycache__/
+*.py[cod]
+*$py.class
+
+# --- Entornos Virtuales ---
+# Ignora tu carpeta .venv para no subir librerías innecesarias
+.venv/
+venv/
+env/
+
+# --- IDEs y Editores (Opcional pero recomendado) ---
+# Configuraciones locales de VS Code o PyCharm
+.vscode/
+.idea/
+
+# --- Logs y Bases de Datos Locales ---
+*.log
+*.sqlite3
