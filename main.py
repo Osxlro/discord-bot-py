@@ -6,6 +6,7 @@ import logging
 from config import settings
 from discord.ext import commands
 from config import settings
+from services import db_service
 
 # --- CONFIGURACIÓN DE LOGS ---
 # Esto guardará todo lo que pase en un archivo 'discord.log' y lo mostrará en consola
@@ -47,6 +48,9 @@ class BotPersonal(commands.Bot):
                     except Exception as e:
                         print(f'❌ Error cargando {extension_name}: {e}')
         
+        print("--- 💾 INICIANDO BASE DE DATOS ---")
+        await db_service.init_db()
+
         print("--- 🔄 SINCRONIZANDO COMANDOS ---")
         try:
             synced = await self.tree.sync()
