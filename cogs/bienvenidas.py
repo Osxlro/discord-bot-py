@@ -7,10 +7,6 @@ class Bienvenidas(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    @commands.Cog.listener()
-    async def on_ready(self):
-        print(f'✅ Módulo Bienvenidas cargado.')
-
     # EVENTO: Cuando alguien entra al servidor
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):

@@ -7,10 +7,6 @@ class Moderacion(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    @commands.Cog.listener()
-    async def on_ready(self):
-        print(f'✅ Módulo Moderación cargado.')
-
     # --- COMANDO: CLEAR (Limpiar chat) ---
     @app_commands.command(name="clear", description="Borra una cantidad de mensajes del chat")
     @app_commands.describe(cantidad="Número de mensajes a borrar")

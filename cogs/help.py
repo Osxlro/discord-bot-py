@@ -7,10 +7,6 @@ class Ayuda(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    @commands.Cog.listener()
-    async def on_ready(self):
-        print(f'✅ Módulo Ayuda cargado.')
-
     @app_commands.command(name="help", description="Muestra todos los comandos y módulos disponibles")
     async def help(self, interaction: discord.Interaction):
         # 1. Crear el Embed base usando tu servicio de diseño

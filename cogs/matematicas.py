@@ -9,10 +9,6 @@ class Matematicas(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    @commands.Cog.listener()
-    async def on_ready(self):
-        print(f'✅ Módulo Matemáticas cargado.')
-
     # Comando Único: /matematicas
     @app_commands.command(name="matematicas", description="Realiza operaciones matemáticas")
     @app_commands.describe(

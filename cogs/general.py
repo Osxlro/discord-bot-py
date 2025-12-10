@@ -8,10 +8,6 @@ class General(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    @commands.Cog.listener()
-    async def on_ready(self):
-        print(f'✅ Módulo General cargado.')
-
     @app_commands.command(name="hola", description="Te da la bienvenida")
     async def hola(self, interaction: discord.Interaction):
         saludo = math_service.obtener_saludo_personalizado(interaction.user.name)

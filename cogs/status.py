@@ -13,10 +13,6 @@ class Status(commands.Cog):
         # Iniciamos la tarea de bucle
         self.status_loop.start()
 
-    @commands.Cog.listener()
-    async def on_ready(self):
-        print(f'✅ Módulo Status cargado.')
-
     def _get_activity_type(self, type_str: str) -> discord.ActivityType:
         """Convierte el texto del config a un objeto ActivityType de Discord."""
         type_str = type_str.lower()

@@ -5,10 +5,6 @@ class Developer(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    @commands.Cog.listener()
-    async def on_ready(self):
-        print(f'✅ Módulo Developer cargado.')
-
     # Comando de texto clásico: !sync
     @commands.command(name="sync")
     @commands.is_owner() # Descomenta esto si solo tú debes usarlo (requiere configurar owner_id)
