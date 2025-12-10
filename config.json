@@ -16,5 +16,14 @@
   },
   "roles": {
     "admin_role_id": 0
+  },
+  "presence": {
+    "rotate_interval": 15,
+    "statuses": [
+      {"type": "playing", "text": "Visual Studio Code"},
+      {"type": "watching", "text": "a los usuarios"},
+      {"type": "listening", "text": "tus comandos /"},
+      {"type": "competing", "text": "una carrera de bits"}
+    ]
   }
 }

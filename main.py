@@ -48,8 +48,6 @@ class BotPersonal(commands.Bot):
         print(f'🤖 Bot conectado: {self.user}')
         print(f'🆔 ID: {self.user.id}')
         print(f'------------------------------------')
-        # Cambiar estado una vez cargado
-        await self.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="/comandos"))
 
 async def main():
     bot = BotPersonal()
