@@ -48,6 +48,7 @@ class BotPersonal(commands.Bot):
         print(f'🤖 Bot conectado: {self.user}')
         print(f'🆔 ID: {self.user.id}')
         print(f'------------------------------------')
+        settings.set_bot_icon(self.user.display_avatar.url)
 
 async def main():
     bot = BotPersonal()

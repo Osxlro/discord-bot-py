@@ -2,7 +2,7 @@
   "bot_config": {
     "prefix": "!",
     "version": "1.0.0",
-    "description": "El Bot Personal de Oscurin"
+    "description": "Oscurin Inc"
   },
   "channels": {
     "welcome_channel_id": 1287906569823977513,

@@ -2,14 +2,21 @@ import discord
 from discord.ext import commands
 from services import embed_service
 
-# --- 1. El Menú Desplegable (La lógica de selección) ---
 class HelpSelect(discord.ui.Select):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        options = []
         
-        # Diccionario de emojis para cada módulo (Puedes personalizarlos)
-        # Asegúrate de que los nombres coincidan EXACTAMENTE con tus nombres de archivo/clase
+        # Opción para volver al inicio (Portada)
+        options = [
+            discord.SelectOption(
+                label="Inicio",
+                description="Volver al panel principal",
+                emoji="🏠",
+                value="inicio"
+            )
+        ]
+
+        # Mapa de Emojis para cada categoría
         emoji_map = {
             "Matematicas": "🧮",
             "General": "👋",
@@ -19,29 +26,26 @@ class HelpSelect(discord.ui.Select):
             "Status": "📡",
             "Bienvenidas": "🚪",
             "Ayuda": "ℹ️",
-            "Logger": "📝"
+            "Logger": "📝",
+            "Admin": "👮"
         }
 
-        # Recorremos dinámicamente todos los Cogs cargados
-        for nombre_cog, cog in bot.cogs.items():
-            # Obtenemos los comandos y filtramos los ocultos
+        # Generamos las opciones dinámicamente según los Cogs cargados
+        for name, cog in bot.cogs.items():
+            # Filtramos comandos ocultos
             cmds = [c for c in cog.get_commands() if not c.hidden]
-            
-            # Si el módulo no tiene comandos públicos, no lo mostramos en la lista
             if not cmds:
                 continue
             
-            # Buscamos el emoji, si no existe usamos una carpeta genérica
-            emoji = emoji_map.get(nombre_cog, "📂")
+            emoji = emoji_map.get(name, "📂")
             
             options.append(discord.SelectOption(
-                label=nombre_cog,
-                description=f"Ver {len(cmds)} comandos de {nombre_cog}",
+                label=name,
+                description=f"Ver {len(cmds)} comandos",
                 emoji=emoji,
-                value=nombre_cog
+                value=name
             ))
 
-        # Configuración del menú
         super().__init__(
             placeholder="Selecciona una categoría...", 
             min_values=1, 
@@ -49,78 +53,84 @@ class HelpSelect(discord.ui.Select):
             options=options
         )
 
-    # Esto se ejecuta cuando el usuario selecciona algo
     async def callback(self, interaction: discord.Interaction):
-        # 1. Identificar qué módulo eligió
+        # Si elige "Inicio", restauramos el embed original (guardado en la View)
+        if self.values[0] == "inicio":
+            await interaction.response.edit_message(embed=self.view.main_embed)
+            return
+
+        # Si elige una categoría, buscamos el Cog
         nombre_cog = self.values[0]
         cog = self.bot.get_cog(nombre_cog)
         
-        # 2. Construir el embed nuevo con los comandos de ESE módulo
         embed = embed_service.info(
             title=f"Módulo {nombre_cog}", 
-            description=f"Aquí tienes los comandos disponibles en **{nombre_cog}**:"
+            description=f"Comandos disponibles en **{nombre_cog}**:"
         )
         
-        cmds = [c for c in cog.get_commands() if not c.hidden]
         lista_txt = ""
-        
+        cmds = [c for c in cog.get_commands() if not c.hidden]
+
         for cmd in cmds:
-            # Obtener descripción, si no tiene ponemos un texto default
-            desc = cmd.description or cmd.help or "Sin descripción"
-            
-            # Mostramos el formato /comando
-            lista_txt += f"🔹 **/{cmd.name}** - {desc}\n"
+            # Detectamos si es un GRUPO de comandos (ej: /admin ban, /admin kick)
+            if isinstance(cmd, commands.HybridGroup):
+                for sub in cmd.commands:
+                    desc = sub.description or "Sin descripción"
+                    # Mostramos: 🔹 /padre hijo - descripción
+                    lista_txt += f"🔹 `/{cmd.name} {sub.name}` - {desc}\n"
+            else:
+                # Comando normal
+                desc = cmd.description or cmd.help or "Sin descripción"
+                lista_txt += f"🔹 `/{cmd.name}` - {desc}\n"
             
         embed.add_field(name="Comandos", value=lista_txt or "No hay comandos disponibles.")
         
-        # 3. Editar el mensaje original con el nuevo contenido
         await interaction.response.edit_message(embed=embed)
 
-# --- 2. La Vista (Contiene el menú y botones) ---
 class HelpView(discord.ui.View):
-    def __init__(self, bot: commands.Bot):
-        super().__init__(timeout=180) # El menú deja de funcionar a los 3 min para ahorrar memoria
+    def __init__(self, bot: commands.Bot, main_embed: discord.Embed):
+        super().__init__(timeout=180)
+        # Guardamos el embed de portada para poder volver a él con el botón "Inicio"
+        self.main_embed = main_embed
         
-        # Añadimos el menú desplegable que creamos arriba
         self.add_item(HelpSelect(bot))
         
-        # (Opcional) Añadimos un botón de enlace como en la foto
         self.add_item(discord.ui.Button(
-            label="Sitio Web / Soporte", 
+            label="Soporte", 
             url="https://google.com", 
             style=discord.ButtonStyle.link,
             emoji="🔗"
         ))
 
-# --- 3. El Comando /help ---
 class Ayuda(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
     @commands.hybrid_command(name="help", description="Muestra el menú de ayuda interactivo")
     async def help(self, ctx: commands.Context):
-        # 1. Embed "Portada" (Lo primero que se ve)
+        # 1. Estadísticas
         conteo_comandos = len([c for c in self.bot.commands if not c.hidden])
         conteo_categorias = len(self.bot.cogs)
 
         embed = embed_service.info(
             title="Panel de Ayuda", 
-            description=f"Hola **{ctx.author.name}**, soy **{self.bot.user.name}**.\nUsa el menú desplegable de abajo para explorar mis funciones."
+            description=f"Hola **{ctx.author.name}**. Usa el menú de abajo para explorar las funciones."
         )
         
-        # Mostramos estadísticas bonitas tipo Nekotina
         embed.add_field(name="📊 Estadísticas", value=f"• **{conteo_categorias}** Categorías\n• **{conteo_comandos}** Comandos", inline=False)
 
-        # Generamos una "Grilla" de texto con las categorías disponibles
+        # 2. Lista Visual de Categorías (Estilo Nekotina)
+        # Obtenemos solo categorías con comandos visibles
         nombres_cogs = [name for name in self.bot.cogs.keys() if self.bot.get_cog(name).get_commands()]
+        
+        # Formato de bloque de código
         lista_visual = "```\n" + "\n".join(nombres_cogs) + "\n```"
         
         embed.add_field(name="📂 Categorías Disponibles", value=lista_visual, inline=False)
+        embed.set_thumbnail(url=self.bot.user.display_avatar.url)
         
-        # 2. Crear la vista interactiva
-        view = HelpView(self.bot)
-        
-        # 3. Enviar mensaje
+        # 3. Vista y Envío
+        view = HelpView(self.bot, embed)
         await ctx.reply(embed=embed, view=view)
 
 async def setup(bot: commands.Bot):

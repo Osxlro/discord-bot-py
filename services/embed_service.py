@@ -2,11 +2,10 @@ import discord
 import datetime
 from config import settings
 
-def _get_base_embed(title: str, description: str, color_key: str) -> discord.Embed:
+# 1. Añadimos el argumento opcional icon_url=None
+def _get_base_embed(title: str, description: str, color_key: str, icon_url: str = None) -> discord.Embed:
     """Función interna para construir el embed base con footer y timestamp."""
     
-    # Obtenemos el color desde settings (que lee config.json)
-    # settings.get_color ya lo implementamos en el paso anterior
     color = settings.get_color(color_key)
     
     embed = discord.Embed(
@@ -15,18 +14,25 @@ def _get_base_embed(title: str, description: str, color_key: str) -> discord.Emb
         color=color,
         timestamp=datetime.datetime.now()
     )
-    # Footer genérico para marca de agua
-    embed.set_footer(text=f"{settings.CONFIG['bot_config']['description']} • v{settings.CONFIG['bot_config']['version']}")
+    
+    # 2. Usamos icon_url en el footer si se proporciona
+    footer_text = f"{settings.CONFIG['bot_config']['description']}  •  v{settings.CONFIG['bot_config']['version']}"
+        # Imagen
+    icon_url = settings.get_bot_icon()
+
+    if icon_url:
+        embed.set_footer(text=footer_text, icon_url=icon_url)
+    else:
+        embed.set_footer(text=footer_text)
+        
     return embed
 
-def success(title: str, description: str) -> discord.Embed:
-    """Genera un embed verde de éxito."""
-    return _get_base_embed(f"✅ {title}", description, "success")
+# 3. Actualizamos las funciones públicas para que acepten el parámetro
+def success(title: str, description: str, icon_url: str = None) -> discord.Embed:
+    return _get_base_embed(f"✅ {title}", description, "success", icon_url)
 
-def error(title: str, description: str) -> discord.Embed:
-    """Genera un embed rojo de error."""
-    return _get_base_embed(f"⛔ {title}", description, "error")
+def error(title: str, description: str, icon_url: str = None) -> discord.Embed:
+    return _get_base_embed(f"⛔ {title}", description, "error", icon_url)
 
-def info(title: str, description: str) -> discord.Embed:
-    """Genera un embed azul de información."""
-    return _get_base_embed(f"ℹ️ {title}", description, "info")
+def info(title: str, description: str, icon_url: str = None) -> discord.Embed:
+    return _get_base_embed(f"ℹ️ {title}", description, "info", icon_url)

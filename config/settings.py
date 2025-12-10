@@ -26,9 +26,19 @@ def load_config():
 
 # Variable global que importaremos en otros archivos
 CONFIG = load_config()
+_BOT_ICON_URL = None
 
 # Acceso rápido a colores (opcional, para escribir menos código luego)
 # Convierte el string hex "0x..." a entero para Discord
 def get_color(category: str):
     hex_str = CONFIG.get("colors", {}).get(category, "0xFFFFFF")
     return int(hex_str, 16)
+
+def set_bot_icon(url: str):
+    """Guarda la URL del icono del bot en memoria."""
+    global _BOT_ICON_URL
+    _BOT_ICON_URL = url
+
+def get_bot_icon() -> str:
+    """Recupera la URL guardada (o None si aún no se ha guardado)."""
+    return _BOT_ICON_URL
