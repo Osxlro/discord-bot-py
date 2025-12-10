@@ -38,7 +38,7 @@ class Bienvenidas(commands.Cog):
         if channel:
             embed = embed_service.error(
                 title="Un usuario ha partido",
-                description=f"{member.name} ha abandonado el servidor. ¡Hasta luego!"
+                description=f"{member.name} ha abandonado el servidor. ¡Maldita rata!"
             )
             await channel.send(embed=embed)
 

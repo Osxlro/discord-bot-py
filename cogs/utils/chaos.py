@@ -21,8 +21,8 @@ class Chaos(commands.Cog):
         # 3. Verificar suerte usando el servicio
         if random_service.verificar_suerte(probabilidad):
             try:
-                # 4. Aplicar Timeout (1 minuto)
-                tiempo = datetime.timedelta(minutes=1)
+                # 4. Aplicar Timeout 
+                tiempo = datetime.timedelta(minutes=settings.CONFIG.get("chaos_config", {}).get("timeout", 1))
                 await message.author.timeout(tiempo, reason="🔫 Ruleta Rusa: ¡Mala suerte!")
 
                 # 5. Notificar
@@ -34,7 +34,7 @@ class Chaos(commands.Cog):
 
             except discord.Forbidden:
                 # El bot no tiene permisos o el usuario es admin/dueño
-                print(f"⚠️ Chaos: No pude aislar a {message.author.name} (Faltan permisos o jerarquía).")
+                pass
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(Chaos(bot))

@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands
 from discord import app_commands
+from config import settings
 from services import embed_service
 
 class Moderacion(commands.Cog):
@@ -12,9 +13,11 @@ class Moderacion(commands.Cog):
     @app_commands.describe(cantidad="Número de mensajes a borrar")
     @app_commands.checks.has_permissions(manage_messages=True) # Solo quien pueda gestionar mensajes
     async def clear(self, ctx : commands.Context, cantidad: int):
-        # Validamos que no borren todo el servidor por error
-        if cantidad > 100:
-            embed = embed_service.error("Demasiados mensajes", "El límite es borrar 100 mensajes a la vez.")
+        
+        max_msg = settings.CONFIG.get("moderation_config", {}).get("max_clear_msg", 100)
+
+        if cantidad > max_msg:
+            embed = embed_service.error("Demasiados mensajes", "El límite es borrar {max_msg} mensajes a la vez.")
             await ctx.reply(embed=embed, ephemeral=True)
             return
 

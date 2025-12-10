@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands
 from discord import app_commands
+from config import settings
 from services import embed_service, emojimixer_service, random_service
 
 class Diversion(commands.Cog):
@@ -82,6 +83,51 @@ class Diversion(commands.Cog):
         embed.set_image(url=url_imagen)
         
         await ctx.reply(embed=embed)
+
+    # --- COMANDO: CONFESAR (Confiesa tus pecados) ---
+    @app_commands.command(name="confess", description="Envía un secreto anónimo al servidor")
+    @app_commands.describe(secreto="Tu confesión anónima (¡Nadie sabrá que fuiste tú!)")
+    async def confesar(self, interaction: discord.Interaction, secreto: str):
+        # 1. Obtener el ID desde la configuración
+        canal_id = settings.CONFIG["channels"].get("confessions_channel_id")
+
+        # 2. Validaciones básicas
+        if not canal_id:
+            embed = embed_service.error(
+                "Configuración Faltante", 
+                "El dueño del bot no ha configurado el ID del canal de confesiones en `config.json`."
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
+
+        canal = self.bot.get_channel(canal_id)
+        if not canal:
+            embed = embed_service.error(
+                "Error de Canal", 
+                f"No encuentro el canal con ID `{canal_id}`. Verifica que el bot tenga acceso."
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
+
+        # 3. Construir la confesión (Estética anónima)
+        embed_confesion = discord.Embed(
+            title="🤫 Nueva Confesión Anónima",
+            description=f"\"{secreto}\"",
+            color=discord.Color.random() # Color aleatorio para cada confesión
+        )
+        # Usamos el footer global que ya configuraste en embed_service, 
+        # o forzamos uno personalizado para que se entienda la mecánica:
+        embed_confesion.set_footer(text="Enviado de forma anónima vía /confesar")
+
+        # 4. Enviar al canal público
+        await canal.send(embed=embed_confesion)
+
+        # 5. Confirmación privada al usuario
+        embed_confirm = embed_service.success(
+            "Confesión Enviada", 
+            f"Tu secreto ha sido publicado en {canal.mention}. 🤐"
+        )
+        await interaction.response.send_message(embed=embed_confirm, ephemeral=True)
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(Diversion(bot))

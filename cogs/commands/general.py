@@ -1,8 +1,8 @@
 # Archivo: cogs/general.py
 import discord
 from discord.ext import commands
-from discord import app_commands
-from services import math_service, embed_service
+from discord import app_commands    # Sin usar porque no hay cosas que añadir por ahora.
+from services import embed_service
 
 class General(commands.Cog):
     def __init__(self, bot: commands.Bot):
