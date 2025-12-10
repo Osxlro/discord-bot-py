@@ -17,10 +17,28 @@ intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
 
+# --- LÓGICA DE PREFIX DINÁMICO ---
+async def get_prefix(bot, message):
+    # 1. Si es en DM, usa el default
+    if not message.guild:
+        return settings.CONFIG["bot_config"]["prefix"]
+
+    # 2. Intentamos leer de la DB (Idealmente esto se cachea, pero por simplicidad lo haremos directo)
+    # Nota: Si el bot crece mucho, esto debe optimizarse con un diccionario en memoria.
+    try:
+        row = await db_service.fetch_one("SELECT custom_prefix FROM users WHERE user_id = ?", (message.author.id,))
+        if row and row['custom_prefix']:
+            return row['custom_prefix']
+    except:
+        pass # Si la DB falla, usa default
+
+    # 3. Retorna el default
+    return settings.CONFIG["bot_config"]["prefix"]
+
 class BotPersonal(commands.Bot):
     def __init__(self):
         super().__init__(
-            command_prefix=settings.CONFIG["bot_config"]["prefix"], 
+            command_prefix=get_prefix, 
             intents=intents,
             help_command=None,
             activity=discord.Game(name="Iniciando sistemas...") # Status inicial

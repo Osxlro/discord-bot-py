@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 from discord import app_commands
-from services import embed_service, translator_service  # Asegúrate de importar el servicio
+from services import embed_service, translator_service, db_service  # Asegúrate de importar el servicio
 
 class General(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -76,6 +76,27 @@ class General(commands.Cog):
             
         except Exception as e:
             await interaction.followup.send(f"Error al traducir: {e}", ephemeral=True)
+
+    @commands.hybrid_command(name="setprefix", description="Cambia el prefijo que usas con el bot")
+    async def setprefix(self, ctx: commands.Context, nuevo_prefix: str):
+        if len(nuevo_prefix) > 5:
+            await ctx.reply("El prefijo no puede tener más de 5 caracteres.", ephemeral=True)
+            return
+
+        # Guardamos en la tabla de usuarios
+        # Asegúrate de que db_service.execute usa INSERT OR REPLACE o similar lógica si el usuario no existe
+        # Como usamos UPDATE o INSERT, haremos un truco de SQLite moderno:
+        
+        # Primero verificamos si existe
+        check = await db_service.fetch_one("SELECT user_id FROM users WHERE user_id = ?", (ctx.author.id,))
+        
+        if not check:
+            await db_service.execute("INSERT INTO users (user_id, custom_prefix) VALUES (?, ?)", (ctx.author.id, nuevo_prefix))
+        else:
+            await db_service.execute("UPDATE users SET custom_prefix = ? WHERE user_id = ?", (nuevo_prefix, ctx.author.id))
+            
+        embed = embed_service.success("Prefijo Actualizado", f"Ahora puedes usarme con: `{nuevo_prefix}` (ej: `{nuevo_prefix}ping`)")
+        await ctx.reply(embed=embed)
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(General(bot))

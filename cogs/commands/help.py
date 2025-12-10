@@ -2,6 +2,18 @@ import discord
 from discord.ext import commands
 from services import embed_service
 
+def contar_comandos(cog):
+    contador = 0
+    for cmd in cog.get_commands():
+        if cmd.hidden:
+            continue
+        # Si es un grupo (ej: /admin), contamos sus hijos
+        if isinstance(cmd, commands.HybridGroup) or isinstance(cmd, commands.Group):
+            contador += len(cmd.commands)
+        else:
+            contador += 1
+    return contador
+
 class HelpSelect(discord.ui.Select):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
@@ -32,16 +44,15 @@ class HelpSelect(discord.ui.Select):
 
         # Generamos las opciones dinámicamente según los Cogs cargados
         for name, cog in bot.cogs.items():
-            # Filtramos comandos ocultos
-            cmds = [c for c in cog.get_commands() if not c.hidden]
-            if not cmds:
+            cmds_count = contar_comandos(cog) # <--- USAMOS LA NUEVA FUNCIÓN
+            if cmds_count == 0:
                 continue
             
             emoji = emoji_map.get(name, "📂")
             
             options.append(discord.SelectOption(
                 label=name,
-                description=f"Ver {len(cmds)} comandos",
+                description=f"Ver {cmds_count} comandos", # <--- AHORA EL NÚMERO ES REAL
                 emoji=emoji,
                 value=name
             ))

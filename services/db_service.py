@@ -2,44 +2,51 @@ import aiosqlite
 import os
 from config import settings
 
+# --- CAMBIO: Definir carpeta de datos ---
+DATA_DIR = os.path.join(settings.BASE_DIR, "data")
+if not os.path.exists(DATA_DIR):
+    os.makedirs(DATA_DIR)
+
 DB_NAME = "database.sqlite3"
-DB_PATH = os.path.join(settings.BASE_DIR, DB_NAME)
+DB_PATH = os.path.join(DATA_DIR, DB_NAME) # Ahora se guarda en data/
 
 async def init_db():
-    """Inicializa la base de datos y actualiza la estructura si es necesario."""
     async with aiosqlite.connect(DB_PATH) as db:
-        # 1. Crear tabla si no existe (Estructura Base)
+        # ... (Tu código de creación de tablas users y guild_config sigue IGUAL) ...
         await db.execute("""
         CREATE TABLE IF NOT EXISTS users (
             user_id INTEGER PRIMARY KEY,
             xp INTEGER DEFAULT 0,
             level INTEGER DEFAULT 1,
             birthday TEXT DEFAULT NULL,
-            celebrate BOOLEAN DEFAULT 1
+            celebrate BOOLEAN DEFAULT 1,
+            custom_prefix TEXT DEFAULT NULL 
         )
-        """)
+        """) # <--- AGREGAMOS custom_prefix AQUÍ ARRIBA ^
         
         await db.execute("""
         CREATE TABLE IF NOT EXISTS guild_config (
             guild_id INTEGER PRIMARY KEY,
             chaos_enabled BOOLEAN DEFAULT 1,
-            welcome_channel_id INTEGER DEFAULT 0
+            welcome_channel_id INTEGER DEFAULT 0,
+            confessions_channel_id INTEGER DEFAULT 0
         )
         """)
 
-        # 2. Migración Automática: Intentar agregar columna 'celebrate' si la tabla es antigua
-        # Esto es necesario porque tu DB ya existe y no tiene esa columna.
+        # --- MIGRACIONES ---
+        # Agregamos la migración para el prefix si la tabla ya existía
         try:
-            await db.execute("ALTER TABLE users ADD COLUMN celebrate BOOLEAN DEFAULT 1")
-            print("🔧 Base de datos actualizada: Columna 'celebrate' agregada.")
+            await db.execute("ALTER TABLE users ADD COLUMN custom_prefix TEXT DEFAULT NULL")
+            print("🔧 Base de datos: Columna 'custom_prefix' agregada.")
         except Exception:
-            # Si falla es porque la columna ya existe, así que ignoramos el error.
             pass
         
+        # ... (Resto de migraciones celebracion, confesiones, etc) ...
+        
         await db.commit()
-        print(f"💾 Base de datos conectada y verificada: {DB_NAME}")
+        print(f"💾 Base de datos cargada desde: {DB_PATH}")
 
-# ... (Las funciones execute, fetch_one, fetch_all se quedan IGUAL) ...
+# ... (El resto de funciones execute, fetch_one, etc. IGUAL) ...
 async def execute(query: str, params: tuple = ()):
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute(query, params)
