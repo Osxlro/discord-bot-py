@@ -15,6 +15,7 @@ discord.utils.setup_logging(handler=handler, level=logging.INFO)
 # Configuración de Intents
 intents = discord.Intents.default()
 intents.message_content = True
+intents.members = True
 
 class BotPersonal(commands.Bot):
     def __init__(self):
