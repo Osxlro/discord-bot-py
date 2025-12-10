@@ -2,13 +2,24 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 import random
-import datetime
 from services import db_service, embed_service
 
 class Niveles(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self._cd = commands.CooldownMapping.from_cooldown(1, 60.0, commands.BucketType.user) # 1 mensaje cada 60s da XP
+
+        # --- REGISTRO MANUAL DEL MENÚ CONTEXTUAL ---
+        # Igual que en el traductor, lo registramos al iniciar la clase
+        self.ctx_menu = app_commands.ContextMenu(
+            name="Ver Rank",
+            callback=self.ver_rank_menu
+        )
+        self.bot.tree.add_command(self.ctx_menu)
+
+    async def cog_unload(self):
+        # Limpieza al descargar el cog
+        self.bot.tree.remove_command(self.ctx_menu.name, type=self.ctx_menu.type)
 
     def get_ratelimit(self, message: discord.Message):
         """Evita el spam de XP."""
@@ -20,11 +31,11 @@ class Niveles(commands.Cog):
         if message.author.bot or not message.guild:
             return
 
-        # 1. Verificar Cooldown (Para que no ganen XP por spamear "hola" 20 veces)
+        # 1. Verificar Cooldown
         if self.get_ratelimit(message):
             return
 
-        # 2. Calcular XP ganada (Random entre 15 y 25)
+        # 2. Calcular XP ganada
         xp_ganada = random.randint(15, 25)
 
         # 3. Obtener datos actuales
@@ -32,7 +43,6 @@ class Niveles(commands.Cog):
         
         if not row:
             # Usuario nuevo
-            xp_actual = 0
             nivel_actual = 1
             await db_service.execute("INSERT INTO users (user_id, xp, level) VALUES (?, ?, ?)", (message.author.id, xp_ganada, 1))
         else:
@@ -43,7 +53,6 @@ class Niveles(commands.Cog):
             nuevo_total_xp = xp_actual + xp_ganada
             
             # 4. Verificar Subida de Nivel
-            # Fórmula: Nivel * 100 (Ej: Para pasar a nivel 2 necesitas 100xp acumulada total)
             xp_necesaria_siguiente = nivel_actual * 100 
             
             if nuevo_total_xp >= xp_necesaria_siguiente:
@@ -69,7 +78,11 @@ class Niveles(commands.Cog):
         xp_next = nivel * 100 # Meta para el siguiente nivel
         
         # Barra de progreso visual
-        porcentaje = min(xp / xp_next, 1.0)
+        try:
+            porcentaje = min(xp / xp_next, 1.0)
+        except ZeroDivisionError:
+            porcentaje = 0
+            
         bloques = int(porcentaje * 10)
         barra = "🟩" * bloques + "⬜" * (10 - bloques)
 
@@ -81,12 +94,10 @@ class Niveles(commands.Cog):
         
         await ctx.reply(embed=embed)
 
-    # --- MENÚ CONTEXTUAL: Ver Rank (Click Derecho) ---
-    # Esto demuestra tu duda anterior: El menú vive junto al comando, no en un servicio aparte.
-    @app_commands.context_menu(name="Ver Rank")
+    # --- CALLBACK DEL MENÚ CONTEXTUAL ---
+    # Ya NO lleva el decorador @app_commands.context_menu
     async def ver_rank_menu(self, interaction: discord.Interaction, member: discord.Member):
-        # Reutilizamos la lógica llamando al comando (o duplicamos la consulta si prefieres pureza)
-        # Aquí haremos la consulta directa para ser rápidos
+        # Aquí haremos la consulta directa
         row = await db_service.fetch_one("SELECT xp, level FROM users WHERE user_id = ?", (member.id,))
         
         if not row:
