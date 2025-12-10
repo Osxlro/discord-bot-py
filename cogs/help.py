@@ -7,8 +7,8 @@ class Ayuda(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    @app_commands.command(name="help", description="Muestra todos los comandos y módulos disponibles")
-    async def help(self, interaction: discord.Interaction):
+    @commands.hybrid_command(name="help", description="Muestra todos los comandos y módulos disponibles")
+    async def help(self, ctx: commands.Context):
         # 1. Crear el Embed base usando tu servicio de diseño
         embed = embed_service.info(
             title="Panel de Ayuda", 
@@ -20,7 +20,7 @@ class Ayuda(commands.Cog):
         for nombre_cog, cog in self.bot.cogs.items():
             
             # Obtenemos los comandos Slash definidos dentro de ese Cog
-            comandos_slash = cog.get_app_commands()
+            comandos_slash = cog.get_hybrid_command()
             
             # Si el módulo tiene comandos, lo agregamos a la lista
             if comandos_slash:
@@ -42,7 +42,7 @@ class Ayuda(commands.Cog):
                 )
 
         # 3. Enviar respuesta (Ephemeral=True para que solo lo vea quien lo pidió, opcional)
-        await interaction.response.send_message(embed=embed)
+        await ctx.reply(embed=embed)
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(Ayuda(bot))

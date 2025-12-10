@@ -19,7 +19,7 @@ class Developer(commands.Cog):
             synced = await self.bot.tree.sync()
             
             # 2. Confirma
-            await msg.edit(content=f"✅ **¡Sincronización Completada!**\nSe han actualizado `{len(synced)}` comandos Slash globalmente.\n\n*Nota: Si no aparecen, reinicia tu app de Discord (Ctrl+R).*")
+            await msg.edit(content=f"✅ **¡Sincronización Completada!**\nSe han actualizado `{len(synced)}` comandos Slash globalmente.")
             print(f"Comandos sincronizados manualmente por {ctx.author}")
             
         except Exception as e:

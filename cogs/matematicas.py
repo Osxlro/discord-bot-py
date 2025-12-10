@@ -10,7 +10,7 @@ class Matematicas(commands.Cog):
         self.bot = bot
 
     # Comando Único: /matematicas
-    @app_commands.command(name="matematicas", description="Realiza operaciones matemáticas")
+    @commands.hybrid_command(name="matematicas", description="Realiza operaciones matemáticas")
     @app_commands.describe(
         tipo="¿Qué operación quieres realizar?",
         num1="El primer número",
@@ -18,7 +18,7 @@ class Matematicas(commands.Cog):
     )
     async def matematicas(
         self, 
-        interaction: discord.Interaction, 
+        ctx: commands.Context, 
         tipo: Literal["sumar", "restar", "multiplicacion", "division"], # Esto crea el menú desplegable
         num1: int, 
         num2: int
@@ -39,12 +39,12 @@ class Matematicas(commands.Cog):
                 title="Cálculo Completado",
                 description=f"{emoji_op} La operación **{tipo}** de `{num1}` y `{num2}` es: **{resultado}**"
             )
-            await interaction.response.send_message(embed=embed)
+            await ctx.reply(embed=embed)
 
         except ValueError as e:
             # Capturamos errores de lógica (como dividir por cero)
             embed = embed_service.error("Error Matemático", str(e))
-            await interaction.response.send_message(embed=embed, ephemeral=True)
+            await ctx.reply(embed=embed, ephemeral=True)
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(Matematicas(bot))

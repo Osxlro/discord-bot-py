@@ -8,34 +8,34 @@ class Moderacion(commands.Cog):
         self.bot = bot
 
     # --- COMANDO: CLEAR (Limpiar chat) ---
-    @app_commands.command(name="clear", description="Borra una cantidad de mensajes del chat")
+    @commands.hybrid_command(name="clear", description="Borra una cantidad de mensajes del chat")
     @app_commands.describe(cantidad="Número de mensajes a borrar")
     @app_commands.checks.has_permissions(manage_messages=True) # Solo quien pueda gestionar mensajes
-    async def clear(self, interaction: discord.Interaction, cantidad: int):
+    async def clear(self, ctx : commands.Context, cantidad: int):
         # Validamos que no borren todo el servidor por error
         if cantidad > 100:
             embed = embed_service.error("Demasiados mensajes", "El límite es borrar 100 mensajes a la vez.")
-            await interaction.response.send_message(embed=embed, ephemeral=True)
+            await ctx.reply(embed=embed, ephemeral=True)
             return
 
         # "Pensando..." (importante para operaciones que tardan un poco)
-        await interaction.response.defer(ephemeral=True) 
+        await ctx.response.defer(ephemeral=True) 
 
         # Ejecutamos la limpieza
-        deleted = await interaction.channel.purge(limit=cantidad)
+        deleted = await ctx.channel.purge(limit=cantidad)
         
         embed = embed_service.success(
             title="Limpieza Completada", 
             description=f"Se han eliminado **{len(deleted)}** mensajes."
         )
         # Usamos followup porque ya usamos defer
-        await interaction.followup.send(embed=embed)
+        await ctx.followup.send(embed=embed)
 
     # --- COMANDO: KICK (Expulsar) ---
-    @app_commands.command(name="kick", description="Expulsa a un miembro del servidor")
+    @commands.hybrid_command(name="kick", description="Expulsa a un miembro del servidor")
     @app_commands.describe(usuario="El usuario a expulsar", razon="Motivo de la expulsión")
     @app_commands.checks.has_permissions(kick_members=True)
-    async def kick(self, interaction: discord.Interaction, usuario: discord.Member, razon: str = "Sin razón especificada"):
+    async def kick(self, ctx: commands.Context, usuario: discord.Member, razon: str = "Sin razón especificada"):
         
         # Evitar autokick o kick al bot
         if usuario.id == interaction.user.id:
