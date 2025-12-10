@@ -2,6 +2,8 @@ import discord
 import os
 import asyncio
 import logging
+
+from config import settings
 from discord.ext import commands
 from config import settings
 
@@ -17,7 +19,7 @@ intents.message_content = True
 class BotPersonal(commands.Bot):
     def __init__(self):
         super().__init__(
-            command_prefix="!", 
+            command_prefix=settings.CONFIG["bot_config"]["prefix"], 
             intents=intents,
             help_command=None,
             activity=discord.Game(name="Iniciando sistemas...") # Status inicial
