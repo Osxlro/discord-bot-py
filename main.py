@@ -1,39 +1,52 @@
 import discord
 import os
 import asyncio
+import logging
 from discord.ext import commands
 from config import settings
 
-# Configuración de Intents (Permisos)
+# --- CONFIGURACIÓN DE LOGS ---
+# Esto guardará todo lo que pase en un archivo 'discord.log' y lo mostrará en consola
+handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
+discord.utils.setup_logging(handler=handler, level=logging.INFO)
+
+# Configuración de Intents
 intents = discord.Intents.default()
-intents.message_content = True # Necesario si vas a leer mensajes
+intents.message_content = True
 
 class BotPersonal(commands.Bot):
     def __init__(self):
         super().__init__(
             command_prefix="!", 
             intents=intents,
-            help_command=None # Desactivamos el help por defecto para crear uno propio luego
+            help_command=None,
+            activity=discord.Game(name="Iniciando sistemas...") # Status inicial
         )
 
     async def setup_hook(self):
-        """Este método se ejecuta al iniciar, ideal para cargar extensiones."""
-        print("--- Cargando extensiones ---")
-        # Recorre la carpeta cogs y carga los archivos .py
+        print("--- ⚙️  CARGANDO EXTENSIONES ---")
         for filename in os.listdir('./cogs'):
             if filename.endswith('.py'):
-                await self.load_extension(f'cogs.{filename[:-3]}')
-                print(f'Extensión cargada: {filename}')
+                try:
+                    await self.load_extension(f'cogs.{filename[:-3]}')
+                    print(f'✅ Extensión cargada: {filename}')
+                except Exception as e:
+                    print(f'❌ Error cargando {filename}: {e}')
         
-        # Sincronizar comandos con Discord (Importante para que aparezca el menu /)
-        # NOTA: En producción, evita hacer sync global cada vez que reinicias.
-        print("--- Sincronizando árbol de comandos ---")
-        await self.tree.sync() 
-        print("--- Sincronización completada ---")
+        print("--- 🔄 SINCRONIZANDO COMANDOS ---")
+        try:
+            synced = await self.tree.sync()
+            print(f"✨ Se han sincronizado {len(synced)} comandos Slash.")
+        except Exception as e:
+            print(f"❌ Error al sincronizar: {e}")
 
     async def on_ready(self):
-        print(f'Conectado como {self.user} (ID: {self.user.id})')
-        print('Bot listo para operar.')
+        print(f'------------------------------------')
+        print(f'🤖 Bot conectado: {self.user}')
+        print(f'🆔 ID: {self.user.id}')
+        print(f'------------------------------------')
+        # Cambiar estado una vez cargado
+        await self.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="/comandos"))
 
 async def main():
     bot = BotPersonal()
@@ -44,5 +57,4 @@ if __name__ == '__main__':
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        # Manejo limpio de cierre (Ctrl+C)
-        print("Apagando bot...")
+        print("🛑 Apagando bot...")

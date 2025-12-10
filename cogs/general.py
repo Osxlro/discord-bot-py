@@ -19,6 +19,14 @@ class General(commands.Cog):
         mensaje = math_service.obtener_saludo_personalizado(interaction.user.name)
         await interaction.response.send_message(mensaje)
 
+    # TEST
+    @app_commands.command(name="error_test", description="Comando para probar el manejador de errores")
+    @app_commands.checks.has_permissions(administrator=True) # Requiere admin
+    async def error_test(self, interaction: discord.Interaction):
+        # Simulamos una división por cero
+        resultado = 1 / 0 
+        await interaction.response.send_message(f"Resultado: {resultado}")
+
     # Comando Slash: /sumar
     @app_commands.command(name="sumar", description="Suma dos números")
     @app_commands.describe(num1="El primer número", num2="El segundo número")
