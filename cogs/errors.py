@@ -2,86 +2,84 @@ import discord
 import logging
 from discord.ext import commands
 from discord import app_commands
+from services import embed_service
 
 class ErrorHandler(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        # Sobrescribimos el manejador de errores del árbol de comandos (Slash)
-        # para que use nuestra función personalizada definida abajo.
         bot.tree.on_error = self.on_app_command_error
 
-    # --- 1. Manejador para Comandos de Barra (Slash Commands) ---
     async def on_app_command_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
-        """Maneja errores generados por comandos / (Slash)"""
-        
-        # Si el comando tiene su propio manejador local, lo ignoramos aquí
         if isinstance(error, app_commands.CommandInvokeError):
             error = error.original
 
-        # Error: El usuario no tiene permisos
         if isinstance(error, app_commands.MissingPermissions):
-            missing = [perm.replace('_', ' ').replace('guild', 'server').title() for perm in error.missing_permissions]
-            embed = discord.Embed(
-                title="⛔ Permisos Insuficientes",
-                description=f"Necesitas los siguientes permisos para usar esto:\n**{', '.join(missing)}**",
-                color=discord.Color.red()
+            missing = [perm.replace('_', ' ').title() for perm in error.missing_permissions]
+            embed = embed_service.error(
+                "Acceso Denegado",
+                f"Lo siento {interaction.user.mention}, no tienes permisos para usar esto.\n\n🔒 **Necesitas:** `{', '.join(missing)}`"
             )
             await interaction.response.send_message(embed=embed, ephemeral=True)
         
-        # Error: El BOT no tiene permisos para ejecutar la acción
         elif isinstance(error, app_commands.BotMissingPermissions):
-            missing = [perm.replace('_', ' ').replace('guild', 'server').title() for perm in error.missing_permissions]
-            embed = discord.Embed(
-                title="⛔ Me faltan permisos",
-                description=f"No puedo hacer esto porque me faltan permisos:\n**{', '.join(missing)}**",
-                color=discord.Color.orange()
+            missing = [perm.replace('_', ' ').title() for perm in error.missing_permissions]
+            embed = embed_service.error(
+                "Faltan Permisos",
+                f"No puedo ejecutar esta orden porque me faltan permisos en este canal.\n\n🤖 **Necesito:** `{', '.join(missing)}`"
             )
             await interaction.response.send_message(embed=embed, ephemeral=True)
 
-        # Error genérico no controlado (Bugs de código)
-        else:
-            # Registramos el error en la consola/log para el desarrollador
-            logging.error(f"Error en comando Slash '{interaction.command.name}': {error}", exc_info=True)
-            
-            embed = discord.Embed(
-                title="💥 Error Inesperado",
-                description="Ocurrió un error interno al ejecutar este comando. El administrador ha sido notificado.",
-                color=discord.Color.dark_red()
+        elif isinstance(error, app_commands.CommandOnCooldown):
+            embed = embed_service.error(
+                "Estás muy rápido",
+                f"Espera un poco antes de volver a usar este comando.\n⏱️ **Tiempo restante:** {error.retry_after:.2f} segundos."
             )
-            # Intentamos responder, si ya respondimos usamos follow up
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+
+        else:
+            logging.error(f"Error Slash '{interaction.command.name}': {error}", exc_info=True)
+            embed = embed_service.error(
+                "Error Inesperado",
+                "Ocurrió un problema interno. El desarrollador ha sido notificado."
+            )
             if interaction.response.is_done():
                 await interaction.followup.send(embed=embed, ephemeral=True)
             else:
                 await interaction.response.send_message(embed=embed, ephemeral=True)
 
-    # --- 2. Manejador para Comandos de Prefijo (Legacy '!') ---
     @commands.Cog.listener()
     async def on_command_error(self, ctx: commands.Context, error: commands.CommandError):
-        """Maneja errores generados por comandos de prefijo (!comando)"""
-
-        # Evitamos que el error se propague si ya fue manejado localmente
         if hasattr(ctx.command, 'on_error'):
             return
 
-        # Ignoramos si el error es "Comando no encontrado" (para no spamear el chat)
         if isinstance(error, commands.CommandNotFound):
             return 
 
-        # Extraemos el error original si está empaquetado
         error = getattr(error, 'original', error)
 
         if isinstance(error, commands.MissingPermissions):
-            await ctx.reply("⛔ No tienes permisos para usar este comando.", delete_after=10)
+            embed = embed_service.error("Acceso Denegado", "No tienes permisos suficientes para usar este comando.")
+            await ctx.reply(embed=embed, delete_after=10)
 
         elif isinstance(error, commands.BotMissingPermissions):
-            await ctx.reply("⛔ No tengo permisos suficientes en este canal.", delete_after=10)
+            embed = embed_service.error("Me faltan permisos", "Verifica mis roles y permisos en este canal.")
+            await ctx.reply(embed=embed, delete_after=10)
         
         elif isinstance(error, commands.MissingRequiredArgument):
-            await ctx.reply(f"⚠️ Te faltan argumentos. Uso correcto: `{ctx.prefix}{ctx.command.name} {ctx.command.signature}`", delete_after=10)
+            embed = embed_service.info(
+                "Faltan datos",
+                f"Uso correcto:\n`{ctx.prefix}{ctx.command.qualified_name} {ctx.command.signature}`"
+            )
+            await ctx.reply(embed=embed, delete_after=15)
+
+        elif isinstance(error, commands.NotOwner):
+            embed = embed_service.error("Solo Desarrollador", "Este comando es exclusivo para el dueño del bot.")
+            await ctx.reply(embed=embed, delete_after=5)
 
         else:
-            logging.error(f"Error en comando prefijo '{ctx.command}': {error}", exc_info=True)
-            await ctx.reply("💥 Ocurrió un error desconocido. Revisa la consola.", delete_after=10)
+            logging.error(f"Error Prefix '{ctx.command}': {error}", exc_info=True)
+            embed = embed_service.error("Error", "Ocurrió un error desconocido.")
+            await ctx.reply(embed=embed, delete_after=10)
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(ErrorHandler(bot))
