@@ -17,7 +17,7 @@ class Moderacion(commands.Cog):
         max_msg = settings.CONFIG.get("moderation_config", {}).get("max_clear_msg", 100)
 
         if cantidad > max_msg:
-            embed = embed_service.error("Demasiados mensajes", "El límite es borrar {max_msg} mensajes a la vez.")
+            embed = embed_service.error("Demasiados mensajes", f"El límite es borrar {max_msg} mensajes a la vez.")
             await ctx.reply(embed=embed, ephemeral=True)
             return
 

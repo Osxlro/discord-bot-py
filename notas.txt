@@ -3,3 +3,4 @@ interaction.user,                       ctx.author
 interaction.response.send_message(...), ctx.reply(...)
 await interaction.response.defer(),     await ctx.defer()
 interaction.guild,                      ctx.guild
+interaction.followup.send               ctx.send

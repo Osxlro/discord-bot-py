@@ -5,7 +5,6 @@ import logging
 
 from config import settings
 from discord.ext import commands
-from config import settings
 from services import db_service
 
 # --- CONFIGURACIÓN DE LOGS ---

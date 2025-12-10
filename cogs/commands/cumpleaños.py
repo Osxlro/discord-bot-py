@@ -100,7 +100,7 @@ class Cumpleanos(commands.Cog):
                 
                 dias_restantes = (proximo - hoy).days
                 lista_cumples.append((dias_restantes, uid, fecha_str))
-            except:
+            except ValueError:
                 continue 
 
         # Ordenar por los que faltan menos días y tomar top 10
