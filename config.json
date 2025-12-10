@@ -5,7 +5,7 @@
     "description": "El Bot Personal de Oscurin"
   },
   "channels": {
-    "welcome_channel_id": 0,
+    "welcome_channel_id": 1287906569823977513,
     "logs_channel_id": 0
   },
   "colors": {
