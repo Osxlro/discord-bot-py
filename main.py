@@ -28,13 +28,24 @@ class BotPersonal(commands.Bot):
 
     async def setup_hook(self):
         print("--- ⚙️  CARGANDO EXTENSIONES ---")
-        for filename in os.listdir('./cogs'):
-            if filename.endswith('.py'):
-                try:
-                    await self.load_extension(f'cogs.{filename[:-3]}')
-                    print(f'✅ Extensión cargada: {filename}')
-                except Exception as e:
-                    print(f'❌ Error cargando {filename}: {e}')
+        
+        # os.walk recorre el árbol de directorios
+        # root: la carpeta actual (ej: ./cogs/commands)
+        # dirs: carpetas dentro
+        # files: archivos dentro
+        for root, dirs, files in os.walk('./cogs'):
+            for filename in files:
+                if filename.endswith('.py'):
+                    # Construimos la ruta de importación tipo: cogs.commands.general
+                    # 1. Quitamos './' del inicio y reemplazamos las barras de carpeta por puntos
+                    relative_path = os.path.relpath(root, '.').replace(os.path.sep, '.')
+                    extension_name = f"{relative_path}.{filename[:-3]}"
+                    
+                    try:
+                        await self.load_extension(extension_name)
+                        print(f'✅ Extensión cargada: {extension_name}')
+                    except Exception as e:
+                        print(f'❌ Error cargando {extension_name}: {e}')
         
         print("--- 🔄 SINCRONIZANDO COMANDOS ---")
         try:
