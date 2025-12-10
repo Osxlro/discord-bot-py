@@ -17,7 +17,7 @@ class General(commands.Cog):
     @commands.hybrid_command(name="avatar", description="Muestra el avatar de un usuario")
     async def avatar(self, ctx: commands.Context, usuario: discord.Member = None):
         # Si no especifica usuario, usa el suyo propio
-        usuario = usuario or interaction.user
+        usuario = usuario or ctx.author
         
         embed = embed_service.info(f"Avatar de {usuario.name}", "")
         embed.set_image(url=usuario.display_avatar.url)
