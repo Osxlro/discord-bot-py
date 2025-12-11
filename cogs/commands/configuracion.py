@@ -40,14 +40,14 @@ class Configuracion(commands.Cog):
     async def server_config(
         self, 
         ctx: commands.Context, 
-        ajuste: Literal["Canal Bienvenidas", "Canal Logs", "Canal Confesiones", "Respuesta Mención"],
+        ajuste: Literal["Bienvenidas", "Logs", "Confesiones", "Mencion", "Cumpleaños"],
         canal: Optional[discord.TextChannel] = None,
         texto: Optional[str] = None
     ):
         guild_id = ctx.guild.id
 
         # CASO A: Configuración de Texto (Mención)
-        if ajuste == "Respuesta Mención":
+        if ajuste == "Mencion":
             if not texto:
                 await ctx.reply(embed=embed_service.error("Faltan datos", "Para configurar la mención, debes escribir algo en el campo `texto`."), ephemeral=True)
                 return
@@ -70,9 +70,10 @@ class Configuracion(commands.Cog):
 
             # Mapeo de la opción elegida -> columna en base de datos
             col_map = {
-                "Canal Bienvenidas": "welcome_channel_id",
-                "Canal Logs": "logs_channel_id",
-                "Canal Confesiones": "confessions_channel_id"
+                "Bienvenidas": "welcome_channel_id",
+                "Logs": "logs_channel_id",
+                "Confesiones": "confessions_channel_id",
+                "Cumpleaños": "birthday_channel_id"
             }
             columna = col_map[ajuste]
             

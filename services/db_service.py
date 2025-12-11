@@ -38,6 +38,8 @@ async def init_db():
 
         # --- MIGRACIONES ---
         # Ejecutamos migraciones previas para evitar errores
+        try: await db.execute("ALTER TABLE guild_config ADD COLUMN birthday_channel_id INTEGER DEFAULT 0")
+        except: pass
         try: await db.execute("ALTER TABLE users ADD COLUMN custom_prefix TEXT DEFAULT NULL")
         except: pass
         try: await db.execute("ALTER TABLE guild_config ADD COLUMN mention_response TEXT DEFAULT NULL")
