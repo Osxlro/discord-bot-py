@@ -12,7 +12,6 @@ DB_PATH = os.path.join(DATA_DIR, DB_NAME) # Ahora se guarda en data/
 
 async def init_db():
     async with aiosqlite.connect(DB_PATH) as db:
-        # ... (Tu código de creación de tablas users y guild_config sigue IGUAL) ...
         await db.execute("""
         CREATE TABLE IF NOT EXISTS users (
             user_id INTEGER PRIMARY KEY,
@@ -22,14 +21,15 @@ async def init_db():
             celebrate BOOLEAN DEFAULT 1,
             custom_prefix TEXT DEFAULT NULL 
         )
-        """) # <--- AGREGAMOS custom_prefix AQUÍ ARRIBA ^
+        """)
         
         await db.execute("""
         CREATE TABLE IF NOT EXISTS guild_config (
             guild_id INTEGER PRIMARY KEY,
             chaos_enabled BOOLEAN DEFAULT 1,
             welcome_channel_id INTEGER DEFAULT 0,
-            confessions_channel_id INTEGER DEFAULT 0
+            confessions_channel_id INTEGER DEFAULT 0,
+            mentions_response TEXT DEFAULT NULL
         )
         """)
 
@@ -40,7 +40,18 @@ async def init_db():
             print("🔧 Base de datos: Columna 'custom_prefix' agregada.")
         except Exception:
             pass
+
+        try: 
+            await db.execute("ALTER TABLE guild_config ADD COLUMN confessions_channel_id INTEGER DEFAULT 0")
+        except Exception: 
+            pass
         
+        try:
+            await db.execute("ALTER TABLE guild_config ADD COLUMN mention_response TEXT DEFAULT NULL")
+            print("🔧 Base de datos: Columna 'mention_response' agregada.")
+        except Exception:
+            pass
+
         # ... (Resto de migraciones celebracion, confesiones, etc) ...
         
         await db.commit()
