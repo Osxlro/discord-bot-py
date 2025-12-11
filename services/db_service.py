@@ -29,7 +29,7 @@ async def init_db():
             chaos_enabled BOOLEAN DEFAULT 1,
             welcome_channel_id INTEGER DEFAULT 0,
             confessions_channel_id INTEGER DEFAULT 0,
-            mentions_response TEXT DEFAULT NULL
+            mention_response TEXT DEFAULT NULL
         )
         """)
 

@@ -1,3 +1,4 @@
+# cogs/utils/mencion.py
 import discord
 from discord.ext import commands
 from services import db_service, embed_service
@@ -9,13 +10,14 @@ class Mencion(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
-        # Ignorar bots, DMs, o mensajes que NO son una mención directa
         if message.author.bot or not message.guild:
             return
 
-        # Verificamos si el mensaje es ÚNICAMENTE la mención al bot (ej: "@Bot")
-        # .strip() elimina espacios extra
-        if message.content.strip() == self.bot.user.mention:
+        # LOGICA MEJORADA:
+        # 1. Verificamos si el bot está en la lista de mencionados.
+        # 2. Verificamos que no sea un @everyone o @here.
+        # 3. Verificamos que el mensaje no tenga más palabras (len == 1).
+        if self.bot.user in message.mentions and len(message.content.split()) == 1 and not message.mention_everyone:
             
             # 1. Buscamos configuración en la DB
             row = await db_service.fetch_one("SELECT mention_response FROM guild_config WHERE guild_id = ?", (message.guild.id,))
@@ -24,7 +26,6 @@ class Mencion(commands.Cog):
             if row and row['mention_response']:
                 respuesta = row['mention_response']
             else:
-                # Respuesta por defecto si no han configurado nada
                 prefix = settings.CONFIG["bot_config"]["prefix"]
                 respuesta = f"¡Hola! Soy **{self.bot.user.name}**.\nUsa `/help` o `{prefix}help` para ver mis comandos."
 
