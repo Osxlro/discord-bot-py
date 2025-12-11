@@ -34,19 +34,41 @@ class Configuracion(commands.Cog):
     @app_commands.describe(
         ajuste="¿Qué sistema quieres configurar?",
         canal="[Opcional] Selecciona el canal (solo para Bienvenidas, Logs, Confesiones)",
-        texto="[Opcional] Escribe el mensaje (solo para Mención). Usa 'reset' para borrar."
+        texto="[Opcional] Escribe el mensaje (solo para Mención). Usa 'reset' para borrar.",
+        rol="[Opcional] Selecciona el rol (para Auto Rol)"
     )
     @commands.has_permissions(administrator=True)
     async def server_config(
         self, 
         ctx: commands.Context, 
-        ajuste: Literal["Bienvenidas", "Logs", "Confesiones", "Mencion", "Cumpleaños"],
+        ajuste: Literal["Bienvenidas", "Logs", "Confesiones", "Mencion", "Cumpleaños", "Auto Rol"],
         canal: Optional[discord.TextChannel] = None,
-        texto: Optional[str] = None
+        texto: Optional[str] = None,
+        rol: Optional[discord.Role] = None
     ):
         guild_id = ctx.guild.id
 
-        # CASO A: Configuración de Texto (Mención)
+        # CASO A: Auto Rol (Entrada) - NUEVO
+        if ajuste == "Auto Rol":
+            if not rol:
+                 # Si quiere desactivarlo, podría no pasar rol, pero por ahora exigimos rol o un comando 'reset' aparte
+                 # Para simplificar: Si no pone rol, le avisamos.
+                await ctx.reply(embed=embed_service.error("Faltan datos", "Debes seleccionar un `rol` para configurar el Auto Rol."), ephemeral=True)
+                return
+            
+            # Verificar jerarquía (No puedes dar un rol superior al del bot)
+            if rol.position >= ctx.guild.me.top_role.position:
+                await ctx.reply(embed=embed_service.error("Jerarquía Inválida", "No puedo asignar ese rol porque es superior o igual a mi rol más alto."), ephemeral=True)
+                return
+
+            await db_service.execute("""
+                INSERT INTO guild_config (guild_id, autorole_id) VALUES (?, ?)
+                ON CONFLICT(guild_id) DO UPDATE SET autorole_id = excluded.autorole_id
+            """, (guild_id, rol.id))
+            
+            await ctx.reply(embed=embed_service.success("Auto Rol Configurado", f"✅ Los nuevos usuarios recibirán el rol: {rol.mention}"))
+
+        # CASO B: Configuración de Texto (Mención)
         if ajuste == "Mencion":
             if not texto:
                 await ctx.reply(embed=embed_service.error("Faltan datos", "Para configurar la mención, debes escribir algo en el campo `texto`."), ephemeral=True)
