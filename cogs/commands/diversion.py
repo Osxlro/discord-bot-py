@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 from config import settings
-from services import embed_service, emojimixer_service, random_service
+from services import embed_service, emojimixer_service, random_service, db_service
 
 class Diversion(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -86,26 +86,18 @@ class Diversion(commands.Cog):
 
     # --- COMANDO: CONFESAR (Confiesa tus pecados) ---
     @app_commands.command(name="confess", description="Envía un secreto anónimo al servidor")
-    @app_commands.describe(secreto="Tu confesión anónima (¡Nadie sabrá que fuiste tú!)")
     async def confesar(self, interaction: discord.Interaction, secreto: str):
-        # 1. Obtener el ID desde la configuración
-        canal_id = settings.CONFIG["channels"].get("confessions_channel_id")
+        # 1. Consultar DB
+        row = await db_service.fetch_one("SELECT confessions_channel_id FROM guild_config WHERE guild_id = ?", (interaction.guild_id,))
 
-        # 2. Validaciones básicas
-        if not canal_id:
-            embed = embed_service.error(
-                "Configuración Faltante", 
-                "El dueño del bot no ha configurado el ID del canal de confesiones en `config.json`."
-            )
+        if not row or not row['confessions_channel_id']:
+            embed = embed_service.error("Error", "El canal de confesiones no ha sido configurado por los administradores.")
             await interaction.response.send_message(embed=embed, ephemeral=True)
             return
 
-        canal = self.bot.get_channel(canal_id)
+        canal = self.bot.get_channel(row['confessions_channel_id'])
         if not canal:
-            embed = embed_service.error(
-                "Error de Canal", 
-                f"No encuentro el canal con ID `{canal_id}`. Verifica que el bot tenga acceso."
-            )
+            embed = embed_service.error("Error", "El canal configurado ya no existe.")
             await interaction.response.send_message(embed=embed, ephemeral=True)
             return
 

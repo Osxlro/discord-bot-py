@@ -1,52 +1,89 @@
 import discord
 from discord.ext import commands
 from discord import app_commands
+from typing import Literal, Optional
 from services import db_service, embed_service
 
 class Configuracion(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    # --- COMANDO 1: Configurar Prefijo Personal (Movido desde General) ---
-    @commands.hybrid_command(name="setprefix", description="Cambia el prefijo que usas con el bot")
-    @app_commands.describe(nuevo_prefix="El nuevo símbolo (máx 5 caracteres)")
-    async def setprefix(self, ctx: commands.Context, nuevo_prefix: str):
-        if len(nuevo_prefix) > 5:
+    @commands.hybrid_group(name="config", description="Panel de configuración del Bot")
+    async def config(self, ctx: commands.Context):
+        if ctx.invoked_subcommand is None:
+            await ctx.send_help(ctx.command)
+
+    # --- 1. CONFIGURACIÓN DE USUARIO (Cualquiera puede usarlo) ---
+    @config.command(name="prefix", description="Cambia tu prefijo personal")
+    async def set_prefix(self, ctx: commands.Context, nuevo: str):
+        if len(nuevo) > 5:
             await ctx.reply("El prefijo no puede tener más de 5 caracteres.", ephemeral=True)
             return
 
-        # Verificamos si ya existe el usuario
         check = await db_service.fetch_one("SELECT user_id FROM users WHERE user_id = ?", (ctx.author.id,))
-        
         if not check:
-            await db_service.execute("INSERT INTO users (user_id, custom_prefix) VALUES (?, ?)", (ctx.author.id, nuevo_prefix))
+            await db_service.execute("INSERT INTO users (user_id, custom_prefix) VALUES (?, ?)", (ctx.author.id, nuevo))
         else:
-            await db_service.execute("UPDATE users SET custom_prefix = ? WHERE user_id = ?", (nuevo_prefix, ctx.author.id))
+            await db_service.execute("UPDATE users SET custom_prefix = ? WHERE user_id = ?", (nuevo, ctx.author.id))
             
-        embed = embed_service.success("Prefijo Actualizado", f"Ahora puedes usarme con: `{nuevo_prefix}` (ej: `{nuevo_prefix}ping`)")
+        embed = embed_service.success("Prefijo Personal", f"Ahora puedes usarme con: `{nuevo}` (ej: `{nuevo}ping`)")
         await ctx.reply(embed=embed)
 
-    # --- COMANDO 2: Configurar Respuesta a Mención (Nuevo) ---
-    @commands.hybrid_command(name="setmencion", description="Define qué responde el bot al ser mencionado (@Bot)")
-    @app_commands.describe(mensaje="El mensaje de respuesta (escribe 'reset' para borrar)")
-    @commands.has_permissions(administrator=True) # Solo admins pueden cambiar la config del servidor
-    async def setmencion(self, ctx: commands.Context, mensaje: str):
-        if mensaje.lower() == "reset":
-            nuevo_valor = None
-            texto_confirm = "El mensaje de mención ha sido restablecido al valor por defecto."
+    # --- 2. CONFIGURACIÓN DE SERVIDOR (Unificado) ---
+    @config.command(name="server", description="Configura canales y opciones del servidor")
+    @app_commands.describe(
+        ajuste="¿Qué sistema quieres configurar?",
+        canal="[Opcional] Selecciona el canal (solo para Bienvenidas, Logs, Confesiones)",
+        texto="[Opcional] Escribe el mensaje (solo para Mención). Usa 'reset' para borrar."
+    )
+    @commands.has_permissions(administrator=True)
+    async def server_config(
+        self, 
+        ctx: commands.Context, 
+        ajuste: Literal["Canal Bienvenidas", "Canal Logs", "Canal Confesiones", "Respuesta Mención"],
+        canal: Optional[discord.TextChannel] = None,
+        texto: Optional[str] = None
+    ):
+        guild_id = ctx.guild.id
+
+        # CASO A: Configuración de Texto (Mención)
+        if ajuste == "Respuesta Mención":
+            if not texto:
+                await ctx.reply(embed=embed_service.error("Faltan datos", "Para configurar la mención, debes escribir algo en el campo `texto`."), ephemeral=True)
+                return
+            
+            valor = None if texto.lower() == "reset" else texto
+            msg_exito = "Mensaje restablecido." if not valor else f"✅ Respuesta actualizada a: **{texto}**"
+            
+            await db_service.execute("""
+                INSERT INTO guild_config (guild_id, mention_response) VALUES (?, ?)
+                ON CONFLICT(guild_id) DO UPDATE SET mention_response = excluded.mention_response
+            """, (guild_id, valor))
+            
+            await ctx.reply(embed=embed_service.success("Configuración Actualizada", msg_exito))
+
+        # CASO B: Configuración de Canales
         else:
-            nuevo_valor = mensaje
-            texto_confirm = f"✅ Ahora responderé: **{mensaje}**"
+            if not canal:
+                await ctx.reply(embed=embed_service.error("Faltan datos", f"Para configurar **{ajuste}**, debes seleccionar un canal en el campo `canal`."), ephemeral=True)
+                return
 
-        # Guardamos en la tabla del SERVIDOR (guild_config)
-        # Usamos UPSERT para crear la fila del servidor si no existe
-        await db_service.execute("""
-            INSERT INTO guild_config (guild_id, mention_response) VALUES (?, ?)
-            ON CONFLICT(guild_id) DO UPDATE SET mention_response = excluded.mention_response
-        """, (ctx.guild.id, nuevo_valor))
-
-        embed = embed_service.success("Configuración de Servidor", texto_confirm)
-        await ctx.reply(embed=embed)
+            # Mapeo de la opción elegida -> columna en base de datos
+            col_map = {
+                "Canal Bienvenidas": "welcome_channel_id",
+                "Canal Logs": "logs_channel_id",
+                "Canal Confesiones": "confessions_channel_id"
+            }
+            columna = col_map[ajuste]
+            
+            # Query dinámica segura
+            query = f"""
+                INSERT INTO guild_config (guild_id, {columna}) VALUES (?, ?)
+                ON CONFLICT(guild_id) DO UPDATE SET {columna} = excluded.{columna}
+            """
+            await db_service.execute(query, (guild_id, canal.id))
+            
+            await ctx.reply(embed=embed_service.success(f"{ajuste}", f"✅ Configurado en: {canal.mention}"))
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(Configuracion(bot))
