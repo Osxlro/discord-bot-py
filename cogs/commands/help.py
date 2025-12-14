@@ -30,16 +30,18 @@ class HelpSelect(discord.ui.Select):
 
         # Mapa de Emojis para cada categoría
         emoji_map = {
-            "Matematicas": "🧮",
-            "General": "👋",
-            "Moderacion": "🛡️",
-            "Diversion": "🎉",
-            "Developer": "🔧",
-            "Status": "📡",
-            "Bienvenidas": "🚪",
-            "Ayuda": "ℹ️",
-            "Logger": "📝",
-            "Admin": "👮"
+            "General": "🌐",      # Ahora incluye matématicas
+            "Moderacion": "🔨",
+            "Diversion": "🎲",
+            "Developer": "💻",
+            "Status": "🟢",
+            "Bienvenidas": "👋",
+            "Ayuda": "❓",
+            "Logger": "📜",
+            "Niveles": "⭐",      # Nuevo icono para niveles
+            "Roles": "🎭",
+            "Configuracion": "⚙️",
+            "Backup": "💾"
         }
 
         # Generamos las opciones dinámicamente según los Cogs cargados

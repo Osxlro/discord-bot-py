@@ -48,6 +48,8 @@ async def init_db():
         except: pass
         try: await db.execute("ALTER TABLE guild_config ADD COLUMN autorole_id INTEGER DEFAULT 0")
         except: pass
+        try:await db.execute("ALTER TABLE guild_config ADD COLUMN level_msg TEXT DEFAULT NULL")
+        except: pass
 
         # NUEVA MIGRACIÓN: Logs
         try:

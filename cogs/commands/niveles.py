@@ -7,10 +7,8 @@ from services import db_service, embed_service
 class Niveles(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self._cd = commands.CooldownMapping.from_cooldown(1, 60.0, commands.BucketType.user) # 1 mensaje cada 60s da XP
+        self._cd = commands.CooldownMapping.from_cooldown(1, 60.0, commands.BucketType.user)
 
-        # --- REGISTRO MANUAL DEL MENÚ CONTEXTUAL ---
-        # Igual que en el traductor, lo registramos al iniciar la clase
         self.ctx_menu = app_commands.ContextMenu(
             name="Ver Rank",
             callback=self.ver_rank_menu
@@ -18,96 +16,109 @@ class Niveles(commands.Cog):
         self.bot.tree.add_command(self.ctx_menu)
 
     async def cog_unload(self):
-        # Limpieza al descargar el cog
         self.bot.tree.remove_command(self.ctx_menu.name, type=self.ctx_menu.type)
 
     def get_ratelimit(self, message: discord.Message):
-        """Evita el spam de XP."""
         bucket = self._cd.get_bucket(message)
         return bucket.update_rate_limit()
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
-        if message.author.bot or not message.guild:
-            return
+        if message.author.bot or not message.guild: return
+        if self.get_ratelimit(message): return
 
-        # 1. Verificar Cooldown
-        if self.get_ratelimit(message):
-            return
-
-        # 2. Calcular XP ganada
         xp_ganada = random.randint(15, 25)
-
-        # 3. Obtener datos actuales
+        
+        # Obtenemos datos del usuario Y config del servidor al mismo tiempo si es posible, 
+        # pero por orden haremos dos consultas rápidas.
         row = await db_service.fetch_one("SELECT xp, level FROM users WHERE user_id = ?", (message.author.id,))
         
         if not row:
-            # Usuario nuevo
             nivel_actual = 1
             await db_service.execute("INSERT INTO users (user_id, xp, level) VALUES (?, ?, ?)", (message.author.id, xp_ganada, 1))
         else:
             xp_actual = row['xp']
             nivel_actual = row['level']
-            
-            # Actualizar XP
             nuevo_total_xp = xp_actual + xp_ganada
+            xp_necesaria = nivel_actual * 100 
             
-            # 4. Verificar Subida de Nivel
-            xp_necesaria_siguiente = nivel_actual * 100 
-            
-            if nuevo_total_xp >= xp_necesaria_siguiente:
+            if nuevo_total_xp >= xp_necesaria:
                 nivel_actual += 1
-                await message.channel.send(f"🎉 ¡Felicidades {message.author.mention}! Has subido al **Nivel {nivel_actual}** 🆙")
+                
+                # BUSCAR MENSAJE PERSONALIZADO
+                guild_conf = await db_service.fetch_one("SELECT level_msg FROM guild_config WHERE guild_id = ?", (message.guild.id,))
+                
+                msg_raw = guild_conf['level_msg'] if guild_conf and guild_conf['level_msg'] else "🎉 ¡Felicidades {user}! Has subido al **Nivel {level}** 🆙"
+                
+                # Reemplazar variables
+                msg_final = msg_raw.replace("{user}", message.author.mention).replace("{level}", str(nivel_actual))
+                
+                await message.channel.send(msg_final)
             
-            # Guardar en DB
             await db_service.execute("UPDATE users SET xp = ?, level = ? WHERE user_id = ?", (nuevo_total_xp, nivel_actual, message.author.id))
 
-    @commands.hybrid_command(name="rank", description="Muestra tu nivel y experiencia actual")
-    async def rank(self, ctx: commands.Context, usuario: discord.Member = None):
-        target = usuario or ctx.author
+    # --- COMANDO PRINCIPAL CON SUBCOMANDOS ---
+    @commands.hybrid_group(name="rank", description="Sistema de Niveles")
+    async def rank_group(self, ctx: commands.Context):
+        if ctx.invoked_subcommand is None:
+            # Si usa solo /rank, mostramos su status
+            await self.ver_status(ctx, ctx.author)
+
+    @rank_group.command(name="user", description="Ver el rango de un usuario")
+    async def user_rank(self, ctx: commands.Context, usuario: discord.Member):
+        await self.ver_status(ctx, usuario)
+
+    @rank_group.command(name="leaderboard", description="Ver el top 10 de usuarios con más XP")
+    async def leaderboard(self, ctx: commands.Context):
+        # Nota: Esto es global (todos los usuarios de la DB). 
+        # Si quieres solo del servidor, habría que filtrar en Python o tener una tabla por servidor.
+        # Por simplicidad en SQLite simple, lo haremos global del bot.
+        rows = await db_service.fetch_all("SELECT user_id, level, xp FROM users ORDER BY xp DESC LIMIT 10")
         
-        row = await db_service.fetch_one("SELECT xp, level FROM users WHERE user_id = ?", (target.id,))
-        
-        if not row:
-            embed = embed_service.info("Sin Rango", f"{target.name} aún no tiene experiencia registrada.")
-            await ctx.reply(embed=embed)
+        if not rows:
+            await ctx.reply(embed=embed_service.info("Vacío", "Nadie tiene experiencia aún."))
             return
 
-        xp = row['xp']
-        nivel = row['level']
-        xp_next = nivel * 100 # Meta para el siguiente nivel
-        
-        # Barra de progreso visual
-        try:
-            porcentaje = min(xp / xp_next, 1.0)
-        except ZeroDivisionError:
-            porcentaje = 0
+        desc = ""
+        for i, row in enumerate(rows, 1):
+            user_id = row['user_id']
+            # Intentar obtener nombre (puede que no esté en este server)
+            user = self.bot.get_user(user_id)
+            name = user.name if user else f"Usuario ID {user_id}"
             
+            medalla = "🥇" if i==1 else "🥈" if i==2 else "🥉" if i==3 else f"{i}."
+            desc += f"**{medalla} {name}** • Nvl {row['level']} ({row['xp']} XP)\n"
+
+        embed = embed_service.info("🏆 Tabla de Clasificación", desc)
+        await ctx.reply(embed=embed)
+
+    # Función auxiliar para ver status (reutilizada)
+    async def ver_status(self, ctx, target):
+        row = await db_service.fetch_one("SELECT xp, level FROM users WHERE user_id = ?", (target.id,))
+        if not row:
+            await ctx.reply(embed=embed_service.info("Sin Rango", f"{target.name} no tiene XP."), ephemeral=True)
+            return
+
+        xp, nivel = row['xp'], row['level']
+        xp_next = nivel * 100
+        porcentaje = min(xp / xp_next, 1.0) if xp_next > 0 else 0
         bloques = int(porcentaje * 10)
         barra = "🟩" * bloques + "⬜" * (10 - bloques)
 
         embed = embed_service.info(f"Rango de {target.name}", "")
         embed.add_field(name="Nivel", value=f"🏆 **{nivel}**", inline=True)
-        embed.add_field(name="XP Total", value=f"✨ `{xp} / {xp_next}`", inline=True)
+        embed.add_field(name="XP", value=f"✨ `{xp} / {xp_next}`", inline=True)
         embed.add_field(name="Progreso", value=f"{barra} {int(porcentaje*100)}%", inline=False)
         embed.set_thumbnail(url=target.display_avatar.url)
-        
         await ctx.reply(embed=embed)
 
-    # --- CALLBACK DEL MENÚ CONTEXTUAL ---
-    # Ya NO lleva el decorador @app_commands.context_menu
+    # Callback Menú
     async def ver_rank_menu(self, interaction: discord.Interaction, member: discord.Member):
-        # Aquí haremos la consulta directa
         row = await db_service.fetch_one("SELECT xp, level FROM users WHERE user_id = ?", (member.id,))
-        
         if not row:
-            await interaction.response.send_message(f"{member.name} no tiene rango.", ephemeral=True)
+            await interaction.response.send_message("Sin datos de XP.", ephemeral=True)
             return
-
-        xp = row['xp']
-        nivel = row['level']
-        
-        embed = embed_service.info(f"Rango de {member.name}", f"🏆 Nivel: **{nivel}**\n✨ XP: `{xp}`")
+        embed = embed_service.info(f"Rango de {member.name}", f"🏆 Nivel: **{row['level']}**\n✨ XP: `{row['xp']}`")
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
 async def setup(bot: commands.Bot):

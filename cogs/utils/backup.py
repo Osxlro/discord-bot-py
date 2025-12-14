@@ -36,6 +36,23 @@ class Backup(commands.Cog):
                 self.limpiar_backups_antiguos(backup_dir)
             except Exception as e:
                 print(f"❌ [Backup] Error: {e}")
+        
+        try:
+            # BUSCAR AL DUEÑO DEL BOT
+            # Nota: Asegúrate de que tu ID sea obtenible. 
+            # Si tienes problemas, pon tu ID fijo: user = await self.bot.fetch_user(123456789)
+            app_info = await self.bot.application_info()
+            owner = app_info.owner
+
+            fecha = datetime.date.today().strftime("%Y-%m-%d")
+            
+            # Enviar archivo por DM
+            archivo = discord.File(source, filename=f"backup_{fecha}.sqlite3")
+            await owner.send(content=f"📦 **Copia de seguridad automática** del día {fecha}.", file=archivo)
+            print(f"✅ Backup enviado a {owner.name}")
+
+        except Exception as e:
+            print(f"❌ Error al enviar backup: {e}")
 
     def limpiar_backups_antiguos(self, directorio):
         # Lógica simple para no llenar el disco

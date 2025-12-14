@@ -22,3 +22,6 @@ env/
 # --- Logs y Bases de Datos Locales ---
 *.log
 *.sqlite3
+
+# --- Archivos Temporales ---
+*.zip

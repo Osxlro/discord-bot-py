@@ -1,7 +1,8 @@
 import discord
 from discord.ext import commands
 from discord import app_commands
-from services import embed_service, translator_service, db_service
+from typing import Literal
+from services import embed_service, translator_service, math_service
 
 class General(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -49,7 +50,6 @@ class General(commands.Cog):
         except Exception as e:
             await ctx.send(embed=embed_service.error("Error", str(e)))
 
-    # --- CALLBACK DEL MENÚ CONTEXTUAL ---
     async def traducir_mensaje(self, interaction: discord.Interaction, message: discord.Message):
         await interaction.response.defer(ephemeral=True)
         if not message.content:
@@ -65,6 +65,33 @@ class General(commands.Cog):
             await interaction.followup.send(embed=embed, ephemeral=True)
         except Exception as e:
             await interaction.followup.send(f"Error al traducir: {e}", ephemeral=True)
+    
+    # --- NUEVO: MATEMATICAS (FUSIONADO) ---
+    @commands.hybrid_command(name="calc", description="Calculadora simple")
+    @app_commands.describe(operacion="Operación", num1="Número 1", num2="Número 2")
+    async def calc(self, ctx: commands.Context, operacion: Literal["sumar", "restar", "multiplicacion", "division"], num1: int, num2: int):
+        try:
+            res = math_service.calcular(operacion, num1, num2)
+            op_emojis = {"sumar": "➕", "restar": "➖", "multiplicacion": "✖️", "division": "➗"}
+            
+            embed = embed_service.success("Resultado", f"{op_emojis.get(operacion)} `{num1}` y `{num2}` = **{res}**")
+            await ctx.reply(embed=embed)
+        except ValueError as e:
+            await ctx.reply(embed=embed_service.error("Error Matemático", str(e)), ephemeral=True)
+
+    # Callback Context Menu
+    async def traducir_mensaje(self, interaction: discord.Interaction, message: discord.Message):
+        # (El código que ya tenías para traducir mensajes)
+        await interaction.response.defer(ephemeral=True)
+        if not message.content:
+            await interaction.followup.send("❌ Sin texto.", ephemeral=True)
+            return
+        try:
+            res = await translator_service.traducir(message.content, "es")
+            embed = embed_service.success("Traducción Rápida", f"**De:** {message.author.mention}\n**Dice:** {res['traducido']}")
+            await interaction.followup.send(embed=embed, ephemeral=True)
+        except Exception as e:
+            await interaction.followup.send(f"Error: {e}", ephemeral=True)
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(General(bot))
