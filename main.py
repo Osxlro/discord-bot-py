@@ -9,7 +9,10 @@ from services import db_service
 
 # --- CONFIGURACIÓN DE LOGS ---
 # Esto guardará todo lo que pase en un archivo 'discord.log' y lo mostrará en consola
-handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
+if not os.path.exists("./data"):
+    os.makedirs("./data")
+
+handler = logging.FileHandler(filename='./data/discord.log', encoding='utf-8', mode='w')
 discord.utils.setup_logging(handler=handler, level=logging.INFO)
 
 # Configuración de Intents
