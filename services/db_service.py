@@ -23,6 +23,17 @@ async def init_db():
         )
         """)
         
+        # Tabla Estadísticas por Servidor (XP y Nivel Local) - NUEVA
+        await db.execute("""
+        CREATE TABLE IF NOT EXISTS guild_stats (
+            guild_id INTEGER,
+            user_id INTEGER,
+            xp INTEGER DEFAULT 0,
+            level INTEGER DEFAULT 1,
+            PRIMARY KEY (guild_id, user_id)
+        )
+        """)
+        
         # Tabla Configuración de Servidor (Configuración Global)
         # Añadimos logs_channel_id
         await db.execute("""
@@ -32,7 +43,10 @@ async def init_db():
             welcome_channel_id INTEGER DEFAULT 0,
             confessions_channel_id INTEGER DEFAULT 0,
             logs_channel_id INTEGER DEFAULT 0, 
-            mention_response TEXT DEFAULT NULL
+            birthday_channel_id INTEGER DEFAULT 0,
+            autorole_id INTEGER DEFAULT 0,
+            mention_response TEXT DEFAULT NULL,
+            server_level_msg TEXT DEFAULT NULL
         )
         """)
 
@@ -50,13 +64,16 @@ async def init_db():
         except: pass
         try:await db.execute("ALTER TABLE guild_config ADD COLUMN level_msg TEXT DEFAULT NULL")
         except: pass
-
-        # NUEVA MIGRACIÓN: Logs
-        try:
-            await db.execute("ALTER TABLE guild_config ADD COLUMN logs_channel_id INTEGER DEFAULT 0")
-            print("🔧 Base de datos: Columna 'logs_channel_id' agregada.")
-        except Exception:
-            pass
+        try: await db.execute("ALTER TABLE guild_config ADD COLUMN logs_channel_id INTEGER DEFAULT 0")
+        except: pass
+        try: await db.execute("ALTER TABLE users ADD COLUMN description TEXT DEFAULT 'Sin descripción.'")
+        except: pass
+        try: await db.execute("ALTER TABLE users ADD COLUMN personal_level_msg TEXT DEFAULT NULL")
+        except: pass
+        try: await db.execute("ALTER TABLE users ADD COLUMN personal_birthday_msg TEXT DEFAULT NULL")
+        except: pass
+        try: await db.execute("ALTER TABLE guild_config ADD COLUMN server_level_msg TEXT DEFAULT NULL")
+        except: pass
         
         await db.commit()
         print(f"💾 Base de datos conectada: {DB_PATH}")

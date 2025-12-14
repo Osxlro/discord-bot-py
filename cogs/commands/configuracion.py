@@ -8,103 +8,85 @@ class Configuracion(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    @commands.hybrid_group(name="config", description="Panel de configuración del Bot")
-    async def config(self, ctx: commands.Context):
-        if ctx.invoked_subcommand is None:
-            await ctx.send_help(ctx.command)
+    # Creamos un GRUPO PRINCIPAL llamado /setup
+    setup_group = app_commands.Group(name="setup", description="Configuraciones del Servidor")
 
-    # --- 1. CONFIGURACIÓN DE USUARIO (Cualquiera puede usarlo) ---
-    @config.command(name="prefix", description="Cambia tu prefijo personal")
+    # --- SUB-GRUPO: CANALES ---
+    # Uso: /setup canales [tipo] [canal]
+    @setup_group.command(name="canales", description="Configura los canales de bienvenida, logs, etc.")
+    @app_commands.describe(tipo="¿Qué canal quieres configurar?", canal="El canal de texto")
+    @commands.has_permissions(administrator=True)
+    async def setup_canales(self, ctx: discord.Interaction, tipo: Literal["Bienvenidas", "Logs", "Confesiones", "Cumpleaños"], canal: discord.TextChannel):
+        col_map = {
+            "Bienvenidas": "welcome_channel_id",
+            "Logs": "logs_channel_id",
+            "Confesiones": "confessions_channel_id",
+            "Cumpleaños": "birthday_channel_id"
+        }
+        columna = col_map[tipo]
+        
+        await db_service.execute(f"""
+            INSERT INTO guild_config (guild_id, {columna}) VALUES (?, ?)
+            ON CONFLICT(guild_id) DO UPDATE SET {columna} = excluded.{columna}
+        """, (ctx.guild.id, canal.id))
+        
+        embed = embed_service.success(f"Canal de {tipo}", f"✅ Configurado exitosamente en: {canal.mention}")
+        await ctx.response.send_message(embed=embed)
+
+    # --- SUB-GRUPO: ROLES ---
+    # Uso: /setup rol [rol]
+    @setup_group.command(name="autorol", description="Define el rol que se da al entrar")
+    @app_commands.describe(rol="Rol para nuevos usuarios (o vacío para desactivar)")
+    @commands.has_permissions(administrator=True)
+    async def setup_autorol(self, ctx: discord.Interaction, rol: Optional[discord.Role] = None):
+        if rol:
+            if rol.position >= ctx.guild.me.top_role.position:
+                await ctx.response.send_message("❌ Ese rol es superior al mío, no puedo darlo.", ephemeral=True)
+                return
+            valor = rol.id
+            msg = f"✅ Auto-Rol activado: {rol.mention}"
+        else:
+            valor = 0
+            msg = "⚪ Auto-Rol desactivado."
+
+        await db_service.execute("""
+            INSERT INTO guild_config (guild_id, autorole_id) VALUES (?, ?)
+            ON CONFLICT(guild_id) DO UPDATE SET autorole_id = excluded.autorole_id
+        """, (ctx.guild.id, valor))
+        
+        await ctx.response.send_message(embed=embed_service.success("Auto Rol", msg))
+
+    # --- SUB-GRUPO: MENSAJES DE SERVIDOR ---
+    @setup_group.command(name="mensajes", description="Personaliza las respuestas del bot en este servidor")
+    @app_commands.describe(tipo="Mención o Nivel", texto="Tu mensaje (Usa {user}, {level}). Escribe 'reset' para borrar.")
+    @commands.has_permissions(administrator=True)
+    async def setup_mensajes(self, ctx: discord.Interaction, tipo: Literal["Respuesta Mención", "Subida Nivel"], texto: str):
+        columna = "mention_response" if tipo == "Respuesta Mención" else "server_level_msg"
+        valor = None if texto.lower() == "reset" else texto
+        
+        await db_service.execute(f"""
+            INSERT INTO guild_config (guild_id, {columna}) VALUES (?, ?)
+            ON CONFLICT(guild_id) DO UPDATE SET {columna} = excluded.{columna}
+        """, (ctx.guild.id, valor))
+        
+        await ctx.response.send_message(embed=embed_service.success(f"Configuración: {tipo}", "✅ Mensaje actualizado."))
+
+    # --- COMANDO PREFIX (Fuera del grupo setup, para acceso rápido) ---
+    @commands.hybrid_command(name="prefix", description="Cambia tu prefijo personal para comandos de texto")
     async def set_prefix(self, ctx: commands.Context, nuevo: str):
         if len(nuevo) > 5:
-            await ctx.reply("El prefijo no puede tener más de 5 caracteres.", ephemeral=True)
+            await ctx.reply("Máximo 5 caracteres.", ephemeral=True)
             return
 
-        check = await db_service.fetch_one("SELECT user_id FROM users WHERE user_id = ?", (ctx.author.id,))
-        if not check:
+        # Check simple para insertar o actualizar en users (ahora usamos insert or replace o la logica previa)
+        # Como users ya existe seguro por el User Card, hacemos UPDATE o INSERT
+        row = await db_service.fetch_one("SELECT user_id FROM users WHERE user_id = ?", (ctx.author.id,))
+        if not row:
             await db_service.execute("INSERT INTO users (user_id, custom_prefix) VALUES (?, ?)", (ctx.author.id, nuevo))
         else:
             await db_service.execute("UPDATE users SET custom_prefix = ? WHERE user_id = ?", (nuevo, ctx.author.id))
             
-        embed = embed_service.success("Prefijo Personal", f"Ahora puedes usarme con: `{nuevo}` (ej: `{nuevo}ping`)")
-        await ctx.reply(embed=embed)
-
-    # --- 2. CONFIGURACIÓN DE SERVIDOR ---
-    @config.command(name="server", description="Configura canales y opciones del servidor")
-    @app_commands.describe(
-        ajuste="¿Qué sistema quieres configurar?",
-        canal="[Opcional] Selecciona el canal (para Bienvenidas, Logs, Confesiones)",
-        texto="[Opcional] Escribe el texto (para Mención o Nivel). Usa 'reset' para borrar.",
-        rol="[Opcional] Selecciona el rol (para Auto Rol)"
-    )
-    @commands.has_permissions(administrator=True)
-    async def server_config(
-        self, 
-        ctx: commands.Context, 
-        ajuste: Literal["Bienvenidas", "Logs", "Confesiones", "Mencion", "Cumpleaños", "Auto Rol", "Mensaje Nivel"],
-        canal: Optional[discord.TextChannel] = None,
-        texto: Optional[str] = None,
-        rol: Optional[discord.Role] = None
-    ):
-        guild_id = ctx.guild.id
-
-        # CASO: Auto Rol
-        if ajuste == "Auto Rol":
-            if not rol:
-                # Si escribe 'reset' en texto y no pone rol, borramos la config
-                if texto and texto.lower() == "reset":
-                    await db_service.execute("UPDATE guild_config SET autorole_id = 0 WHERE guild_id = ?", (guild_id,))
-                    await ctx.reply(embed=embed_service.success("Auto Rol Desactivado", "Ya no se entregarán roles al entrar."))
-                    return
-
-                await ctx.reply(embed=embed_service.error("Faltan datos", "Debes seleccionar un `rol`."), ephemeral=True)
-                return
-            
-            # Validación de jerarquía (Bug Fix)
-            if rol.position >= ctx.guild.me.top_role.position:
-                await ctx.reply(embed=embed_service.error("Error", "Ese rol es superior a los míos."), ephemeral=True)
-                return
-
-            await db_service.execute("""
-                INSERT INTO guild_config (guild_id, autorole_id) VALUES (?, ?)
-                ON CONFLICT(guild_id) DO UPDATE SET autorole_id = excluded.autorole_id
-            """, (guild_id, rol.id))
-            
-            await ctx.reply(embed=embed_service.success("Auto Rol", f"✅ Nuevo rol de entrada: {rol.mention}"))
-
-        # CASO: Mensajes de Texto (Mención y Nivel)
-        elif ajuste in ["Mencion", "Mensaje Nivel"]:
-            if not texto:
-                ejemplo = "¡Felicidades {user}, eres nivel {level}!" if ajuste == "Mensaje Nivel" else "Hola..."
-                await ctx.reply(embed=embed_service.error("Faltan datos", f"Debes escribir el mensaje en `texto`.\nEjemplo: `{ejemplo}`"), ephemeral=True)
-                return
-            
-            columna = "mention_response" if ajuste == "Mencion" else "level_msg"
-            valor = None if texto.lower() == "reset" else texto
-            
-            query = f"INSERT INTO guild_config (guild_id, {columna}) VALUES (?, ?) ON CONFLICT(guild_id) DO UPDATE SET {columna} = excluded.{columna}"
-            await db_service.execute(query, (guild_id, valor))
-            
-            await ctx.reply(embed=embed_service.success(f"{ajuste}", "✅ Configuración de texto actualizada."))
-
-        # CASO: Canales
-        else:
-            if not canal:
-                await ctx.reply(embed=embed_service.error("Faltan datos", f"Para configurar **{ajuste}**, selecciona un `canal`."), ephemeral=True)
-                return
-
-            col_map = {
-                "Bienvenidas": "welcome_channel_id",
-                "Logs": "logs_channel_id",
-                "Confesiones": "confessions_channel_id",
-                "Cumpleaños": "birthday_channel_id"
-            }
-            columna = col_map[ajuste]
-            
-            query = f"INSERT INTO guild_config (guild_id, {columna}) VALUES (?, ?) ON CONFLICT(guild_id) DO UPDATE SET {columna} = excluded.{columna}"
-            await db_service.execute(query, (guild_id, canal.id))
-            
-            await ctx.reply(embed=embed_service.success(f"{ajuste}", f"✅ Canal configurado: {canal.mention}"))
+        await ctx.reply(embed=embed_service.success("Prefijo Personal", f"Nuevo prefijo: `{nuevo}`"))
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(Configuracion(bot))
