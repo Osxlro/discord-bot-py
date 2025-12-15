@@ -3,8 +3,8 @@ import random
 def obtener_cara_cruz() -> tuple[str, str]:
     """Retorna una tupla (Texto, Emoji)."""
     opciones = [
-        ("Cara", "🪙"), 
-        ("Cruz", "🦅")
+        ("SOL", "🪙"), 
+        ("LUNA", "🦅")
     ]
     return random.choice(opciones)
 

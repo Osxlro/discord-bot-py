@@ -34,7 +34,7 @@ class General(commands.Cog):
         embed.set_image(url=usuario.display_avatar.url)
         await ctx.reply(embed=embed)
 
-    # --- COMANDO: TRADUCIR (Híbrido) ---
+    # --- COMANDO: TRADUCIR ---
     @commands.hybrid_command(name="traducir", description="Traduce un texto a otro idioma (ej: en, fr, it, ja)")
     @app_commands.describe(texto="Lo que quieres traducir", idioma="Código del idioma destino (por defecto: es)")
     async def traducir(self, ctx: commands.Context, texto: str, idioma: str = "es"):
@@ -66,7 +66,7 @@ class General(commands.Cog):
         except Exception as e:
             await interaction.followup.send(f"Error al traducir: {e}", ephemeral=True)
     
-    # --- NUEVO: MATEMATICAS (FUSIONADO) ---
+    # --- COMANDO: MATEMATICAS ---
     @commands.hybrid_command(name="calc", description="Calculadora simple")
     @app_commands.describe(operacion="Operación", num1="Número 1", num2="Número 2")
     async def calc(self, ctx: commands.Context, operacion: Literal["sumar", "restar", "multiplicacion", "division"], num1: int, num2: int):
@@ -79,9 +79,9 @@ class General(commands.Cog):
         except ValueError as e:
             await ctx.reply(embed=embed_service.error("Error Matemático", str(e)), ephemeral=True)
 
-    # Callback Context Menu
+    # CONTEXT MENU
+    # TRADUCIR
     async def traducir_mensaje(self, interaction: discord.Interaction, message: discord.Message):
-        # (El código que ya tenías para traducir mensajes)
         await interaction.response.defer(ephemeral=True)
         if not message.content:
             await interaction.followup.send("❌ Sin texto.", ephemeral=True)

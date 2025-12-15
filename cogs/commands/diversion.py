@@ -21,7 +21,8 @@ class Diversion(commands.Cog):
                 # Creamos el embed usando tu servicio de diseños
                 embed = embed_service.info(
                     title=f"Emoji: {partial_emoji.name}", 
-                    description="Aquí tienes tu emoji en tamaño completo:"
+                    description="Aquí tienes tu emoji en tamaño completo:",
+                    lite=True
                 )
                 # Ponemos la imagen del emoji en grande
                 embed.set_image(url=partial_emoji.url)
@@ -31,7 +32,8 @@ class Diversion(commands.Cog):
                 # Si es un emoji normal de texto (🍎, 😎), no tienen URL de imagen directa
                 embed = embed_service.error(
                     title="Emoji no válido", 
-                    description="Solo puedo hacer zoom a **emojis personalizados** del servidor (los que tienen imagen propia)."
+                    description="Solo puedo hacer zoom a **emojis personalizados** del servidor (los que tienen imagen propia).",
+                    lite=True
                 )
                 await ctx.reply(embed=embed, ephemeral=True)
 
@@ -39,7 +41,8 @@ class Diversion(commands.Cog):
             # Si el usuario escribe algo que no es un emoji
             embed = embed_service.error(
                 title="Error", 
-                description="Eso no parece ser un emoji válido. Intenta poner solo un emoji."
+                description="Eso no parece ser un emoji válido. Intenta poner solo un emoji.",
+                lite=True
             )
             await ctx.reply(embed=embed, ephemeral=True)
 
@@ -50,8 +53,9 @@ class Diversion(commands.Cog):
         resultado, emoji = random_service.obtener_cara_cruz()
         
         embed = embed_service.info(
-            title="Moneda lanzada",
-            description=f"La moneda ha caído en: **{resultado}** {emoji}"
+            title="¡Moneda Lanzada!",
+            description=f"La moneda ha caído en: **{resultado}** {emoji}",
+            lite=True
         )
         await ctx.reply(embed=embed)
 
@@ -67,7 +71,8 @@ class Diversion(commands.Cog):
         
         embed = embed_service.success(
             title="He tomado una decisión",
-            description=f"Entre **{opcion_a}** y **{opcion_b}**, elijo:\n\n👉 **{eleccion}**"
+            description=f"Entre **{opcion_a}** y **{opcion_b}**, elijo:\n\n👉 **{eleccion}**",
+            lite=True
         )
         await ctx.reply(embed=embed)
 
@@ -79,7 +84,7 @@ class Diversion(commands.Cog):
         # Generamos la URL
         url_imagen = emojimixer_service.generar_url_emojimix(emoji1, emoji2)
         
-        embed = embed_service.info("Emoji Kitchen", f"Mezcla de {emoji1} + {emoji2}")
+        embed = embed_service.info("Emoji Kitchen", f"Mezcla de {emoji1} + {emoji2}",lite=True)
         embed.set_image(url=url_imagen)
         
         await ctx.reply(embed=embed)
@@ -91,7 +96,7 @@ class Diversion(commands.Cog):
         row = await db_service.fetch_one("SELECT confessions_channel_id FROM guild_config WHERE guild_id = ?", (interaction.guild_id,))
 
         if not row or not row['confessions_channel_id']:
-            embed = embed_service.error("Error", "El canal de confesiones no ha sido configurado por los administradores.")
+            embed = embed_service.error("Error", "El canal de confesiones no ha sido configurado por los administradores.",lite=True)
             await interaction.response.send_message(embed=embed, ephemeral=True)
             return
 

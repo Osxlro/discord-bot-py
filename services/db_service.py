@@ -43,6 +43,7 @@ async def init_db():
         CREATE TABLE IF NOT EXISTS guild_config (
             guild_id INTEGER PRIMARY KEY,
             chaos_enabled BOOLEAN DEFAULT 1,
+            chaos_probability REAL DEFAULT 0.01,
             welcome_channel_id INTEGER DEFAULT 0,
             confessions_channel_id INTEGER DEFAULT 0,
             logs_channel_id INTEGER DEFAULT 0, 
@@ -67,7 +68,8 @@ async def init_db():
             "ALTER TABLE users ADD COLUMN personal_level_msg TEXT DEFAULT NULL",
             "ALTER TABLE users ADD COLUMN personal_birthday_msg TEXT DEFAULT NULL",
             "ALTER TABLE guild_config ADD COLUMN server_level_msg TEXT DEFAULT NULL",
-            "ALTER TABLE guild_config ADD COLUMN server_birthday_msg TEXT DEFAULT NULL" # <--- NUEVA
+            "ALTER TABLE guild_config ADD COLUMN server_birthday_msg TEXT DEFAULT NULL",
+            "ALTER TABLE guild_config ADD COLUMN chaos_probability REAL DEFAULT 0.01"
         ]
         
         for query in migraciones:

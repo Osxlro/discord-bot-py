@@ -54,7 +54,7 @@ class Perfil(commands.Cog):
                 msgs_texto += f"**• Cumple:** \"{user_data['personal_birthday_msg'][:40]}...\"\n"
         
         if msgs_texto:
-            embed.add_field(name="💌 Mensajes Personalizados", value=msgs_texto, inline=False)
+            embed.add_field(name="--- Mensajes Personalizados ---", value=msgs_texto, inline=False)
 
         await ctx.reply(embed=embed)
 

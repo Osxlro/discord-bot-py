@@ -88,6 +88,32 @@ class Configuracion(commands.Cog):
         """, (ctx.guild.id, valor))
         
         await ctx.reply(embed=embed_service.success(f"Configuración: {tipo}", "✅ Mensaje actualizado."))
+        
+    # --- SUB-COMANDO: CHAOS ---
+    @setup.command(name="chaos", description="Configura la Ruleta Rusa (Chaos)")
+    @app_commands.describe(
+        estado="Activar o desactivar",
+        probabilidad="Porcentaje de riesgo (1-100). Ejemplo: 5 para 5%."
+    )
+    async def setup_chaos(self, ctx: commands.Context, estado: Literal["Activado", "Desactivado"], probabilidad: int):
+        # Validación
+        if probabilidad < 1 or probabilidad > 100:
+            await ctx.reply("❌ La probabilidad debe ser un número entre 1 y 100.", ephemeral=True)
+            return
+
+        enabled = 1 if estado == "Activado" else 0
+        prob_decimal = probabilidad / 100.0 # Convertimos 5 a 0.05
+
+        await db_service.execute("""
+            INSERT INTO guild_config (guild_id, chaos_enabled, chaos_probability) VALUES (?, ?, ?)
+            ON CONFLICT(guild_id) DO UPDATE SET 
+                chaos_enabled = excluded.chaos_enabled,
+                chaos_probability = excluded.chaos_probability
+        """, (ctx.guild.id, enabled, prob_decimal))
+        
+        msg_estado = "✅ Activado" if enabled else "⚪ Desactivado"
+        embed = embed_service.success("Configuración Chaos", f"{msg_estado}\n🔫 Probabilidad de disparo: **{probabilidad}%**")
+        await ctx.reply(embed=embed)
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(Configuracion(bot))

@@ -30,7 +30,7 @@ class Mencion(commands.Cog):
                 respuesta = f"¡Hola! Soy **{self.bot.user.name}**.\nUsa `/help` o `{prefix}help` para ver mis comandos."
 
             # 3. Enviamos el embed
-            embed = embed_service.info("👋 ¿Me llamaste?", respuesta)
+            embed = embed_service.info("👋 Hola", respuesta)
             await message.channel.send(embed=embed)
 
 async def setup(bot: commands.Bot):
