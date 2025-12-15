@@ -8,7 +8,6 @@ class Configuracion(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    # --- COMANDO PREFIX (Fuera del grupo setup) ---
     @commands.hybrid_command(name="prefix", description="Cambia tu prefijo personal para comandos de texto")
     async def set_prefix(self, ctx: commands.Context, nuevo: str):
         if len(nuevo) > 5:
@@ -23,15 +22,12 @@ class Configuracion(commands.Cog):
             
         await ctx.reply(embed=embed_service.success("Prefijo Personal", f"Nuevo prefijo: `{nuevo}`"))
 
-    # --- GRUPO PRINCIPAL: SETUP (Ahora es Hybrid para salir en Help) ---
     @commands.hybrid_group(name="setup", description="Configuraciones del Servidor")
     @commands.has_permissions(administrator=True)
     async def setup(self, ctx: commands.Context):
-        # Si el usuario escribe solo "/setup" sin subcomando, le mostramos la ayuda
         if ctx.invoked_subcommand is None:
             await ctx.send_help(ctx.command)
 
-    # --- SUB-COMANDO: CANALES ---
     @setup.command(name="canales", description="Configura los canales de bienvenida, logs, etc.")
     @app_commands.describe(tipo="¿Qué canal quieres configurar?", canal="El canal de texto")
     async def setup_canales(self, ctx: commands.Context, tipo: Literal["Bienvenidas", "Logs", "Confesiones", "Cumpleaños"], canal: discord.TextChannel):
@@ -51,7 +47,6 @@ class Configuracion(commands.Cog):
         embed = embed_service.success(f"Canal de {tipo}", f"✅ Configurado exitosamente en: {canal.mention}")
         await ctx.reply(embed=embed)
 
-    # --- SUB-COMANDO: ROLES ---
     @setup.command(name="autorol", description="Define el rol que se da al entrar")
     @app_commands.describe(rol="Rol para nuevos usuarios (o vacío para desactivar)")
     async def setup_autorol(self, ctx: commands.Context, rol: Optional[discord.Role] = None):
@@ -72,11 +67,19 @@ class Configuracion(commands.Cog):
         
         await ctx.reply(embed=embed_service.success("Auto Rol", msg))
 
-    # --- SUB-COMANDO: MENSAJES ---
+    # --- SUB-COMANDO: MENSAJES (ACTUALIZADO) ---
     @setup.command(name="mensajes", description="Personaliza las respuestas del bot en este servidor")
-    @app_commands.describe(tipo="Mención o Nivel", texto="Tu mensaje (Usa {user}, {level}). Escribe 'reset' para borrar.")
-    async def setup_mensajes(self, ctx: commands.Context, tipo: Literal["Respuesta Mención", "Subida Nivel"], texto: str):
-        columna = "mention_response" if tipo == "Respuesta Mención" else "server_level_msg"
+    @app_commands.describe(
+        tipo="Tipo de mensaje", 
+        texto="Tu mensaje. Variables: {user}, {level} (nivel). 'reset' para borrar."
+    )
+    async def setup_mensajes(self, ctx: commands.Context, tipo: Literal["Respuesta Mención", "Subida Nivel", "Felicitación Cumple"], texto: str):
+        
+        # Mapa de columnas
+        if tipo == "Respuesta Mención": columna = "mention_response"
+        elif tipo == "Subida Nivel": columna = "server_level_msg"
+        else: columna = "server_birthday_msg"
+
         valor = None if texto.lower() == "reset" else texto
         
         await db_service.execute(f"""

@@ -12,16 +12,15 @@ class Perfil(commands.Cog):
     async def perfil(self, ctx: commands.Context, usuario: discord.Member = None):
         target = usuario or ctx.author
         
-        # 1. Obtener Datos Globales (Descripción, Cumple, Prefix)
+        # 1. Obtener Datos Globales
         user_data = await db_service.fetch_one("SELECT * FROM users WHERE user_id = ?", (target.id,))
         
-        # 2. Obtener Datos del Servidor (Nivel, XP)
+        # 2. Obtener Datos del Servidor
         guild_data = await db_service.fetch_one(
             "SELECT xp, level FROM guild_stats WHERE guild_id = ? AND user_id = ?", 
             (ctx.guild.id, target.id)
         )
 
-        # Valores por defecto si no existen
         desc = user_data['description'] if user_data else "Sin descripción."
         cumple = user_data['birthday'] if user_data and user_data['birthday'] else "No establecido"
         prefix = user_data['custom_prefix'] if user_data and user_data['custom_prefix'] else "!"
@@ -29,13 +28,11 @@ class Perfil(commands.Cog):
         xp = guild_data['xp'] if guild_data else 0
         nivel = guild_data['level'] if guild_data else 1
         
-        # Barra de progreso
         xp_next = nivel * 100
         progreso = min(xp / xp_next, 1.0)
         bloques = int(progreso * 10)
-        barra = "▰" * bloques + "▱" * (10 - bloques) # Estilo visual diferente
+        barra = "▰" * bloques + "▱" * (10 - bloques)
 
-        # Construir Embed
         embed = discord.Embed(title=f"Tarjeta de {target.display_name}", color=target.color)
         embed.set_thumbnail(url=target.display_avatar.url)
         
@@ -43,16 +40,21 @@ class Perfil(commands.Cog):
         embed.add_field(name="🎂 Cumpleaños", value=f"📅 {cumple}", inline=True)
         embed.add_field(name="⌨️ Prefix", value=f"`{prefix}`", inline=True)
         
-        # Separador visual
         embed.add_field(name="⠀", value="**--- Estadísticas del Servidor ---**", inline=False)
-        
         embed.add_field(name="🏆 Nivel", value=f"**{nivel}**", inline=True)
         embed.add_field(name="✨ XP Total", value=f"{xp}", inline=True)
         embed.add_field(name=f"Progreso ({int(progreso*100)}%)", value=f"`{barra}` {xp}/{xp_next}", inline=False)
 
-        # Footer con info de mensajes personalizados
-        if user_data and (user_data['personal_level_msg'] or user_data['personal_birthday_msg']):
-            embed.set_footer(text="✨ Este usuario tiene mensajes personalizados activos.")
+        # --- SECCIÓN DE MENSAJES PERSONALIZADOS ---
+        msgs_texto = ""
+        if user_data:
+            if user_data['personal_level_msg']:
+                msgs_texto += f"**• Nivel:** \"{user_data['personal_level_msg'][:40]}...\"\n"
+            if user_data['personal_birthday_msg']:
+                msgs_texto += f"**• Cumple:** \"{user_data['personal_birthday_msg'][:40]}...\"\n"
+        
+        if msgs_texto:
+            embed.add_field(name="💌 Mensajes Personalizados", value=msgs_texto, inline=False)
 
         await ctx.reply(embed=embed)
 
@@ -69,7 +71,6 @@ class Perfil(commands.Cog):
             await ctx.reply("La descripción es muy larga (máx 200 caracteres).", ephemeral=True)
             return
             
-        # Upsert (Insert or Update)
         check = await db_service.fetch_one("SELECT user_id FROM users WHERE user_id = ?", (ctx.author.id,))
         if not check:
             await db_service.execute("INSERT INTO users (user_id, description) VALUES (?, ?)", (ctx.author.id, texto))
@@ -90,6 +91,19 @@ class Perfil(commands.Cog):
             await db_service.execute("UPDATE users SET personal_level_msg = ? WHERE user_id = ?", (val, ctx.author.id))
             
         await ctx.reply(embed=embed_service.success("Mensaje Personal", "Tu mensaje de nivel ha sido configurado."))
+
+    @mi_perfil.command(name="mensaje_cumple", description="Define tu propio mensaje de cumpleaños")
+    @app_commands.describe(mensaje="Usa {user}. Escribe 'reset' para usar el del servidor.")
+    async def set_bday_msg(self, ctx: commands.Context, mensaje: str):
+        val = None if mensaje.lower() == "reset" else mensaje
+        
+        check = await db_service.fetch_one("SELECT user_id FROM users WHERE user_id = ?", (ctx.author.id,))
+        if not check:
+            await db_service.execute("INSERT INTO users (user_id, personal_birthday_msg) VALUES (?, ?)", (ctx.author.id, val))
+        else:
+            await db_service.execute("UPDATE users SET personal_birthday_msg = ? WHERE user_id = ?", (val, ctx.author.id))
+            
+        await ctx.reply(embed=embed_service.success("Mensaje Personal", "Tu mensaje de cumpleaños ha sido configurado."))
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(Perfil(bot))

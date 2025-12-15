@@ -1,72 +1,78 @@
 import discord
-from discord.ext import commands, tasks # Importamos tasks
+from discord.ext import commands, tasks
 from discord import app_commands
 from typing import Literal
 from services import db_service, embed_service
 import datetime
-import asyncio
 
 class Cumpleanos(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.check_birthdays.start() # Iniciamos el loop al cargar el Cog
+        self.check_birthdays.start()
 
     def cog_unload(self):
-        self.check_birthdays.cancel() # Lo detenemos si se descarga
+        self.check_birthdays.cancel()
 
-    # --- TAREA AUTOMÁTICA ---
-    @tasks.loop(hours=24) # Revisa una vez al día
+    @tasks.loop(hours=24)
     async def check_birthdays(self):
-        # Esperar a que el bot esté listo
         await self.bot.wait_until_ready()
         
-        # 1. Obtener fecha de hoy (dia/mes)
         hoy = datetime.date.today()
         fecha_hoy_str = f"{hoy.day}/{hoy.month}"
         
-        # 2. Buscar cumpleañeros en la DB que quieran celebrar
+        # Buscar usuarios que cumplen hoy y quieren celebrar
+        # Obtenemos también su mensaje personalizado si existe
         cumpleaneros = await db_service.fetch_all(
-            "SELECT user_id FROM users WHERE birthday = ? AND celebrate = 1", 
+            "SELECT user_id, personal_birthday_msg FROM users WHERE birthday = ? AND celebrate = 1", 
             (fecha_hoy_str,)
         )
         
         if not cumpleaneros:
-            return # Nadie cumple hoy
+            return
 
-        # 3. Agrupar cumpleañeros por Servidor para no spamear consultas
-        # (Esta lógica es sencilla: iteramos por servidor donde esté el bot)
         for guild in self.bot.guilds:
-            # Obtener canal de cumples de este servidor
-            config = await db_service.fetch_one("SELECT birthday_channel_id FROM guild_config WHERE guild_id = ?", (guild.id,))
+            # 1. Configuración del Servidor
+            config = await db_service.fetch_one("SELECT birthday_channel_id, server_birthday_msg FROM guild_config WHERE guild_id = ?", (guild.id,))
             
             if not config or not config['birthday_channel_id']:
-                continue # Este server no tiene canal configurado
+                continue 
             
             channel = guild.get_channel(config['birthday_channel_id'])
             if not channel:
                 continue
 
-            # Verificamos cuáles de los cumpleañeros están en ESTE servidor
-            usuarios_a_felicitar = []
+            # Mensaje Base del Servidor
+            msg_server_raw = config['server_birthday_msg'] or "Hoy es un día especial. Queremos desearle un muy feliz cumpleaños a:\n\n✨ {user} ✨\n\n¡Que pases un día increíble!"
+
+            # 2. Clasificar Usuarios
+            usuarios_genericos = [] # Usarán el mensaje del servidor
+            
             for row in cumpleaneros:
                 member = guild.get_member(row['user_id'])
-                if member:
-                    usuarios_a_felicitar.append(member.mention)
-            
-            if usuarios_a_felicitar:
-                # 4. Enviar felicitación
-                lista_menciones = ", ".join(usuarios_a_felicitar)
-                embed = embed_service.success(
-                    "🎉 ¡Feliz Cumpleaños! 🎂", 
-                    f"Hoy es un día especial. Queremos desearle un muy feliz cumpleaños a:\n\n✨ {lista_menciones} ✨\n\n¡Que pasen un día increíble!"
-                )
-                embed.set_thumbnail(url="https://emojigraph.org/media/apple/birthday-cake_1f382.png") # Imagen genérica de pastel
-                await channel.send(embed=embed)
+                if not member: 
+                    continue # El usuario no está en este servidor
 
-    # --- (AQUÍ ABAJO VAN LOS COMANDOS QUE YA TENÍAS: establecer, eliminar, privacidad, lista) ---
-    # COPIA Y PEGA TUS COMANDOS EXISTENTES AQUÍ
-    # ...
-    
+                # Si tiene mensaje PERSONALIZADO, enviamos uno individual
+                if row['personal_birthday_msg']:
+                    msg_personal = row['personal_birthday_msg'].replace("{user}", member.mention)
+                    embed_p = embed_service.success("🎉 ¡Feliz Cumpleaños! 🎂", msg_personal)
+                    embed_p.set_thumbnail(url=member.display_avatar.url)
+                    await channel.send(content=member.mention, embed=embed_p)
+                else:
+                    # Si no, va al grupo
+                    usuarios_genericos.append(member.mention)
+
+            # 3. Enviar mensaje GRUPAL (si hay)
+            if usuarios_genericos:
+                lista_menciones = ", ".join(usuarios_genericos)
+                # Reemplazamos {user} por la lista de todos
+                msg_final = msg_server_raw.replace("{user}", lista_menciones)
+                
+                embed_g = embed_service.success("🎉 ¡Feliz Cumpleaños! 🎂", msg_final)
+                embed_g.set_thumbnail(url="https://emojigraph.org/media/apple/birthday-cake_1f382.png")
+                await channel.send(embed=embed_g)
+
+    # --- COMANDOS EXISTENTES ---
     @commands.hybrid_group(name="cumple", description="Sistema de cumpleaños")
     async def cumple(self, ctx: commands.Context):
         if ctx.invoked_subcommand is None:

@@ -19,7 +19,10 @@ async def init_db():
             level INTEGER DEFAULT 1,
             birthday TEXT DEFAULT NULL,
             celebrate BOOLEAN DEFAULT 1,
-            custom_prefix TEXT DEFAULT NULL 
+            custom_prefix TEXT DEFAULT NULL,
+            description TEXT DEFAULT 'Sin descripción.',
+            personal_level_msg TEXT DEFAULT NULL,
+            personal_birthday_msg TEXT DEFAULT NULL
         )
         """)
         
@@ -46,34 +49,32 @@ async def init_db():
             birthday_channel_id INTEGER DEFAULT 0,
             autorole_id INTEGER DEFAULT 0,
             mention_response TEXT DEFAULT NULL,
-            server_level_msg TEXT DEFAULT NULL
+            server_level_msg TEXT DEFAULT NULL,
+            server_birthday_msg TEXT DEFAULT NULL
         )
         """)
 
         # --- MIGRACIONES ---
-        # Ejecutamos migraciones previas para evitar errores
-        try: await db.execute("ALTER TABLE guild_config ADD COLUMN birthday_channel_id INTEGER DEFAULT 0")
-        except: pass
-        try: await db.execute("ALTER TABLE users ADD COLUMN custom_prefix TEXT DEFAULT NULL")
-        except: pass
-        try: await db.execute("ALTER TABLE guild_config ADD COLUMN mention_response TEXT DEFAULT NULL")
-        except: pass
-        try: await db.execute("ALTER TABLE guild_config ADD COLUMN confessions_channel_id INTEGER DEFAULT 0")
-        except: pass
-        try: await db.execute("ALTER TABLE guild_config ADD COLUMN autorole_id INTEGER DEFAULT 0")
-        except: pass
-        try:await db.execute("ALTER TABLE guild_config ADD COLUMN level_msg TEXT DEFAULT NULL")
-        except: pass
-        try: await db.execute("ALTER TABLE guild_config ADD COLUMN logs_channel_id INTEGER DEFAULT 0")
-        except: pass
-        try: await db.execute("ALTER TABLE users ADD COLUMN description TEXT DEFAULT 'Sin descripción.'")
-        except: pass
-        try: await db.execute("ALTER TABLE users ADD COLUMN personal_level_msg TEXT DEFAULT NULL")
-        except: pass
-        try: await db.execute("ALTER TABLE users ADD COLUMN personal_birthday_msg TEXT DEFAULT NULL")
-        except: pass
-        try: await db.execute("ALTER TABLE guild_config ADD COLUMN server_level_msg TEXT DEFAULT NULL")
-        except: pass
+        # Añadimos columnas nuevas de forma segura
+        migraciones = [
+            "ALTER TABLE guild_config ADD COLUMN birthday_channel_id INTEGER DEFAULT 0",
+            "ALTER TABLE users ADD COLUMN custom_prefix TEXT DEFAULT NULL",
+            "ALTER TABLE guild_config ADD COLUMN mention_response TEXT DEFAULT NULL",
+            "ALTER TABLE guild_config ADD COLUMN confessions_channel_id INTEGER DEFAULT 0",
+            "ALTER TABLE guild_config ADD COLUMN autorole_id INTEGER DEFAULT 0",
+            "ALTER TABLE guild_config ADD COLUMN logs_channel_id INTEGER DEFAULT 0",
+            "ALTER TABLE users ADD COLUMN description TEXT DEFAULT 'Sin descripción.'",
+            "ALTER TABLE users ADD COLUMN personal_level_msg TEXT DEFAULT NULL",
+            "ALTER TABLE users ADD COLUMN personal_birthday_msg TEXT DEFAULT NULL",
+            "ALTER TABLE guild_config ADD COLUMN server_level_msg TEXT DEFAULT NULL",
+            "ALTER TABLE guild_config ADD COLUMN server_birthday_msg TEXT DEFAULT NULL" # <--- NUEVA
+        ]
+        
+        for query in migraciones:
+            try:
+                await db.execute(query)
+            except:
+                pass
         
         await db.commit()
         print(f"💾 Base de datos conectada: {DB_PATH}")
