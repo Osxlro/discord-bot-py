@@ -1,18 +1,16 @@
 import discord
-import os
 import asyncio
 import logging
-
+import pathlib 
 from config import settings
 from discord.ext import commands
 from services import db_service
 
 # --- CONFIGURACIÓN DE LOGS ---
-# Esto guardará todo lo que pase en un archivo 'discord.log' y lo mostrará en consola
-if not os.path.exists("./data"):
-    os.makedirs("./data")
+data_dir = pathlib.Path("./data")
+data_dir.mkdir(exist_ok=True)
 
-handler = logging.FileHandler(filename='./data/discord.log', encoding='utf-8', mode='w')
+handler = logging.FileHandler(filename=data_dir / 'discord.log', encoding='utf-8', mode='w')
 discord.utils.setup_logging(handler=handler, level=logging.INFO)
 
 # Configuración de Intents
@@ -22,20 +20,14 @@ intents.members = True
 
 # --- LÓGICA DE PREFIX DINÁMICO ---
 async def get_prefix(bot, message):
-    # 1. Si es en DM, usa el default
     if not message.guild:
         return settings.CONFIG["bot_config"]["prefix"]
-
-    # 2. Intentamos leer de la DB (Idealmente esto se cachea, pero por simplicidad lo haremos directo)
-    # Nota: Si el bot crece mucho, esto debe optimizarse con un diccionario en memoria.
     try:
         row = await db_service.fetch_one("SELECT custom_prefix FROM users WHERE user_id = ?", (message.author.id,))
         if row and row['custom_prefix']:
             return row['custom_prefix']
     except:
-        pass # Si la DB falla, usa default
-
-    # 3. Retorna el default
+        pass
     return settings.CONFIG["bot_config"]["prefix"]
 
 class BotPersonal(commands.Bot):
@@ -44,29 +36,30 @@ class BotPersonal(commands.Bot):
             command_prefix=get_prefix, 
             intents=intents,
             help_command=None,
-            activity=discord.Game(name="Iniciando sistemas...") # Status inicial
+            activity=discord.Game(name="Iniciando sistemas...")
         )
 
     async def setup_hook(self):
-        print("--- ⚙️  CARGANDO EXTENSIONES ---")
+        print("--- ⚙️  CARGANDO EXTENSIONES (PATHLIB) ---")
         
-        # os.walk recorre el árbol de directorios
-        # root: la carpeta actual (ej: ./cogs/commands)
-        # dirs: carpetas dentro
-        # files: archivos dentro
-        for root, dirs, files in os.walk('./cogs'):
-            for filename in files:
-                if filename.endswith('.py'):
-                    # Construimos la ruta de importación tipo: cogs.commands.general
-                    # 1. Quitamos './' del inicio y reemplazamos las barras de carpeta por puntos
-                    relative_path = os.path.relpath(root, '.').replace(os.path.sep, '.')
-                    extension_name = f"{relative_path}.{filename[:-3]}"
-                    
-                    try:
-                        await self.load_extension(extension_name)
-                        print(f'✅ Extensión cargada: {extension_name}')
-                    except Exception as e:
-                        print(f'❌ Error cargando {extension_name}: {e}')
+        # Usamos pathlib para recorrer la carpeta cogs de forma recursiva (rglob)
+        # Esto funciona perfecto en Windows, Linux y Mac sin trucos raros.
+        cogs_dir = pathlib.Path("./cogs")
+        
+        for file in cogs_dir.rglob("*.py"):
+            # Ignoramos archivos __init__.py si existen
+            if file.name == "__init__.py": continue
+            
+            # Convertimos la ruta de archivo a formato de punto (cogs.commands.general)
+            # parts separa la ruta en ('cogs', 'commands', 'general.py')
+            # [:-3] quita el .py del nombre final
+            extension_name = ".".join(file.parts).replace(".py", "")
+            
+            try:
+                await self.load_extension(extension_name)
+                print(f'✅ Extensión cargada: {extension_name}')
+            except Exception as e:
+                print(f'❌ Error cargando {extension_name}: {e}')
         
         print("--- 💾 INICIANDO BASE DE DATOS ---")
         await db_service.init_db()
