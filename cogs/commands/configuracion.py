@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 from typing import Literal, Optional
-from services import db_service, embed_service
+from services import db_service, embed_service,lang_service
 
 class Configuracion(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -28,6 +28,37 @@ class Configuracion(commands.Cog):
         if ctx.invoked_subcommand is None:
             await ctx.send_help(ctx.command)
 
+    # --- NUEVO: IDIOMA ---
+    @setup.command(name="idioma", description="Change bot language / Cambiar idioma")
+    @app_commands.describe(lenguaje="Español (es) or English (en)")
+    async def setup_lang(self, ctx: commands.Context, lenguaje: Literal["es", "en"]):
+        await db_service.execute("""
+            INSERT INTO guild_config (guild_id, language) VALUES (?, ?)
+            ON CONFLICT(guild_id) DO UPDATE SET language = excluded.language
+        """, (ctx.guild.id, lenguaje))
+        
+        # Respondemos en el idioma seleccionado
+        msg = lang_service.get_text("lang_success", lenguaje)
+        await ctx.reply(embed=embed_service.success("Idioma/Language", msg))
+
+    # --- CHAOS ---
+    @setup.command(name="chaos")
+    async def setup_chaos(self, ctx: commands.Context, estado: Literal["Activado", "Desactivado"], probabilidad: int):
+        lang = await lang_service.get_guild_lang(ctx.guild.id)
+        if not (1 <= probabilidad <= 100):
+            await ctx.reply("1-100%", ephemeral=True)
+            return
+
+        enabled = 1 if estado == "Activado" else 0
+        await db_service.execute("""
+            INSERT INTO guild_config (guild_id, chaos_enabled, chaos_probability) VALUES (?, ?, ?)
+            ON CONFLICT(guild_id) DO UPDATE SET chaos_enabled = excluded.chaos_enabled, chaos_probability = excluded.chaos_probability
+        """, (ctx.guild.id, enabled, probabilidad/100.0))
+        
+        status_txt = "✅ ON" if enabled else "⚪ OFF"
+        desc = lang_service.get_text("setup_chaos_desc", lang, status=status_txt, prob=probabilidad)
+        await ctx.reply(embed=embed_service.success("Chaos Config", desc))
+    
     @setup.command(name="canales", description="Configura los canales de bienvenida, logs, etc.")
     @app_commands.describe(tipo="¿Qué canal quieres configurar?", canal="El canal de texto")
     async def setup_canales(self, ctx: commands.Context, tipo: Literal["Bienvenidas", "Logs", "Confesiones", "Cumpleaños"], canal: discord.TextChannel):

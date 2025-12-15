@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 from config import settings
-from services import embed_service, emojimixer_service, random_service, db_service
+from services import embed_service, emojimixer_service, random_service, db_service, lang_service
 
 class Diversion(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -46,21 +46,16 @@ class Diversion(commands.Cog):
             )
             await ctx.reply(embed=embed, ephemeral=True)
 
-    # --- COMANDO: COINFLIP (Cara o Cruz) ---
-    @commands.hybrid_command(name="coinflip", description="Lanza una moneda al aire")
+    @commands.hybrid_command(name="coinflip")
     async def coinflip(self, ctx: commands.Context):
-        # Lógica en el servicio (Ahora devuelve Nombre y URL)
-        resultado, url_gif = random_service.obtener_cara_cruz()
+        lang = await lang_service.get_guild_lang(ctx.guild.id)
+        res, url_gif = random_service.obtener_cara_cruz()
         
-        embed = embed_service.info(
-            title="¡Moneda Lanzada!",
-            description=f"La moneda ha caído en: **{resultado}**",
-            lite=True
-        )
-        # Añadimos el GIF animado como miniatura
-        embed.set_thumbnail(url=url_gif)
+        title = lang_service.get_text("coinflip_title", lang)
+        desc = lang_service.get_text("coinflip_desc", lang, result=res)
         
-        await ctx.reply(embed=embed)
+        # ¡MIRA QUÉ LIMPIO! Pasamos el thumbnail directo a la función
+        await ctx.reply(embed=embed_service.info(title, desc, thumbnail=url_gif, lite=True))
 
     # --- COMANDO: CHOOSER (Elige por ti) ---
     @commands.hybrid_command(name="eleccion", description="¿Indeciso? El bot elige entre dos opciones por ti")
@@ -79,55 +74,30 @@ class Diversion(commands.Cog):
         )
         await ctx.reply(embed=embed)
 
-    # --- COMANDO: EMOJIMIX (Mezclador) ---
-    @commands.hybrid_command(name="emojimix", description="Mezcla dos emojis (Estilo Google Emoji Kitchen)")
-    @app_commands.describe(emoji1="Primer emoji", emoji2="Segundo emoji")
+    @commands.hybrid_command(name="emojimix")
     async def emojimix(self, ctx: commands.Context, emoji1: str, emoji2: str):
-        
-        # Generamos la URL
-        url_imagen = emojimixer_service.generar_url_emojimix(emoji1, emoji2)
-        
-        embed = embed_service.info("Emoji Kitchen", f"Mezcla de {emoji1} + {emoji2}",lite=True)
-        embed.set_image(url=url_imagen)
-        
-        await ctx.reply(embed=embed)
+        url = emojimixer_service.generar_url_emojimix(emoji1, emoji2)
+        await ctx.reply(embed=embed_service.info("Emoji Mix", f"{emoji1} + {emoji2}", image=url, lite=True))
 
-    # --- COMANDO: CONFESAR (Confiesa tus pecados) ---
-    @app_commands.command(name="confess", description="Envía un secreto anónimo al servidor")
+    @app_commands.command(name="confess")
     async def confesar(self, interaction: discord.Interaction, secreto: str):
-        # 1. Consultar DB
+        lang = await lang_service.get_guild_lang(interaction.guild_id)
         row = await db_service.fetch_one("SELECT confessions_channel_id FROM guild_config WHERE guild_id = ?", (interaction.guild_id,))
 
         if not row or not row['confessions_channel_id']:
-            embed = embed_service.error("Error", "El canal de confesiones no ha sido configurado por los administradores.",lite=True)
-            await interaction.response.send_message(embed=embed, ephemeral=True)
+            await interaction.response.send_message("❌ No channel setup.", ephemeral=True)
             return
 
         canal = self.bot.get_channel(row['confessions_channel_id'])
-        if not canal:
-            embed = embed_service.error("Error", "El canal configurado ya no existe.")
-            await interaction.response.send_message(embed=embed, ephemeral=True)
-            return
+        
+        # Embed de confesión
+        embed = discord.Embed(title=lang_service.get_text("confess_title", lang), description=f"\"{secreto}\"", color=discord.Color.random())
+        embed.set_footer(text="Anon")
+        await canal.send(embed=embed)
 
-        # 3. Construir la confesión (Estética anónima)
-        embed_confesion = discord.Embed(
-            title="🤫 Nueva Confesión Anónima",
-            description=f"\"{secreto}\"",
-            color=discord.Color.random() # Color aleatorio para cada confesión
-        )
-        # Usamos el footer global que ya configuraste en embed_service, 
-        # o forzamos uno personalizado para que se entienda la mecánica:
-        embed_confesion.set_footer(text="Enviado de forma anónima vía /confesar")
-
-        # 4. Enviar al canal público
-        await canal.send(embed=embed_confesion)
-
-        # 5. Confirmación privada al usuario
-        embed_confirm = embed_service.success(
-            "Confesión Enviada", 
-            f"Tu secreto ha sido publicado en {canal.mention}. 🤐"
-        )
-        await interaction.response.send_message(embed=embed_confirm, ephemeral=True)
+        # Confirmación
+        msg = lang_service.get_text("confess_sent", lang, channel=canal.mention)
+        await interaction.response.send_message(embed=embed_service.success("Sent", msg), ephemeral=True)
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(Diversion(bot))

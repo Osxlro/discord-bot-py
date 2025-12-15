@@ -1,20 +1,19 @@
 from config.locales import LOCALES
+from services import db_service
 
 DEFAULT_LANG = "es"
 
+async def get_guild_lang(guild_id: int) -> str:
+    """Obtiene el idioma preferido del servidor desde la DB."""
+    if not guild_id: return DEFAULT_LANG
+    row = await db_service.fetch_one("SELECT language FROM guild_config WHERE guild_id = ?", (guild_id,))
+    return row['language'] if row else DEFAULT_LANG
+
 def get_text(key: str, lang: str = "es", **kwargs) -> str:
-    """
-    Obtiene un texto y rellena las variables.
-    Ej: get_text("ping_msg", ms=120)
-    """
-    # Si el idioma no existe, usa default
-    idioma_data = LOCALES.get(lang, LOCALES[DEFAULT_LANG])
-    
-    # Si la clave no existe, devuelve la clave como error visual
-    texto = idioma_data.get(key, key)
-    
-    # Rellena las variables {ms}, {user}, etc.
+    """Obtiene y formatea el texto."""
+    data = LOCALES.get(lang, LOCALES[DEFAULT_LANG])
+    text = data.get(key, key) # Si no existe la key, devuelve la key como texto
     try:
-        return texto.format(**kwargs)
+        return text.format(**kwargs)
     except KeyError:
-        return texto # Si faltan variables, devolvemos el texto sin formatear para no romper
+        return text
