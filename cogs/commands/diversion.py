@@ -49,14 +49,17 @@ class Diversion(commands.Cog):
     # --- COMANDO: COINFLIP (Cara o Cruz) ---
     @commands.hybrid_command(name="coinflip", description="Lanza una moneda al aire")
     async def coinflip(self, ctx: commands.Context):
-        # Lógica en el servicio
-        resultado, emoji = random_service.obtener_cara_cruz()
+        # Lógica en el servicio (Ahora devuelve Nombre y URL)
+        resultado, url_gif = random_service.obtener_cara_cruz()
         
         embed = embed_service.info(
             title="¡Moneda Lanzada!",
-            description=f"La moneda ha caído en: **{resultado}** {emoji}",
+            description=f"La moneda ha caído en: **{resultado}**",
             lite=True
         )
+        # Añadimos el GIF animado como miniatura
+        embed.set_thumbnail(url=url_gif)
+        
         await ctx.reply(embed=embed)
 
     # --- COMANDO: CHOOSER (Elige por ti) ---
