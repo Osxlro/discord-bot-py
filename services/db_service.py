@@ -69,7 +69,8 @@ async def init_db():
             "ALTER TABLE users ADD COLUMN personal_birthday_msg TEXT DEFAULT NULL",
             "ALTER TABLE guild_config ADD COLUMN server_level_msg TEXT DEFAULT NULL",
             "ALTER TABLE guild_config ADD COLUMN server_birthday_msg TEXT DEFAULT NULL",
-            "ALTER TABLE guild_config ADD COLUMN chaos_probability REAL DEFAULT 0.01"
+            "ALTER TABLE guild_config ADD COLUMN chaos_probability REAL DEFAULT 0.01",
+            "ALTER TABLE guild_config ADD COLUMN language TEXT DEFAULT 'es'"
         ]
         
         for query in migraciones:

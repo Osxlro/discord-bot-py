@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 from typing import Literal
-from services import embed_service, translator_service, math_service
+from services import embed_service, translator_service, math_service, db_service, lang_service
 
 class General(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -20,11 +20,18 @@ class General(commands.Cog):
         self.bot.tree.remove_command(self.ctx_menu.name, type=self.ctx_menu.type)
 
     # --- COMANDO: PING ---
-    @commands.hybrid_command(name="ping", description="Muestra la latencia del bot")
     async def ping(self, ctx: commands.Context):
+        # 1. Obtener idioma del servidor (esto se puede optimizar cacheando, pero por ahora select)
+        row = await db_service.fetch_one("SELECT language FROM guild_config WHERE guild_id = ?", (ctx.guild.id,))
+        lang = row['language'] if row else "es"
+
         latencia = round(self.bot.latency * 1000)
-        embed = embed_service.info("Ping", f"🏓 Pong! Latencia: **{latencia}ms**")
-        await ctx.reply(embed=embed)
+    
+        # 2. Obtener texto traducido
+        texto = lang_service.get_text("ping_msg", lang=lang, ms=latencia)
+    
+        # 3. Embed en una línea
+        await ctx.reply(embed=embed_service.info("Ping", texto))
 
     # --- COMANDO: AVATAR ---
     @commands.hybrid_command(name="avatar", description="Muestra el avatar de un usuario")

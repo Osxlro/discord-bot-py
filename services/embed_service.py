@@ -2,10 +2,7 @@ import discord
 import datetime
 from config import settings
 
-def _get_base_embed(title: str, description: str, color_key: str, icon_url: str = None, lite: bool = False) -> discord.Embed:
-    """
-    lite=True: Elimina timestamp, footer y versión para una estética más limpia.
-    """
+def _get_base_embed(title: str, description: str, color_key: str, thumbnail: str = None, image: str = None, footer: str = None, lite: bool = False) -> discord.Embed:
     color = settings.get_color(color_key)
     
     embed = discord.Embed(
@@ -14,26 +11,38 @@ def _get_base_embed(title: str, description: str, color_key: str, icon_url: str 
         color=color
     )
     
+    # 1. Thumbnail integrado
+    if thumbnail:
+        embed.set_thumbnail(url=thumbnail)
+    
+    # 2. Imagen grande integrada
+    if image:
+        embed.set_image(url=image)
+
+    # 3. Lógica de Footer
     if not lite:
         embed.timestamp = datetime.datetime.now()
-        footer_text = f"{settings.CONFIG['bot_config']['description']} • v{settings.CONFIG['bot_config']['version']}"
-        icon_url = settings.get_bot_icon()
+        # Si pasan un footer personalizado, se usa. Si no, el default.
+        text_footer = footer if footer else f"{settings.CONFIG['bot_config']['description']} • v{settings.CONFIG['bot_config']['version']}"
+        icon_footer = settings.get_bot_icon()
         
-        if icon_url:
-            embed.set_footer(text=footer_text, icon_url=icon_url)
+        if icon_footer:
+            embed.set_footer(text=text_footer, icon_url=icon_footer)
         else:
-            embed.set_footer(text=footer_text)
+            embed.set_footer(text=text_footer)
+    elif footer:
+        # Si es lite pero especificaron footer (ej: confesiones)
+        embed.set_footer(text=footer)
         
     return embed
 
-# Actualizamos las funciones públicas
-def success(title: str, description: str, icon_url: str = None, lite: bool = False) -> discord.Embed:
-    return _get_base_embed(f"✅ {title}", description, "success", icon_url, lite)
+# Funciones públicas con los nuevos argumentos
+def success(title: str, description: str, thumbnail: str = None, image: str = None, footer: str = None, lite: bool = False) -> discord.Embed:
+    return _get_base_embed(f"✅ {title}", description, "success", thumbnail, image, footer, lite)
 
-def error(title: str, description: str, icon_url: str = None, lite: bool = False) -> discord.Embed:
-    return _get_base_embed(f"⛔ {title}", description, "error", icon_url, lite)
+def error(title: str, description: str, thumbnail: str = None, image: str = None, footer: str = None, lite: bool = False) -> discord.Embed:
+    return _get_base_embed(f"⛔ {title}", description, "error", thumbnail, image, footer, lite)
 
-def info(title: str, description: str, icon_url: str = None, lite: bool = False) -> discord.Embed:
-    # Para info, a veces no queremos el emoji en el título si es muy formal
+def info(title: str, description: str, thumbnail: str = None, image: str = None, footer: str = None, lite: bool = False) -> discord.Embed:
     titulo_fmt = f"ℹ️ {title}" if not lite else title
-    return _get_base_embed(titulo_fmt, description, "info", icon_url, lite)
+    return _get_base_embed(titulo_fmt, description, "info", thumbnail, image, footer, lite)
