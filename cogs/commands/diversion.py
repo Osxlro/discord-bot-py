@@ -1,50 +1,28 @@
 import discord
 from discord.ext import commands
 from discord import app_commands
-from config import settings
 from services import embed_service, emojimixer_service, random_service, db_service, lang_service
 
 class Diversion(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    # --- COMANDO: JUMBO (Agrandar Emoji) ---
     @commands.hybrid_command(name="jumbo", description="Muestra la imagen de un emoji en grande")
     @app_commands.describe(emoji="Pon aquí el emoji personalizado que quieras ver")
-    async def zoom(self, ctx: commands.Context, emoji: str):
+    async def jumbo(self, ctx: commands.Context, emoji: str):
+        lang = await lang_service.get_guild_lang(ctx.guild.id)
         try:
-            # Intentamos convertir el texto (string) a un objeto Emoji de Discord
             partial_emoji = discord.PartialEmoji.from_str(emoji)
-
-            # Verificamos si es un emoji personalizado (tiene ID)
             if partial_emoji.is_custom_emoji():
-                # Creamos el embed usando tu servicio de diseños
-                embed = embed_service.info(
-                    title=f"Emoji: {partial_emoji.name}", 
-                    description="Aquí tienes tu emoji en tamaño completo:",
-                    lite=True
-                )
-                # Ponemos la imagen del emoji en grande
-                embed.set_image(url=partial_emoji.url)
-                
-                await ctx.reply(embed=embed)
+                title = lang_service.get_text("jumbo_title", lang, name=partial_emoji.name)
+                # Embed simplificado
+                await ctx.reply(embed=embed_service.info(title, "", image=partial_emoji.url, lite=True))
             else:
-                # Si es un emoji normal de texto (🍎, 😎), no tienen URL de imagen directa
-                embed = embed_service.error(
-                    title="Emoji no válido", 
-                    description="Solo puedo hacer zoom a **emojis personalizados** del servidor (los que tienen imagen propia).",
-                    lite=True
-                )
-                await ctx.reply(embed=embed, ephemeral=True)
-
+                msg = lang_service.get_text("jumbo_error", lang)
+                await ctx.reply(embed=embed_service.error("Error", msg, lite=True), ephemeral=True)
         except Exception:
-            # Si el usuario escribe algo que no es un emoji
-            embed = embed_service.error(
-                title="Error", 
-                description="Eso no parece ser un emoji válido. Intenta poner solo un emoji.",
-                lite=True
-            )
-            await ctx.reply(embed=embed, ephemeral=True)
+            msg = lang_service.get_text("jumbo_invalid", lang)
+            await ctx.reply(embed=embed_service.error("Error", msg, lite=True), ephemeral=True)
 
     @commands.hybrid_command(name="coinflip")
     async def coinflip(self, ctx: commands.Context):
@@ -54,25 +32,17 @@ class Diversion(commands.Cog):
         title = lang_service.get_text("coinflip_title", lang)
         desc = lang_service.get_text("coinflip_desc", lang, result=res)
         
-        # ¡MIRA QUÉ LIMPIO! Pasamos el thumbnail directo a la función
         await ctx.reply(embed=embed_service.info(title, desc, thumbnail=url_gif, lite=True))
 
-    # --- COMANDO: CHOOSER (Elige por ti) ---
-    @commands.hybrid_command(name="eleccion", description="¿Indeciso? El bot elige entre dos opciones por ti")
-    @app_commands.describe(
-        opcion_a="La primera opción",
-        opcion_b="La segunda opción"
-    )
+    @commands.hybrid_command(name="eleccion")
     async def eleccion(self, ctx: commands.Context, opcion_a: str, opcion_b: str):
-        # Lógica en el servicio
+        lang = await lang_service.get_guild_lang(ctx.guild.id)
         eleccion = random_service.elegir_opcion(opcion_a, opcion_b)
         
-        embed = embed_service.success(
-            title="He tomado una decisión",
-            description=f"Entre **{opcion_a}** y **{opcion_b}**, elijo:\n\n👉 **{eleccion}**",
-            lite=True
-        )
-        await ctx.reply(embed=embed)
+        title = lang_service.get_text("choice_title", lang)
+        desc = lang_service.get_text("choice_desc", lang, a=opcion_a, b=opcion_b, result=eleccion)
+        
+        await ctx.reply(embed=embed_service.success(title, desc, lite=True))
 
     @commands.hybrid_command(name="emojimix")
     async def emojimix(self, ctx: commands.Context, emoji1: str, emoji2: str):
@@ -85,17 +55,17 @@ class Diversion(commands.Cog):
         row = await db_service.fetch_one("SELECT confessions_channel_id FROM guild_config WHERE guild_id = ?", (interaction.guild_id,))
 
         if not row or not row['confessions_channel_id']:
-            await interaction.response.send_message("❌ No channel setup.", ephemeral=True)
+            await interaction.response.send_message("❌ Channel not setup.", ephemeral=True)
             return
 
         canal = self.bot.get_channel(row['confessions_channel_id'])
-        
-        # Embed de confesión
-        embed = discord.Embed(title=lang_service.get_text("confess_title", lang), description=f"\"{secreto}\"", color=discord.Color.random())
+        if not canal: return
+
+        title = lang_service.get_text("confess_title", lang)
+        embed = discord.Embed(title=title, description=f"\"{secreto}\"", color=discord.Color.random())
         embed.set_footer(text="Anon")
         await canal.send(embed=embed)
 
-        # Confirmación
         msg = lang_service.get_text("confess_sent", lang, channel=canal.mention)
         await interaction.response.send_message(embed=embed_service.success("Sent", msg), ephemeral=True)
 
