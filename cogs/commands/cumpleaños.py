@@ -52,7 +52,7 @@ class Cumpleanos(commands.Cog):
     async def cumple(self, ctx: commands.Context):
         if ctx.invoked_subcommand is None: await ctx.send_help(ctx.command)
 
-    @cumple.command(name="establecer")
+    @cumple.command(name="establecer", description="Establece tu cumpleaños.")
     async def establecer(self, ctx: commands.Context, dia: int, mes: int):
         lang = await lang_service.get_guild_lang(ctx.guild.id)
         try:
@@ -64,7 +64,7 @@ class Cumpleanos(commands.Cog):
         except ValueError:
             await ctx.reply(embed=embed_service.error("Error", lang_service.get_text("bday_invalid", lang)), ephemeral=True)
 
-    @cumple.command(name="eliminar")
+    @cumple.command(name="eliminar", description= "Elimina tu cumpleaños, o el de alguien más.")
     async def eliminar(self, ctx: commands.Context, usuario: discord.Member = None):
         lang = await lang_service.get_guild_lang(ctx.guild.id)
         target = usuario or ctx.author
@@ -75,7 +75,7 @@ class Cumpleanos(commands.Cog):
         await db_service.execute("UPDATE users SET birthday = NULL WHERE user_id = ?", (target.id,))
         await ctx.reply(embed=embed_service.success("Deleted", lang_service.get_text("bday_removed", lang)))
 
-    @cumple.command(name="privacidad")
+    @cumple.command(name="privacidad", description="Decide si festejar tu cumpleaños o no.")
     async def privacidad(self, ctx: commands.Context, estado: Literal["Visible", "Oculto"]):
         lang = await lang_service.get_guild_lang(ctx.guild.id)
         val = 1 if estado == "Visible" else 0
@@ -83,7 +83,7 @@ class Cumpleanos(commands.Cog):
         msg = lang_service.get_text("bday_visible" if val else "bday_hidden", lang)
         await ctx.reply(embed=embed_service.success(lang_service.get_text("bday_privacy", lang), msg))
 
-    @cumple.command(name="lista")
+    @cumple.command(name="lista", description="Revisa la lista de proximos cumpleaños.")
     async def lista(self, ctx: commands.Context):
         lang = await lang_service.get_guild_lang(ctx.guild.id)
         rows = await db_service.fetch_all("SELECT user_id, birthday FROM users WHERE birthday IS NOT NULL AND celebrate = 1")

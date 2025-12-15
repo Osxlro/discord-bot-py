@@ -9,7 +9,13 @@ class HelpSelect(discord.ui.Select):
         
         options = [discord.SelectOption(label=lang_service.get_text("help_home", lang), description=lang_service.get_text("help_home_desc", lang), emoji="🏠", value="inicio")]
 
-        emoji_map = {"General": "🌐", "Moderacion": "🔨", "Diversion": "🎲", "Developer": "💻", "Status": "🟢", "Bienvenidas": "👋", "Ayuda": "❓", "Logger": "📜", "Niveles": "⭐", "Roles": "🎭", "Configuracion": "⚙️", "Backup": "💾", "Perfil": "👤"}
+        # Mapa de emojis
+        emoji_map = {
+            "General": "🌐", "Moderacion": "🔨", "Diversion": "🎲", "Developer": "💻", 
+            "Status": "🟢", "Bienvenidas": "👋", "Ayuda": "❓", "Logger": "📜", 
+            "Niveles": "⭐", "Roles": "🎭", "Configuracion": "⚙️", "Backup": "💾", 
+            "Perfil": "👤"
+        }
 
         for name, cog in bot.cogs.items():
             if not cog.get_commands(): continue
@@ -30,15 +36,19 @@ class HelpSelect(discord.ui.Select):
         embed = embed_service.info(title, desc)
         
         lista_txt = ""
+        # Mostramos también la descripción de los comandos
         for cmd in cog.get_commands():
             if cmd.hidden: continue
+            
             if isinstance(cmd, commands.HybridGroup):
                 for sub in cmd.commands:
-                    lista_txt += f"🔹 `/{cmd.name} {sub.name}`\n"
+                    desc_cmd = sub.description or "..."
+                    lista_txt += f"🔹 `/{cmd.name} {sub.name}` - {desc_cmd}\n"
             else:
-                lista_txt += f"🔹 `/{cmd.name}`\n"
+                desc_cmd = cmd.description or "..."
+                lista_txt += f"🔹 `/{cmd.name}` - {desc_cmd}\n"
             
-        embed.add_field(name="Commands", value=lista_txt or lang_service.get_text("help_no_cmds", self.lang))
+        embed.add_field(name="Comandos", value=lista_txt or lang_service.get_text("help_no_cmds", self.lang))
         await interaction.response.edit_message(embed=embed)
 
 class HelpView(discord.ui.View):
@@ -51,7 +61,7 @@ class Ayuda(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    @commands.hybrid_command(name="help")
+    @commands.hybrid_command(name="help", description="Muestra el menú de ayuda")
     async def help(self, ctx: commands.Context):
         lang = await lang_service.get_guild_lang(ctx.guild.id)
         conteo_comandos = len([c for c in self.bot.commands if not c.hidden])
@@ -66,7 +76,10 @@ class Ayuda(commands.Cog):
 
         cat_title = lang_service.get_text("help_categories", lang)
         cats = [name for name in self.bot.cogs.keys() if self.bot.get_cog(name).get_commands()]
-        embed.add_field(name=cat_title, value=f"```\n{', '.join(cats)}\n```", inline=False)
+        
+        # AQUÍ ESTÁ EL ARREGLO VISUAL: Saltos de línea
+        cats_formatted = "\n".join([f"• {c}" for c in cats])
+        embed.add_field(name=cat_title, value=f"```\n{cats_formatted}\n```", inline=False)
         
         view = HelpView(self.bot, embed, lang)
         await ctx.reply(embed=embed, view=view)

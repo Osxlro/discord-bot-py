@@ -32,10 +32,7 @@ class Niveles(commands.Cog):
             if nuevo_total_xp >= xp_necesaria:
                 nivel_actual += 1
                 
-                # Obtener idioma
                 lang = await lang_service.get_guild_lang(message.guild.id)
-                
-                # Mensaje de nivel
                 user_conf = await db_service.fetch_one("SELECT personal_level_msg FROM users WHERE user_id = ?", (message.author.id,))
                 guild_conf = await db_service.fetch_one("SELECT server_level_msg FROM guild_config WHERE guild_id = ?", (message.guild.id,))
                 
@@ -51,7 +48,7 @@ class Niveles(commands.Cog):
             
             await db_service.execute("UPDATE guild_stats SET xp = ?, level = ? WHERE guild_id = ? AND user_id = ?", (nuevo_total_xp, nivel_actual, message.guild.id, message.author.id))
 
-    @commands.hybrid_command(name="leaderboard")
+    @commands.hybrid_command(name="leaderboard", description="Muestra el top de XP")
     async def leaderboard(self, ctx: commands.Context):
         lang = await lang_service.get_guild_lang(ctx.guild.id)
         rows = await db_service.fetch_all("SELECT user_id, level, xp FROM guild_stats WHERE guild_id = ? ORDER BY xp DESC LIMIT 10", (ctx.guild.id,))

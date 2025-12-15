@@ -7,7 +7,7 @@ class Diversion(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    @commands.hybrid_command(name="jumbo", description="Muestra la imagen de un emoji en grande")
+    @commands.hybrid_command(name="jumbo", description="Muestra la imagen de un emoji en grande.")
     @app_commands.describe(emoji="Pon aquí el emoji personalizado que quieras ver")
     async def jumbo(self, ctx: commands.Context, emoji: str):
         lang = await lang_service.get_guild_lang(ctx.guild.id)
@@ -24,7 +24,7 @@ class Diversion(commands.Cog):
             msg = lang_service.get_text("jumbo_invalid", lang)
             await ctx.reply(embed=embed_service.error("Error", msg, lite=True), ephemeral=True)
 
-    @commands.hybrid_command(name="coinflip")
+    @commands.hybrid_command(name="coinflip", description="Suelta tu suerte con la moneda.")
     async def coinflip(self, ctx: commands.Context):
         lang = await lang_service.get_guild_lang(ctx.guild.id)
         res, url_gif = random_service.obtener_cara_cruz()
@@ -34,7 +34,7 @@ class Diversion(commands.Cog):
         
         await ctx.reply(embed=embed_service.info(title, desc, thumbnail=url_gif, lite=True))
 
-    @commands.hybrid_command(name="eleccion")
+    @commands.hybrid_command(name="eleccion", description="Elección A o B, ¿cual será?")
     async def eleccion(self, ctx: commands.Context, opcion_a: str, opcion_b: str):
         lang = await lang_service.get_guild_lang(ctx.guild.id)
         eleccion = random_service.elegir_opcion(opcion_a, opcion_b)
@@ -44,12 +44,12 @@ class Diversion(commands.Cog):
         
         await ctx.reply(embed=embed_service.success(title, desc, lite=True))
 
-    @commands.hybrid_command(name="emojimix")
+    @commands.hybrid_command(name="emojimix", description="Mixea emojis con Google Kitchen.")
     async def emojimix(self, ctx: commands.Context, emoji1: str, emoji2: str):
         url = emojimixer_service.generar_url_emojimix(emoji1, emoji2)
         await ctx.reply(embed=embed_service.info("Emoji Mix", f"{emoji1} + {emoji2}", image=url, lite=True))
 
-    @app_commands.command(name="confess")
+    @app_commands.command(name="confess", description="Confiesa tus pecados.")
     async def confesar(self, interaction: discord.Interaction, secreto: str):
         lang = await lang_service.get_guild_lang(interaction.guild_id)
         row = await db_service.fetch_one("SELECT confessions_channel_id FROM guild_config WHERE guild_id = ?", (interaction.guild_id,))

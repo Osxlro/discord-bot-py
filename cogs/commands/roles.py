@@ -38,10 +38,10 @@ class Roles(commands.Cog):
             except Exception as e:
                 await interaction.response.send_message(f"Error: {e}", ephemeral=True)
 
-    @commands.hybrid_command(name="botonrol")
-    @app_commands.describe(color_boton="Color: blue, green, red, grey")
+    @commands.hybrid_command(name="botonrol", description="Crea un botón de auto-rol")
+    @app_commands.describe(rol="Rol a entregar", titulo="Título Embed", descripcion="Desc Embed")
     @commands.has_permissions(administrator=True)
-    async def create_role_button(self, ctx: commands.Context, rol: discord.Role, titulo: str = "Rol", descripcion: str = "Click to get role", emoji: str = "✨", color_boton: Literal["blue", "green", "red", "grey"] = "green"):
+    async def create_role_button(self, ctx: commands.Context, rol: discord.Role, titulo: str = "Rol", descripcion: str = "Click para obtener rol", emoji: str = "✨", color_boton: Literal["blue", "green", "red", "grey"] = "green"):
         lang = await lang_service.get_guild_lang(ctx.guild.id)
         
         if rol.position >= ctx.guild.me.top_role.position:

@@ -23,6 +23,8 @@ LOCALES = {
         "clear_desc": "Se han eliminado **{count}** mensajes.",
         "kick_title": "Usuario Expulsado",
         "kick_desc": "**{user}** ha sido expulsado.\n📝 Razón: {reason}",
+        "ban_title": "Usuario Baneado",
+        "ban_desc": "**{user}** ha sido baneado.\n📝 Razón: {reason}",
         
         # --- DIVERSIÓN ---
         "coinflip_title": "¡Moneda Lanzada!",
@@ -77,7 +79,6 @@ LOCALES = {
         "welcome_desc": "Hola {mention}, gracias por unirte a **{server}**.",
         "goodbye_title": "Un usuario ha partido",
         "goodbye_desc": "{user} ha abandonado el servidor.",
-        "backup_msg": "📦 **Copia de seguridad automática** del día {date}.",
         
         # --- AYUDA ---
         "help_title": "Panel de Ayuda",
@@ -123,6 +124,8 @@ LOCALES = {
         "clear_desc": "**{count}** messages have been deleted.",
         "kick_title": "User Kicked",
         "kick_desc": "**{user}** has been kicked.\n📝 Reason: {reason}",
+        "ban_title": "User Banned",
+        "ban_desc": "**{user}** has been banned.\n📝 Reason: {reason}",
         
         # --- FUN ---
         "coinflip_title": "Coin Flipped!",
@@ -177,7 +180,6 @@ LOCALES = {
         "welcome_desc": "Hi {mention}, thanks for joining **{server}**.",
         "goodbye_title": "A user has left",
         "goodbye_desc": "{user} has left the server.",
-        "backup_msg": "📦 **Automatic Database Backup** for {date}.",
         
         # --- HELP ---
         "help_title": "Help Panel",

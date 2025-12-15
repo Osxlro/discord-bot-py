@@ -7,7 +7,7 @@ class Perfil(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    @commands.hybrid_command(name="perfil")
+    @commands.hybrid_command(name="perfil", description="Muestra todos los detalles del Perfil.")
     async def perfil(self, ctx: commands.Context, usuario: discord.Member = None):
         target = usuario or ctx.author
         lang = await lang_service.get_guild_lang(ctx.guild.id)
@@ -31,7 +31,7 @@ class Perfil(commands.Cog):
         embed.set_thumbnail(url=target.display_avatar.url)
         
         embed.add_field(name="📝 Desc", value=f"*{desc}*", inline=False)
-        embed.add_field(name="🎂 B-day", value=f"📅 {cumple}", inline=True)
+        embed.add_field(name="🎂 Birth Date", value=f"📅 {cumple}", inline=True)
         embed.add_field(name="⌨️ Prefix", value=f"`{prefix}`", inline=True)
         
         stats_title = lang_service.get_text("profile_server_stats", lang)
@@ -54,7 +54,7 @@ class Perfil(commands.Cog):
     async def mi_perfil(self, ctx: commands.Context):
         if ctx.invoked_subcommand is None: await ctx.send_help(ctx.command)
 
-    @mi_perfil.command(name="descripcion")
+    @mi_perfil.command(name="descripcion", description="Cambia la descripción de tu Perfil.")
     async def set_desc(self, ctx: commands.Context, texto: str):
         lang = await lang_service.get_guild_lang(ctx.guild.id)
         if len(texto) > 200: 
@@ -67,7 +67,7 @@ class Perfil(commands.Cog):
         
         await ctx.reply(embed=embed_service.success(lang_service.get_text("profile_update_success", lang), lang_service.get_text("profile_desc_saved", lang)))
 
-    @mi_perfil.command(name="mensaje_nivel")
+    @mi_perfil.command(name="mensaje_nivel", description="Cambia el mensaje de subida de nivel. '{user}','{level}','{server}'")
     async def set_level_msg(self, ctx: commands.Context, mensaje: str):
         lang = await lang_service.get_guild_lang(ctx.guild.id)
         val = None if mensaje.lower() == "reset" else mensaje
@@ -78,7 +78,7 @@ class Perfil(commands.Cog):
         
         await ctx.reply(embed=embed_service.success(lang_service.get_text("profile_update_success", lang), lang_service.get_text("profile_msg_saved", lang)))
 
-    @mi_perfil.command(name="mensaje_cumple")
+    @mi_perfil.command(name="mensaje_cumple", description="Cambia el mensaje de tu cumpleaños. '{user}'")
     async def set_bday_msg(self, ctx: commands.Context, mensaje: str):
         lang = await lang_service.get_guild_lang(ctx.guild.id)
         val = None if mensaje.lower() == "reset" else mensaje

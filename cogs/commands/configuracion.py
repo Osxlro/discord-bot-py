@@ -40,24 +40,6 @@ class Configuracion(commands.Cog):
         # Respondemos en el idioma seleccionado
         msg = lang_service.get_text("lang_success", lenguaje)
         await ctx.reply(embed=embed_service.success("Idioma/Language", msg))
-
-    # --- CHAOS ---
-    @setup.command(name="chaos")
-    async def setup_chaos(self, ctx: commands.Context, estado: Literal["Activado", "Desactivado"], probabilidad: int):
-        lang = await lang_service.get_guild_lang(ctx.guild.id)
-        if not (1 <= probabilidad <= 100):
-            await ctx.reply("1-100%", ephemeral=True)
-            return
-
-        enabled = 1 if estado == "Activado" else 0
-        await db_service.execute("""
-            INSERT INTO guild_config (guild_id, chaos_enabled, chaos_probability) VALUES (?, ?, ?)
-            ON CONFLICT(guild_id) DO UPDATE SET chaos_enabled = excluded.chaos_enabled, chaos_probability = excluded.chaos_probability
-        """, (ctx.guild.id, enabled, probabilidad/100.0))
-        
-        status_txt = "✅ ON" if enabled else "⚪ OFF"
-        desc = lang_service.get_text("setup_chaos_desc", lang, status=status_txt, prob=probabilidad)
-        await ctx.reply(embed=embed_service.success("Chaos Config", desc))
     
     @setup.command(name="canales", description="Configura los canales de bienvenida, logs, etc.")
     @app_commands.describe(tipo="¿Qué canal quieres configurar?", canal="El canal de texto")

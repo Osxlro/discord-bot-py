@@ -13,7 +13,7 @@ class General(commands.Cog):
     async def cog_unload(self):
         self.bot.tree.remove_command(self.ctx_menu.name, type=self.ctx_menu.type)
 
-    @commands.hybrid_command(name="ping")
+    @commands.hybrid_command(name="ping", description="Chequea el Ping del Bot.")
     async def ping(self, ctx: commands.Context):
         lang = await lang_service.get_guild_lang(ctx.guild.id)
         ms = round(self.bot.latency * 1000)
@@ -21,7 +21,7 @@ class General(commands.Cog):
         txt = lang_service.get_text("ping_msg", lang, ms=ms)
         await ctx.reply(embed=embed_service.info("Ping", txt))
 
-    @commands.hybrid_command(name="calc")
+    @commands.hybrid_command(name="calc",description="Calculadora maestra")
     async def calc(self, ctx: commands.Context, operacion: Literal["sumar", "restar", "multiplicacion", "division"], num1: int, num2: int):
         lang = await lang_service.get_guild_lang(ctx.guild.id)
         emojis = {"sumar": "+", "restar": "-", "multiplicacion": "*", "division": "/"}
