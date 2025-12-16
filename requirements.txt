@@ -2,3 +2,4 @@
 python-dotenv==1.2.1
 aiosqlite
 deep-translator
+google-genai
