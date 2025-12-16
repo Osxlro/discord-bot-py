@@ -81,7 +81,11 @@ class BotPersonal(commands.Bot):
 async def main():
     bot = BotPersonal()
     async with bot:
-        await bot.start(settings.TOKEN)
+        try:
+            await bot.start(settings.TOKEN)
+        finally:
+            print("--- 🛑 APAGANDO SERVICIOS ---")
+            await db_service.close_db()
 
 if __name__ == '__main__':
     try:

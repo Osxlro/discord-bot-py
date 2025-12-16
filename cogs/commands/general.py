@@ -1,12 +1,12 @@
 import discord
 from discord.ext import commands
 from discord import app_commands
-from typing import Literal
-from services import embed_service, translator_service, math_service, lang_service
+from services import embed_service, translator_service, lang_service
 
 class General(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
+        # Context Menu (Click derecho en mensaje -> Apps -> Traducir)
         self.ctx_menu = app_commands.ContextMenu(name="Traducir", callback=self.traducir_mensaje)
         self.bot.tree.add_command(self.ctx_menu)
 
@@ -21,21 +21,50 @@ class General(commands.Cog):
         txt = lang_service.get_text("ping_msg", lang, ms=ms)
         await ctx.reply(embed=embed_service.info("Ping", txt))
 
-    @commands.hybrid_command(name="calc",description="Calculadora maestra")
-    async def calc(self, ctx: commands.Context, operacion: Literal["sumar", "restar", "multiplicacion", "division"], num1: int, num2: int):
+    # --- COMANDO MEJORADO ---
+    @commands.hybrid_command(name="calc", description="Calculadora flexible. Ej: /calc + 5 10")
+    @app_commands.describe(
+        operacion="Usa símbolos (+, -, *, /) o palabras (suma, resta...)", 
+        num1="Primer número", 
+        num2="Segundo número"
+    )
+    async def calc(self, ctx: commands.Context, operacion: str, num1: int, num2: int):
         lang = await lang_service.get_guild_lang(ctx.guild.id)
-        emojis = {"sumar": "+", "restar": "-", "multiplicacion": "*", "division": "/"}
+        
+        # Diccionario de sinónimos: Mapea lo que escribe el usuario al símbolo matemático
+        op_map = {
+            "sumar": "+", "suma": "+", "add": "+", "+": "+", "mas": "+",
+            "restar": "-", "resta": "-", "minus": "-", "-": "-", "menos": "-",
+            "multiplicacion": "*", "multiplicar": "*", "por": "*", "*": "*", "x": "*",
+            "division": "/", "dividir": "/", "div": "/", "/": "/"
+        }
+        
+        # Convertimos a minúsculas y buscamos el símbolo
+        op_symbol = op_map.get(operacion.lower())
+        
+        if not op_symbol:
+            # Si no entiende la operación, avisamos qué símbolos acepta
+            await ctx.reply(embed=embed_service.error("Error", "Operación no válida.\nUsa: `+`, `-`, `*`, `/`"), ephemeral=True)
+            return
         
         try:
-            res = math_service.calcular(operacion, num1, num2)
-            txt = lang_service.get_text("calc_result", lang, a=num1, op=emojis[operacion], b=num2, res=res)
+            # Lógica matemática directa (Adiós math_service)
+            res = 0
+            if op_symbol == "+": res = num1 + num2
+            elif op_symbol == "-": res = num1 - num2
+            elif op_symbol == "*": res = num1 * num2
+            elif op_symbol == "/":
+                if num2 == 0: raise ValueError("No puedes dividir por cero.")
+                res = round(num1 / num2, 2)
+
+            txt = lang_service.get_text("calc_result", lang, a=num1, op=op_symbol, b=num2, res=res)
             await ctx.reply(embed=embed_service.success("Math", txt))
+            
         except ValueError as e:
             txt = lang_service.get_text("calc_error", lang, error=str(e))
             await ctx.reply(embed=embed_service.error("Error", txt, lite=True))
 
     async def traducir_mensaje(self, interaction: discord.Interaction, message: discord.Message):
-        # Nota: Aquí usamos interacción directa, así que obtenemos el idioma manualmente
         lang = await lang_service.get_guild_lang(interaction.guild_id)
         await interaction.response.defer(ephemeral=True)
         

@@ -102,7 +102,6 @@ class Configuracion(commands.Cog):
         
         await ctx.reply(embed=embed_service.success(f"Configuración: {tipo}", "✅ Mensaje actualizado."))
         
-    # --- SUB-COMANDO: CHAOS ---
     @setup.command(name="chaos", description="Configura la Ruleta Rusa (Chaos)")
     @app_commands.describe(
         estado="Activar o desactivar",
@@ -115,14 +114,20 @@ class Configuracion(commands.Cog):
             return
 
         enabled = 1 if estado == "Activado" else 0
-        prob_decimal = probabilidad / 100.0 # Convertimos 5 a 0.05
+        prob_decimal = probabilidad / 100.0
 
+        # 1. Guardar en Base de Datos (Persistencia)
         await db_service.execute("""
             INSERT INTO guild_config (guild_id, chaos_enabled, chaos_probability) VALUES (?, ?, ?)
             ON CONFLICT(guild_id) DO UPDATE SET 
                 chaos_enabled = excluded.chaos_enabled,
                 chaos_probability = excluded.chaos_probability
         """, (ctx.guild.id, enabled, prob_decimal))
+        
+        # 2. Actualizar Caché en Memoria (Velocidad)
+        chaos_cog = self.bot.get_cog("Chaos")
+        if chaos_cog:
+            chaos_cog.update_local_config(ctx.guild.id, bool(enabled), prob_decimal)
         
         msg_estado = "✅ Activado" if enabled else "⚪ Desactivado"
         embed = embed_service.success("Configuración Chaos", f"{msg_estado}\n🔫 Probabilidad de disparo: **{probabilidad}%**")
