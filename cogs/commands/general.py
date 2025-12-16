@@ -13,13 +13,13 @@ class General(commands.Cog):
     async def cog_unload(self):
         self.bot.tree.remove_command(self.ctx_menu.name, type=self.ctx_menu.type)
 
-    @commands.hybrid_command(name="ping", description="Chequea el Ping del Bot.")
+    @commands.hybrid_command(name="ping", description="Muestra la latencia actual del bot.")
     async def ping(self, ctx: commands.Context):
         lang = await lang_service.get_guild_lang(ctx.guild.id)
         ms = round(self.bot.latency * 1000)
         
         txt = lang_service.get_text("ping_msg", lang, ms=ms)
-        await ctx.reply(embed=embed_service.info("Ping", txt))
+        await ctx.reply(embed=embed_service.info("Ping", txt, lite=True))
 
     # --- COMANDO MEJORADO ---
     @commands.hybrid_command(name="calc", description="Calculadora flexible. Ej: /calc + 5 10")
@@ -44,7 +44,7 @@ class General(commands.Cog):
         
         if not op_symbol:
             # Si no entiende la operación, avisamos qué símbolos acepta
-            await ctx.reply(embed=embed_service.error("Error", "Operación no válida.\nUsa: `+`, `-`, `*`, `/`"), ephemeral=True)
+            await ctx.reply(embed=embed_service.error("Error", "Operación no válida.\nUsa: `+`, `-`, `*`, `/`", lite=True), ephemeral=True)
             return
         
         try:

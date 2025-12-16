@@ -35,6 +35,7 @@ class Diversion(commands.Cog):
         await ctx.reply(embed=embed_service.info(title, desc, thumbnail=url_gif, lite=True))
 
     @commands.hybrid_command(name="eleccion", description="Elección A o B, ¿cual será?")
+    @app_commands.describe(opcion_a="Primera opción", opcion_b="Segunda opción")
     async def eleccion(self, ctx: commands.Context, opcion_a: str, opcion_b: str):
         lang = await lang_service.get_guild_lang(ctx.guild.id)
         eleccion = random_service.elegir_opcion(opcion_a, opcion_b)
@@ -45,11 +46,13 @@ class Diversion(commands.Cog):
         await ctx.reply(embed=embed_service.success(title, desc, lite=True))
 
     @commands.hybrid_command(name="emojimix", description="Mixea emojis con Google Kitchen.")
+    @app_commands.describe(emoji1="Primer emoji base", emoji2="Segundo emoji para mezclar")
     async def emojimix(self, ctx: commands.Context, emoji1: str, emoji2: str):
         url = emojimixer_service.generar_url_emojimix(emoji1, emoji2)
         await ctx.reply(embed=embed_service.info("Emoji Mix", f"{emoji1} + {emoji2}", image=url, lite=True))
 
     @app_commands.command(name="confess", description="Confiesa tus pecados.")
+    @app_commands.describe(secreto="Tu confesión anónima")
     async def confesar(self, interaction: discord.Interaction, secreto: str):
         lang = await lang_service.get_guild_lang(interaction.guild_id)
         row = await db_service.fetch_one("SELECT confessions_channel_id FROM guild_config WHERE guild_id = ?", (interaction.guild_id,))

@@ -83,15 +83,20 @@ class Configuracion(commands.Cog):
     # --- SUB-COMANDO: MENSAJES (ACTUALIZADO) ---
     @setup.command(name="mensajes", description="Personaliza las respuestas del bot en este servidor")
     @app_commands.describe(
-        tipo="Tipo de mensaje", 
-        texto="Tu mensaje. Variables: {user}, {level} (nivel). 'reset' para borrar."
+        tipo="Tipo de mensaje a configurar", 
+        texto="Tu mensaje. Variables: {user}, {reason} (solo kick/ban). 'reset' para borrar."
     )
-    async def setup_mensajes(self, ctx: commands.Context, tipo: Literal["Respuesta Mención", "Subida Nivel", "Felicitación Cumple"], texto: str):
+    async def setup_mensajes(self, ctx: commands.Context, tipo: Literal["Respuesta Mención", "Subida Nivel", "Felicitación Cumple", "Mensaje Kick", "Mensaje Ban"], texto: str):
         
-        # Mapa de columnas
-        if tipo == "Respuesta Mención": columna = "mention_response"
-        elif tipo == "Subida Nivel": columna = "server_level_msg"
-        else: columna = "server_birthday_msg"
+        # Mapa de columnas actualizado
+        mapa_columnas = {
+            "Respuesta Mención": "mention_response",
+            "Subida Nivel": "server_level_msg",
+            "Felicitación Cumple": "server_birthday_msg",
+            "Mensaje Kick": "server_kick_msg",
+            "Mensaje Ban": "server_ban_msg"
+        }
+        columna = mapa_columnas[tipo]
 
         valor = None if texto.lower() == "reset" else texto
         
@@ -100,7 +105,7 @@ class Configuracion(commands.Cog):
             ON CONFLICT(guild_id) DO UPDATE SET {columna} = excluded.{columna}
         """, (ctx.guild.id, valor))
         
-        await ctx.reply(embed=embed_service.success(f"Configuración: {tipo}", "✅ Mensaje actualizado."))
+        await ctx.reply(embed=embed_service.success(f"Configuración: {tipo}", "✅ Mensaje actualizado.", lite=True))
         
     @setup.command(name="chaos", description="Configura la Ruleta Rusa (Chaos)")
     @app_commands.describe(
@@ -137,7 +142,7 @@ class Configuracion(commands.Cog):
     # --- COMANDO NUEVO: RESET ---
     @setup.command(name="reset", description="Desactiva una configuración del servidor.")
     @app_commands.describe(tipo="¿Qué configuración quieres borrar/resetear?")
-    async def setup_reset(self, ctx: commands.Context, tipo: Literal["Bienvenidas", "Logs", "Confesiones", "Cumpleaños", "AutoRol", "Mensaje Nivel"]):
+    async def setup_reset(self, ctx: commands.Context, tipo: Literal["Bienvenidas", "Logs", "Confesiones", "Cumpleaños", "AutoRol", "Mensaje Nivel", "Mensajes Mod"]):
         
         mapa = {
             "Bienvenidas": "welcome_channel_id",
@@ -145,14 +150,17 @@ class Configuracion(commands.Cog):
             "Confesiones": "confessions_channel_id",
             "Cumpleaños": "birthday_channel_id",
             "AutoRol": "autorole_id",
-            "Mensaje Nivel": "server_level_msg"
+            "Mensaje Nivel": "server_level_msg",
         }
+        
+        if tipo == "Mensajes Mod":
+             await db_service.execute(f"UPDATE guild_config SET server_kick_msg = NULL, server_ban_msg = NULL WHERE guild_id = ?", (ctx.guild.id,))
+             await ctx.reply(embed=embed_service.success("Reset", "🗑️ Mensajes de moderación reseteados.", lite=True))
+             return
+
         columna = mapa.get(tipo)
-        
-        # Ponemos la columna en 0 o NULL
         await db_service.execute(f"UPDATE guild_config SET {columna} = 0 WHERE guild_id = ?", (ctx.guild.id,))
-        
-        await ctx.reply(embed=embed_service.success("Reset Completado", f"🗑️ La configuración de **{tipo}** ha sido eliminada."))
+        await ctx.reply(embed=embed_service.success("Reset Completado", f"🗑️ La configuración de **{tipo}** ha sido eliminada.", lite=True))
 
     # --- COMANDO NUEVO: GESTIÓN DE ESTADOS ---
     @setup.command(name="status", description="Agrega o elimina estados del bot (Global).")

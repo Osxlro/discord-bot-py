@@ -1,13 +1,15 @@
 import discord
 from discord.ext import commands
 from discord import app_commands
+from typing import Literal
 from services import db_service, embed_service, lang_service
 
 class Perfil(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    @commands.hybrid_command(name="perfil", description="Muestra todos los detalles del Perfil.")
+    @commands.hybrid_command(name="perfil", description="Muestra tu tarjeta de perfil o la de otro usuario.")
+    @app_commands.describe(usuario="El usuario del que quieres ver el perfil (vacío para ver el tuyo)")
     async def perfil(self, ctx: commands.Context, usuario: discord.Member = None):
         target = usuario or ctx.author
         lang = await lang_service.get_guild_lang(ctx.guild.id)
@@ -50,11 +52,12 @@ class Perfil(commands.Cog):
 
         await ctx.reply(embed=embed)
 
-    @commands.hybrid_group(name="mi_perfil")
+    @commands.hybrid_group(name="mi_perfil", description="Comandos para editar tu perfil personal.")
     async def mi_perfil(self, ctx: commands.Context):
         if ctx.invoked_subcommand is None: await ctx.send_help(ctx.command)
 
-    @mi_perfil.command(name="descripcion", description="Cambia la descripción de tu Perfil.")
+    @mi_perfil.command(name="descripcion", description="Establece la biografía de tu tarjeta de perfil.")
+    @app_commands.describe(texto="Máximo 200 caracteres.")
     async def set_desc(self, ctx: commands.Context, texto: str):
         lang = await lang_service.get_guild_lang(ctx.guild.id)
         if len(texto) > 200: 
@@ -65,29 +68,27 @@ class Perfil(commands.Cog):
         if not check: await db_service.execute("INSERT INTO users (user_id, description) VALUES (?, ?)", (ctx.author.id, texto))
         else: await db_service.execute("UPDATE users SET description = ? WHERE user_id = ?", (texto, ctx.author.id))
         
-        await ctx.reply(embed=embed_service.success(lang_service.get_text("profile_update_success", lang), lang_service.get_text("profile_desc_saved", lang)))
+        # LITE APLICADO: Configuración rápida
+        await ctx.reply(embed=embed_service.success(lang_service.get_text("profile_update_success", lang), lang_service.get_text("profile_desc_saved", lang), lite=True))
 
-    @mi_perfil.command(name="mensaje_nivel", description="Cambia el mensaje de subida de nivel. '{user}','{level}','{server}'")
-    async def set_level_msg(self, ctx: commands.Context, mensaje: str):
+    # --- COMANDO UNIFICADO ---
+    @mi_perfil.command(name="mensaje", description="Personaliza tus mensajes automáticos.")
+    @app_commands.describe(
+        tipo="¿Qué mensaje quieres personalizar?",
+        texto="Tu mensaje. Usa {user}, {level} (solo nivel). Escribe 'reset' para borrar."
+    )
+    async def set_personal_msg(self, ctx: commands.Context, tipo: Literal["Nivel", "Cumpleaños"], texto: str):
         lang = await lang_service.get_guild_lang(ctx.guild.id)
-        val = None if mensaje.lower() == "reset" else mensaje
+        val = None if texto.lower() == "reset" else texto
+        columna = "personal_level_msg" if tipo == "Nivel" else "personal_birthday_msg"
         
         check = await db_service.fetch_one("SELECT user_id FROM users WHERE user_id = ?", (ctx.author.id,))
-        if not check: await db_service.execute("INSERT INTO users (user_id, personal_level_msg) VALUES (?, ?)", (ctx.author.id, val))
-        else: await db_service.execute("UPDATE users SET personal_level_msg = ? WHERE user_id = ?", (val, ctx.author.id))
+        if not check: 
+            await db_service.execute(f"INSERT INTO users (user_id, {columna}) VALUES (?, ?)", (ctx.author.id, val))
+        else: 
+            await db_service.execute(f"UPDATE users SET {columna} = ? WHERE user_id = ?", (val, ctx.author.id))
         
-        await ctx.reply(embed=embed_service.success(lang_service.get_text("profile_update_success", lang), lang_service.get_text("profile_msg_saved", lang)))
-
-    @mi_perfil.command(name="mensaje_cumple", description="Cambia el mensaje de tu cumpleaños. '{user}'")
-    async def set_bday_msg(self, ctx: commands.Context, mensaje: str):
-        lang = await lang_service.get_guild_lang(ctx.guild.id)
-        val = None if mensaje.lower() == "reset" else mensaje
-        
-        check = await db_service.fetch_one("SELECT user_id FROM users WHERE user_id = ?", (ctx.author.id,))
-        if not check: await db_service.execute("INSERT INTO users (user_id, personal_birthday_msg) VALUES (?, ?)", (ctx.author.id, val))
-        else: await db_service.execute("UPDATE users SET personal_birthday_msg = ? WHERE user_id = ?", (val, ctx.author.id))
-        
-        await ctx.reply(embed=embed_service.success(lang_service.get_text("profile_update_success", lang), lang_service.get_text("profile_msg_saved", lang)))
+        await ctx.reply(embed=embed_service.success("Perfil Actualizado", f"✅ Mensaje de **{tipo}** guardado.", lite=True))
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(Perfil(bot))
