@@ -133,5 +133,59 @@ class Configuracion(commands.Cog):
         embed = embed_service.success("Configuración Chaos", f"{msg_estado}\n🔫 Probabilidad de disparo: **{probabilidad}%**")
         await ctx.reply(embed=embed)
 
+
+    # --- COMANDO NUEVO: RESET ---
+    @setup.command(name="reset", description="Desactiva una configuración del servidor.")
+    @app_commands.describe(tipo="¿Qué configuración quieres borrar/resetear?")
+    async def setup_reset(self, ctx: commands.Context, tipo: Literal["Bienvenidas", "Logs", "Confesiones", "Cumpleaños", "AutoRol", "Mensaje Nivel"]):
+        
+        mapa = {
+            "Bienvenidas": "welcome_channel_id",
+            "Logs": "logs_channel_id",
+            "Confesiones": "confessions_channel_id",
+            "Cumpleaños": "birthday_channel_id",
+            "AutoRol": "autorole_id",
+            "Mensaje Nivel": "server_level_msg"
+        }
+        columna = mapa.get(tipo)
+        
+        # Ponemos la columna en 0 o NULL
+        await db_service.execute(f"UPDATE guild_config SET {columna} = 0 WHERE guild_id = ?", (ctx.guild.id,))
+        
+        await ctx.reply(embed=embed_service.success("Reset Completado", f"🗑️ La configuración de **{tipo}** ha sido eliminada."))
+
+    # --- COMANDO NUEVO: GESTIÓN DE ESTADOS ---
+    @setup.command(name="status", description="Agrega o elimina estados del bot (Global).")
+    @app_commands.describe(accion="Agregar o Eliminar", tipo="Tipo (Solo para agregar)", texto="Texto del estado")
+    @commands.is_owner() # ¡Importante! Solo tú deberías tocar esto
+    async def setup_status(self, ctx: commands.Context, accion: Literal["Agregar", "Eliminar", "Listar"], tipo: Literal["playing", "watching", "listening"] = "playing", texto: str = None):
+        
+        if accion == "Listar":
+            rows = await db_service.fetch_all("SELECT id, type, text FROM bot_statuses")
+            txt = "\n".join([f"`#{r['id']}` **{r['type']}** {r['text']}" for r in rows])
+            await ctx.reply(embed=embed_service.info("Estados Activos", txt or "Ninguno."))
+            return
+
+        if not texto:
+            await ctx.reply("❌ Necesitas escribir el texto del estado.", ephemeral=True)
+            return
+
+        if accion == "Agregar":
+            await db_service.execute("INSERT INTO bot_statuses (type, text) VALUES (?, ?)", (tipo, texto))
+            await ctx.reply(embed=embed_service.success("Estado Agregado", f"✅ Nuevo estado: **{tipo}** {texto}"))
+            # Forzamos actualización visual inmediata
+            await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.playing, name=texto))
+        
+        elif accion == "Eliminar":
+            # Intentamos borrar por texto exacto o por ID si el usuario puso un número
+            try:
+                if texto.isdigit():
+                    await db_service.execute("DELETE FROM bot_statuses WHERE id = ?", (int(texto),))
+                else:
+                    await db_service.execute("DELETE FROM bot_statuses WHERE text = ?", (texto,))
+                await ctx.reply(embed=embed_service.success("Estado Eliminado", "🗑️ Estado borrado de la rotación."))
+            except Exception as e:
+                await ctx.reply(f"Error: {e}")
+    
 async def setup(bot: commands.Bot):
     await bot.add_cog(Configuracion(bot))

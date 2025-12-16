@@ -108,6 +108,26 @@ async def init_db():
             # Ignoramos error si la columna ya existe
             pass
     
+    # 5. Tabla de Estados del Bot (NUEVA)
+    await db.execute("""
+    CREATE TABLE IF NOT EXISTS bot_statuses (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        type TEXT DEFAULT 'playing',
+        text TEXT
+    )
+    """)
+    
+    # Insertar estados por defecto si la tabla está vacía
+    row = await fetch_one("SELECT count(*) as count FROM bot_statuses")
+    if row['count'] == 0:
+        defaults = [
+            ("playing", "Visual Studio Code"),
+            ("watching", "a los usuarios"),
+            ("listening", "/help")
+        ]
+        await db.executemany("INSERT INTO bot_statuses (type, text) VALUES (?, ?)", defaults)
+        await db.commit()
+    
     await db.commit()
 
 # --- FUNCIONES DE CONSULTA OPTIMIZADAS ---
