@@ -1,89 +1,98 @@
 import discord
+import random
 from discord.ext import commands
-from services import ai_service
+from services import ai_service, db_service
 
 class SmartChat(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
+        self.random_talk_chance = 0.005 # 0.5% de probabilidad de hablar random
 
-    async def obtener_historial_reciente(self, channel, limit=15):
-        """Memoria a corto plazo: Lo que acaba de pasar."""
-        msgs = []
-        async for m in channel.history(limit=limit):
-            if not m.author.bot:
-                msgs.append(f"{m.author.name}: {m.content}")
-        return "\n".join(reversed(msgs))
+    async def guardar_mensaje(self, message):
+        """El log continuo: esto es lo que le permite 'aprender'."""
+        if len(message.content) > 2 and not message.content.startswith(("/", "!")):
+            await db_service.execute(
+                "INSERT INTO chat_logs (guild_id, user_name, content) VALUES (?, ?, ?)",
+                (message.guild.id, message.author.name, message.content)
+            )
 
-    async def buscar_en_archivos(self, channel, termino_busqueda):
-        """
-        Memoria a largo plazo: Busca en el pasado (RAG simple).
-        Busca en los últimos 300 mensajes algo que coincida.
-        """
-        hallazgos = []
-        contador = 0
-        
-        # Iteramos hacia atrás
-        async for m in channel.history(limit=300):
-            if termino_busqueda.lower() in m.content.lower() and not m.author.bot:
-                fecha = m.created_at.strftime('%d/%m %H:%M')
-                hallazgos.append(f"[{fecha}] {m.author.name}: {m.content}")
-                contador += 1
-                if contador >= 10: break # Máximo 10 evidencias para no saturar
-        
-        if not hallazgos:
-            return "No encontré nada relevante en los archivos recientes."
-        return "\n".join(reversed(hallazgos))
+    async def obtener_contexto(self, guild_id):
+        """Obtiene lo último que se dijo (Memoria Corto Plazo)."""
+        rows = await db_service.fetch_all(
+            "SELECT user_name, content FROM chat_logs WHERE guild_id = ? ORDER BY id DESC LIMIT 10",
+            (guild_id,)
+        )
+        # Invertimos para orden cronológico
+        msgs = reversed(rows)
+        return "\n".join([f"{r['user_name']}: {r['content']}" for r in msgs])
+
+    async def obtener_lore_random(self, guild_id):
+        """Saca recuerdos aleatorios para inyectar personalidad."""
+        rows = await db_service.fetch_all(
+            "SELECT user_name, content FROM chat_logs WHERE guild_id = ? ORDER BY RANDOM() LIMIT 2",
+            (guild_id,)
+        )
+        return "\n".join([f"[{r['user_name']} dijo una vez]: {r['content']}" for r in rows])
+
+    async def investigar_db(self, guild_id, termino):
+        """Herramienta de investigación: Busca en la base de datos local."""
+        rows = await db_service.fetch_all(
+            "SELECT user_name, content, timestamp FROM chat_logs WHERE guild_id = ? AND content LIKE ? ORDER BY id DESC LIMIT 5",
+            (guild_id, f"%{termino}%")
+        )
+        if not rows:
+            return "No encontré nada en mis registros."
+        return "\n".join([f"[{r['timestamp']}] {r['user_name']}: {r['content']}" for r in rows])
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
-        # Evitar bucles y bots
-        if message.author.bot: return
+        if message.author.bot or not message.guild: return
 
-        # Condiciones para responder:
-        # 1. Mención directa (@Bot)
-        # 2. Es una respuesta (Reply) a un mensaje del bot
+        # 1. APRENDER (Guardar siempre)
+        await self.guardar_mensaje(message)
+
+        # 2. DECIDIR SI HABLAR
         es_mencion = self.bot.user in message.mentions
         es_reply = (message.reference and message.reference.resolved and 
                     message.reference.resolved.author.id == self.bot.user.id)
+        hablar_random = random.random() < self.random_talk_chance
 
-        if es_mencion or es_reply:
+        if es_mencion or es_reply or hablar_random:
             async with message.channel.typing():
-                # 1. Leemos el contexto inmediato
-                contexto = await self.obtener_historial_reciente(message.channel)
+                # Obtenemos datos de la BD local (Rápido)
+                contexto = await self.obtener_contexto(message.guild.id)
+                lore = await self.obtener_lore_random(message.guild.id)
                 
-                # 2. Primer intento de respuesta
-                respuesta = await ai_service.generar_respuesta(message.content, contexto)
+                # Primera llamada a la IA
+                respuesta = await ai_service.generar_respuesta(message.content, contexto, lore)
 
-                # 3. ¿La IA pidió investigar?
+                # ¿La IA quiere investigar?
                 if "[INVESTIGAR:" in respuesta:
                     try:
-                        # Extraemos el término entre comillas
+                        # Extraer término
                         start = respuesta.find('"') + 1
                         end = respuesta.find('"', start)
                         termino = respuesta[start:end]
                         
-                        # Buscamos en el historial profundo
-                        evidencia = await self.buscar_en_archivos(message.channel, termino)
+                        # Buscar en BD
+                        evidencia = await self.investigar_db(message.guild.id, termino)
                         
-                        # 4. Segunda llamada a la IA con la evidencia
+                        # Segunda llamada con la evidencia
                         nuevo_prompt = f"""
-                        El usuario preguntó: "{message.content}"
+                        El usuario dijo: "{message.content}"
+                        Pediste investigar "{termino}".
                         
-                        No sabías la respuesta, así que busqué en la base de datos y encontré esto:
-                        --- INICIO EVIDENCIA ---
+                        RESULTADOS DE LA BASE DE DATOS:
                         {evidencia}
-                        --- FIN EVIDENCIA ---
                         
-                        Ahora sí, responde al usuario basándote en esta evidencia (o búrlate si no hay nada útil).
+                        Ahora responde usando esta info.
                         """
-                        
-                        respuesta_final = await ai_service.generar_respuesta(nuevo_prompt, contexto)
+                        respuesta_final = await ai_service.generar_respuesta(nuevo_prompt, contexto, lore)
                         await message.reply(respuesta_final)
                         
-                    except Exception as e:
-                        await message.reply(f"Me tropecé buscando en los archivos... (Error: {e})")
+                    except Exception:
+                        await message.reply("Me dio un ictus intentando recordar...")
                 else:
-                    # Respuesta normal
                     await message.reply(respuesta)
 
 async def setup(bot: commands.Bot):

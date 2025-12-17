@@ -119,6 +119,16 @@ async def init_db():
     )
     """)
     
+    await db.execute("""
+    CREATE TABLE IF NOT EXISTS chat_logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        guild_id INTEGER,
+        user_name TEXT,
+        content TEXT,
+        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+    
     # Insertar estados por defecto si la tabla está vacía
     row = await fetch_one("SELECT count(*) as count FROM bot_statuses")
     if row['count'] == 0:
