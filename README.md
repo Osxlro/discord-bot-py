@@ -1,6 +1,6 @@
 # 🤖 Bot Modular en Python (Discord.py)
 
-Una base sólida, escalable y modular para bots de Discord usando Python.
+Bot Personal.
 
 ## ✨ Características
 * **Estructura Modular (Cogs):** Lógica separada en carpetas.
