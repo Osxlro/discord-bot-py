@@ -1,6 +1,5 @@
 import aiosqlite
 import os
-import logging
 from config import settings
 
 # Configuración de rutas
@@ -11,7 +10,6 @@ if not os.path.exists(DATA_DIR):
 DB_NAME = "database.sqlite3"
 DB_PATH = os.path.join(DATA_DIR, DB_NAME)
 
-# --- VARIABLE GLOBAL PARA LA CONEXIÓN (SINGLETON) ---
 _connection = None
 
 async def get_db() -> aiosqlite.Connection:
@@ -25,7 +23,7 @@ async def get_db() -> aiosqlite.Connection:
         _connection = await aiosqlite.connect(DB_PATH)
         # Esto permite acceder a columnas por nombre (row['id'])
         _connection.row_factory = aiosqlite.Row
-        print(f"🔌 Base de datos conectada (Singleton): {DB_PATH}")
+        print(f"🔌 Base de datos conectada: {DB_PATH}")
     return _connection
 
 async def close_db():
@@ -110,7 +108,7 @@ async def init_db():
             # Ignoramos error si la columna ya existe
             pass
     
-    # 5. Tabla de Estados del Bot (NUEVA)
+    # 5. Tabla de Estados del Bot
     await db.execute("""
     CREATE TABLE IF NOT EXISTS bot_statuses (
         id INTEGER PRIMARY KEY AUTOINCREMENT,

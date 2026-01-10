@@ -40,7 +40,7 @@ class BotPersonal(commands.Bot):
         )
 
     async def setup_hook(self):
-        print("--- ⚙️  CARGANDO EXTENSIONES (PATHLIB) ---")
+        print("--- ⚙️  CARGANDO EXTENSIONES ---")
         
         # Usamos pathlib para recorrer la carpeta cogs de forma recursiva (rglob)
         # Esto funciona perfecto en Windows, Linux y Mac sin trucos raros.
@@ -67,7 +67,7 @@ class BotPersonal(commands.Bot):
         print("--- 🔄 SINCRONIZANDO COMANDOS ---")
         try:
             synced = await self.tree.sync()
-            print(f"✨ Se han sincronizado {len(synced)} comandos Slash.")
+            print(f"✨ Se han sincronizado {len(synced)} comandos.")
         except Exception as e:
             print(f"❌ Error al sincronizar: {e}")
 

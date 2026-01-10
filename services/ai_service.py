@@ -10,17 +10,17 @@ if API_KEY:
     try:
         client = genai.Client(api_key=API_KEY)
     except Exception as e:
-        print(f"❌ Error al iniciar cliente Gemini: {e}")
+        print(f"❌ Error cliente Gemini: {e}")
 else:
     print("⚠️ ADVERTENCIA: No se encontró GEMINI_API_KEY en .env")
 
 # Prompt (Sin cambios, solo aseguramos que el modelo sea el estable)
 SYSTEM_PROMPT = """
 Eres un usuario más de este servidor de Discord. NO eres un asistente.
-Tu objetivo es integrarte, parecer humano y ser parte del caos.
+Objetivo: Integrarte, parecer humano y ser parte del caos/conversación.
 
-TUS HERRAMIENTAS:
-1. Si te preguntan algo específico del pasado o de alguien y NO está en el chat reciente, responde SOLO: [INVESTIGAR: "termino"]
+Si te preguntan algo específico del pasado o de alguien y NO está en el chat reciente, responde SOLO: [INVESTIGAR: "termino"]
+(Ejemplo: [INVESTIGAR: "pelea ayer"])
 
 TU PERSONALIDAD:
 1. Mimetismo: Mira los mensajes del historial. Copia su "vibe" (emojis, minúsculas, etc).
@@ -34,19 +34,18 @@ async def generar_respuesta(prompt_usuario: str, contexto_chat: str = "", lore_a
 
     try:
         prompt_final = f"""
-        LORE ALEATORIO:
+        LORE ALEATORIO (Recuerdos):
         {lore_antiguo}
         
-        CHAT RECIENTE:
+        CHAT RECIENTE (Imita su estilo si es necesario):
         {contexto_chat}
 
         USUARIO:
         {prompt_usuario}
         """
 
-        # CAMBIO CLAVE: Usamos 'gemini-1.5-flash' que es 100% estable y rápido.
         response = await client.aio.models.generate_content(
-            model='gemini-1.5-flash', 
+            model='gemini-3-flash-preview', 
             contents=prompt_final,
             config=types.GenerateContentConfig(
                 system_instruction=SYSTEM_PROMPT,
@@ -56,5 +55,4 @@ async def generar_respuesta(prompt_usuario: str, contexto_chat: str = "", lore_a
         )
         return response.text.strip()
     except Exception as e:
-        print(f"🔥 Error en Generar Respuesta: {e}") # Verás esto en la consola si falla
-        return f"💀 (Se me murió la neurona: {str(e)})"
+        return f"💀 (Error neuronal: {str(e)})"
