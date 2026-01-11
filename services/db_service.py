@@ -127,6 +127,9 @@ async def init_db():
     )
     """)
     
+    await db.execute("CREATE INDEX IF NOT EXISTS idx_chat_guild ON chat_logs(guild_id)")
+    await db.execute("CREATE INDEX IF NOT EXISTS idx_chat_content ON chat_logs(content)")
+    
     # Insertar estados por defecto si la tabla está vacía
     row = await fetch_one("SELECT count(*) as count FROM bot_statuses")
     if row['count'] == 0:

@@ -60,24 +60,34 @@ class SmartChat(commands.Cog):
                 
                 respuesta = await ai_service.generar_respuesta(message.content, contexto, lore)
 
-                # Detectar [INVESTIGAR: "algo"] con Regex seguro
-                match = re.search(r"\[INVESTIGAR:\s*[\"']?([^\"']+)[\"']?\]", respuesta)
+        # Detectar [INVESTIGAR: "algo"] con Regex seguro
+        match = re.search(r"\[INVESTIGAR:\s*[\"']?([^\"']+)[\"']?\]", respuesta)
+        
+        if match:
+            try:
+                termino = match.group(1) # Captura lo que está adentro
                 
-                if match:
-                    termino = match.group(1)
-                    evidencia = await self.investigar_db(message.guild.id, termino)
-                    
-                    nuevo_prompt = f"""
-                    El usuario dijo: {message.content}
-                    Investigaste '{termino}' y encontraste esto:
-                    {evidencia}
-                    
-                    Responde usando esa información.
-                    """
-                    respuesta_final = await ai_service.generar_respuesta(nuevo_prompt, contexto, lore)
-                    await message.reply(respuesta_final)
-                else:
-                    await message.reply(respuesta)
+                # Buscar en BD
+                evidencia = await self.investigar_db(message.guild.id, termino)
+                
+                nuevo_prompt = f"""
+                El usuario dijo: "{message.content}"
+                Pediste investigar "{termino}".
+
+                RESULTADOS DE LA BASE DE DATOS:
+                {evidencia}
+
+                Ahora responde usando esta info.
+                """
+                respuesta_final = await ai_service.generar_respuesta(nuevo_prompt, contexto, lore)
+                await message.reply(respuesta_final)
+                
+            except Exception as e:
+                print(f"Error investigando: {e}")
+                await message.reply("Me dio un ictus intentando recordar...")
+        else:
+            # Si no hay investigación, responde normal
+            await message.reply(respuesta)
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(SmartChat(bot))
