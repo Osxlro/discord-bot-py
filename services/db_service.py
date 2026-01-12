@@ -60,6 +60,7 @@ async def init_db():
         user_id INTEGER,
         xp INTEGER DEFAULT 0,
         level INTEGER DEFAULT 1,
+        rebirths INTEGER DEFAULT 0,
         PRIMARY KEY (guild_id, user_id)
     )
     """)
@@ -143,7 +144,85 @@ async def init_db():
     
     await db.commit()
 
-# --- FUNCIONES DE CONSULTA OPTIMIZADAS ---
+# --- FUNCIONES DE XP Y NIVEL ---
+
+def calculate_xp_required(level):
+    """Fórmula exponencial: XP requerida para el SIGUIENTE nivel."""
+    # Ejemplo: Nivel 1->2 = 100xp. Nivel 10->11 = ~1500xp
+    return int(100 * (level ** 1.2)) 
+
+async def add_xp(guild_id: int, user_id: int, amount: int):
+    """
+    Añade XP y maneja subidas de nivel con REINICIO de XP.
+    Retorna (nuevo_nivel, subio_de_nivel_bool)
+    """
+    db = await get_db()
+    
+    # 1. Obtener estado actual
+    row = await fetch_one(
+        "SELECT xp, level, rebirths FROM guild_stats WHERE guild_id = ? AND user_id = ?", 
+        (guild_id, user_id)
+    )
+    
+    current_xp = 0
+    current_level = 1
+    current_rebirths = 0
+    
+    if row:
+        current_xp = row['xp']
+        current_level = row['level']
+        current_rebirths = row['rebirths']
+    
+    # 2. Añadir XP
+    current_xp += amount
+    xp_needed = calculate_xp_required(current_level)
+    
+    leveled_up = False
+    
+    # 3. Comprobar Level Up (Bucle por si sube varios niveles de golpe)
+    while current_xp >= xp_needed:
+        current_xp -= xp_needed # Restamos la XP usada (Aquí está el fix)
+        current_level += 1
+        leveled_up = True
+        xp_needed = calculate_xp_required(current_level) # Recalcular para el siguiente
+    
+    # 4. Guardar cambios
+    await db.execute("""
+    INSERT INTO guild_stats (guild_id, user_id, xp, level, rebirths)
+    VALUES (?, ?, ?, ?, ?)
+    ON CONFLICT(guild_id, user_id) DO UPDATE SET
+        xp = excluded.xp,
+        level = excluded.level
+    """, (guild_id, user_id, current_xp, current_level, current_rebirths))
+    
+    await db.commit()
+    return current_level, leveled_up
+
+async def do_rebirth(guild_id: int, user_id: int):
+    """Intenta hacer un rebirth. Retorna (success, mensaje_error_o_nuevo_count)"""
+    row = await fetch_one(
+        "SELECT level, rebirths FROM guild_stats WHERE guild_id = ? AND user_id = ?", 
+        (guild_id, user_id)
+    )
+    
+    if not row:
+        return False, "No tienes datos en este servidor."
+        
+    if row['level'] < 100:
+        return False, row['level'] # Retornamos nivel actual para el mensaje de error
+        
+    new_rebirths = row['rebirths'] + 1
+    
+    # Resetear Stats
+    await execute("""
+        UPDATE guild_stats 
+        SET level = 1, xp = 0, rebirths = ? 
+        WHERE guild_id = ? AND user_id = ?
+    """, (new_rebirths, guild_id, user_id))
+    
+    return True, new_rebirths
+
+# --- FUNCIONES DE CONSULTA ---
 
 async def execute(query: str, params: tuple = ()):
     """Ejecuta una instrucción (INSERT, UPDATE, DELETE) sin cerrar la conexión."""

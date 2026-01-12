@@ -42,3 +42,6 @@ def set_bot_icon(url: str):
 def get_bot_icon() -> str:
     """Recupera la URL guardada (o None si aún no se ha guardado)."""
     return _BOT_ICON_URL
+
+# DM BACKUP
+SEND_BACKUP_TO_OWNER = True  # Cambia a False si no quieres recibir el DM con la DB

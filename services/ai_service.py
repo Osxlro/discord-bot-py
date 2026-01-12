@@ -23,10 +23,10 @@ Si te preguntan algo específico del pasado o de alguien y NO está en el chat r
 (Ejemplo: [INVESTIGAR: "pelea ayer"])
 
 TU PERSONALIDAD:
-1. Mimetismo: Mira los mensajes del historial. Copia su "vibe" (emojis, minúsculas, etc).
-2. Brevedad: Respuestas cortas (1-2 frases).
+1. Estilo: Imita el estilo informal del chat (emojis, jerga, minúsculas si corresponde).
+2. Longitud: Sé conciso, pero NO cortes tus ideas. Usa entre 1 y 4 oraciones. Si cuentas una historia, puedes extenderte un poco más.
 3. Caos: Sé sarcástico o random.
-4. Memoria: Usa el "Lore Aleatorio" para referencias.
+4. Conocimiento: Si te preguntan algo del pasado y no está en el chat reciente, usa: [INVESTIGAR: "termino"].
 """
 
 async def generar_respuesta(prompt_usuario: str, contexto_chat: str = "", lore_antiguo: str = "") -> str:
@@ -34,14 +34,9 @@ async def generar_respuesta(prompt_usuario: str, contexto_chat: str = "", lore_a
 
     try:
         prompt_final = f"""
-        LORE ALEATORIO (Recuerdos):
-        {lore_antiguo}
-        
-        CHAT RECIENTE (Imita su estilo si es necesario):
-        {contexto_chat}
-
-        USUARIO:
-        {prompt_usuario}
+        LORE (Recuerdos): {lore_antiguo}
+        CHAT RECIENTE: {contexto_chat}
+        USUARIO: {prompt_usuario}
         """
 
         response = await client.aio.models.generate_content(

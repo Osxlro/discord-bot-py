@@ -52,6 +52,23 @@ LOCALES = {
         "profile_desc_saved": "Tu descripción ha sido guardada.",
         "profile_msg_saved": "Tu mensaje ha sido configurado.",
         
+            # --- REBIRTH SYSTEM ---
+        "rebirth_success": "✨ **¡RENACIMIENTO COMPLETADO!** ✨\nHas sacrificado tu nivel 100+ para renacer. Ahora tienes **{rebirths}** Rebirth(s).\nTu nivel ha vuelto a 1.",
+        "rebirth_fail_level": "❌ Aún no estás listo para renacer. Necesitas ser **Nivel 100** mínimo (Eres nivel {level}).",
+        "rebirth_fail_generic": "❌ No se pudo completar el renacimiento.",
+        "rebirth_status": "🌀 Rebirths: {count}",
+
+        # --- SIMULACIÓN / PREVIEW ---
+        "simulation_title": "🔮 Simulación de Evento: {event}",
+        "simulation_footer": "Este es un mensaje de prueba solo visible para ti (o en este canal).",
+        "sim_welcome": "Bienvenida",
+        "sim_level": "Subida de Nivel",
+        "sim_birthday": "Cumpleaños",
+        "sim_invalid": "❌ Evento no válido. Usa: `welcome`, `level`, `birthday`.",
+        
+        # --- BACKUP ---
+        "backup_disabled": "⚠️ El envío de backups al dueño está desactivado en settings.",
+        
         # --- CUMPLEAÑOS ---
         "bday_title": "🎉 ¡Feliz Cumpleaños! 🎂",
         "bday_saved": "¡Fecha guardada! **{date}**",
@@ -102,7 +119,7 @@ LOCALES = {
         "lang_success": "Idioma cambiado a **Español** 🇪🇸"
     },
     
-    "en": {
+    "en": { # RECUERDA PONER LAS TRADUCCIONES DE CADA TEXTO NUEVO AQUÍ.
         # --- GLOBAL ERRORS ---
         "error_title": "Error",
         "error_generic": "An unexpected error occurred.",
