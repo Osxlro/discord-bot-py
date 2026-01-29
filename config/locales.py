@@ -97,6 +97,13 @@ LOCALES = {
         "goodbye_title": "Un usuario ha partido",
         "goodbye_desc": "{user} ha abandonado el servidor.",
         
+        # --- VOICE (NUEVO) ---
+        "voice_join": "✅ Conectado a **{channel}**. (Modo AFK)",
+        "voice_leave": "👋 Desconectado del canal de voz.",
+        "voice_error_user": "❌ Debes estar en un canal de voz primero.",
+        "voice_error_bot": "❌ Ya estoy conectado en otro canal.",
+        "voice_error_perms": "❌ No tengo permisos para entrar a ese canal.",
+        
         # --- AYUDA ---
         "help_title": "Panel de Ayuda",
         "help_desc": "Hola **{user}**. Usa el menú de abajo para explorar las funciones.",
@@ -108,6 +115,14 @@ LOCALES = {
         "help_placeholder": "Selecciona una categoría...",
         "help_home": "Inicio",
         "help_home_desc": "Volver al panel principal",
+        
+        # --- STATUS (NUEVO) ---
+        "status_add": "✅ Estado añadido: **{text}** ({type})",
+        "status_deleted": "🗑️ Estado eliminado correctamente.",
+        "status_empty": "⚠️ No hay estados configurados.",
+        "status_placeholder": "Selecciona un estado para eliminar...",
+        "status_list_title": "📜 Estados Activos",
+        "status_list_desc": "El bot rotará entre estos estados:",
         
         # --- CONFIGURACIÓN ---
         "setup_success": "Configuración Actualizada",
@@ -215,6 +230,13 @@ LOCALES = {
         "goodbye_title": "A user has left",
         "goodbye_desc": "{user} has left the server.",
         
+        # --- VOICE (NEW) ---
+        "voice_join": "✅ Connected to **{channel}**. (AFK Mode)",
+        "voice_leave": "👋 Disconnected from voice channel.",
+        "voice_error_user": "❌ You need to be in a voice channel first.",
+        "voice_error_bot": "❌ I am already connected somewhere else.",
+        "voice_error_perms": "❌ I don't have permissions to join that channel.",
+        
         # --- HELP ---
         "help_title": "Help Panel",
         "help_desc": "Hello **{user}**. Use the menu below to explore features.",
@@ -226,6 +248,14 @@ LOCALES = {
         "help_placeholder": "Select a category...",
         "help_home": "Home",
         "help_home_desc": "Return to main panel",
+        
+        # --- STATUS (NUEVO) ---
+        "status_add": "✅ Status added: **{text}** ({type})",
+        "status_deleted": "🗑️ Status deleted.",
+        "status_empty": "⚠️ No statuses found.",
+        "status_placeholder": "Select a status to delete...",
+        "status_list_title": "📜 Active Statuses",
+        "status_list_desc": "The bot will rotate through these:",
         
         # --- CONFIGURATION ---
         "setup_success": "Configuration Updated",

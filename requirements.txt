@@ -2,3 +2,4 @@
 python-dotenv
 aiosqlite
 deep-translator
+PyNacl
