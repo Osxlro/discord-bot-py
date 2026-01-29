@@ -124,6 +124,21 @@ LOCALES = {
         "status_list_title": "📜 Estados Activos",
         "status_list_desc": "El bot rotará entre estos estados:",
         
+        # --- AYUDA (DESCRIPCIONES DE CATEGORÍAS) ---
+        "help_title": "Panel de Ayuda",
+        "help_desc_general": "Comandos básicos y de utilidad.",
+        "help_desc_moderacion": "Herramientas para sancionar y limpiar.",
+        "help_desc_niveles": "Sistema de experiencia y ranking.",
+        "help_desc_diversion": "Minijuegos, azar y entretenimiento.",
+        "help_desc_configuracion": "Ajustes del servidor y setup.",
+        "help_desc_developer": "Administración interna del bot.",
+        "help_desc_cumpleaños": "Recordatorios de cumpleaños.",
+        "help_desc_roles": "Gestión de roles y botones.",
+        "help_desc_voice": "Canales de voz y modo AFK.",
+        "help_desc_perfil": "Gestión de tu tarjeta de usuario.",
+        "help_desc_backup": "Copias de seguridad.",
+        "help_desc_optimizationtasks": "Tareas de mantenimiento interno.",
+        
         # --- CONFIGURACIÓN ---
         "setup_success": "Configuración Actualizada",
         "setup_desc": "✅ {type} configurado exitosamente en: {value}",
@@ -256,6 +271,20 @@ LOCALES = {
         "status_placeholder": "Select a status to delete...",
         "status_list_title": "📜 Active Statuses",
         "status_list_desc": "The bot will rotate through these:",
+        
+        # --- HELP (CATEGORY DESCRIPTIONS) ---
+        "help_desc_general": "Basic utility commands.",
+        "help_desc_moderacion": "Moderation and cleanup tools.",
+        "help_desc_niveles": "Experience and ranking system.",
+        "help_desc_diversion": "Minigames and entertainment.",
+        "help_desc_configuracion": "Server settings and setup.",
+        "help_desc_developer": "Internal bot administration.",
+        "help_desc_cumpleaños": "Birthday reminders.",
+        "help_desc_roles": "Role management and buttons.",
+        "help_desc_voice": "Voice channels and AFK mode.",
+        "help_desc_perfil": "User profile management.",
+        "help_desc_backup": "System backups.",
+        "help_desc_optimizationtasks": "Internal maintenance tasks.",
         
         # --- CONFIGURATION ---
         "setup_success": "Configuration Updated",
