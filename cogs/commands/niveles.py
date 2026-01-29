@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands
-from config import locales
+from discord import app_commands
 import random
 from services import db_service, embed_service, lang_service
 
@@ -11,48 +11,24 @@ class Niveles(commands.Cog):
         self._cd = commands.CooldownMapping.from_cooldown(1, 60.0, commands.BucketType.user)
 
     def get_ratelimit(self, message: discord.Message):
-        """Retorna True si el usuario está en cooldown (ya ganó XP recientemente)."""
+        """Retorna True si el usuario está en cooldown."""
         bucket = self._cd.get_bucket(message)
         return bucket.update_rate_limit()
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
         if message.author.bot or not message.guild: return
-        # Si está en cooldown (escribiendo muy rápido), ignoramos para no saturar la DB
+        # Check cooldown
         if self.get_ratelimit(message): return
 
-        # Fórmula simple de XP (15 a 25 puntos por mensaje)
+        # XP Ganada (15-25)
         xp_ganada = random.randint(15, 25)
         
-        # 1. Consultamos XP actual (Lectura rápida gracias al Singleton)
-        row = await db_service.fetch_one(
-            "SELECT xp, level FROM guild_stats WHERE guild_id = ? AND user_id = ?", 
-            (message.guild.id, message.author.id)
-        )
+        # USAR LA FUNCIÓN DEL SERVICIO (La que tiene la lógica de reinicio)
+        nuevo_nivel, subio_de_nivel = await db_service.add_xp(message.guild.id, message.author.id, xp_ganada)
         
-        if not row:
-            # Primera vez que habla
-            await db_service.execute(
-                "INSERT INTO guild_stats (guild_id, user_id, xp, level) VALUES (?, ?, ?, ?)", 
-                (message.guild.id, message.author.id, xp_ganada, 1)
-            )
-        else:
-            xp_actual = row['xp']
-            nivel_actual = row['level']
-            nuevo_total_xp = xp_actual + xp_ganada
-            
-            # Fórmula RPG: Nivel * 100 (Nvl 1->100, Nvl 2->200...)
-            xp_necesaria = nivel_actual * 100 
-            
-            if nuevo_total_xp >= xp_necesaria:
-                nivel_actual += 1
-                await self._enviar_mensaje_nivel(message, nivel_actual)
-            
-            # Guardamos progreso
-            await db_service.execute(
-                "UPDATE guild_stats SET xp = ?, level = ? WHERE guild_id = ? AND user_id = ?", 
-                (nuevo_total_xp, nivel_actual, message.guild.id, message.author.id)
-            )
+        if subio_de_nivel:
+            await self._enviar_mensaje_nivel(message, nuevo_nivel)
 
     async def _enviar_mensaje_nivel(self, message: discord.Message, nuevo_nivel: int):
         """Maneja el envío del mensaje de felicitación."""
@@ -69,7 +45,7 @@ class Niveles(commands.Cog):
             elif guild_conf and guild_conf['server_level_msg']:
                 msg_raw = guild_conf['server_level_msg']
             else:
-                msg_raw = lang_service.get_text("level_up_default", lang)
+                msg_raw = lang_service.get_text("level_up", lang)
             
             msg_final = msg_raw.replace("{user}", message.author.mention)\
                                .replace("{level}", str(nuevo_nivel))\
@@ -83,9 +59,9 @@ class Niveles(commands.Cog):
     async def leaderboard(self, ctx: commands.Context):
         lang = await lang_service.get_guild_lang(ctx.guild.id)
         
-        # Obtenemos el TOP 10
+        # Obtenemos el TOP 10 ordenado por REBIRTHS > NIVEL > XP
         rows = await db_service.fetch_all(
-            "SELECT user_id, level, xp FROM guild_stats WHERE guild_id = ? ORDER BY xp DESC LIMIT 10", 
+            "SELECT user_id, level, xp, rebirths FROM guild_stats WHERE guild_id = ? ORDER BY rebirths DESC, level DESC, xp DESC LIMIT 10", 
             (ctx.guild.id,)
         )
         
@@ -94,39 +70,50 @@ class Niveles(commands.Cog):
             await ctx.reply(embed=embed_service.info("Vacío", msg))
             return
 
-        desc = ""
+        lines = [] # Usamos lista para unirla limpiamente al final
         for i, row in enumerate(rows, 1):
             user_id = row['user_id']
-            # Intentamos obtener el usuario del caché del bot, si no, mostramos ID
+            # Intentamos obtener el usuario del caché
             member = ctx.guild.get_member(user_id)
             name = member.display_name if member else f"Usuario {user_id}"
             
-            medalla = "🥇" if i==1 else "🥈" if i==2 else "🥉" if i==3 else f"{i}."
-            desc += f"**{medalla} {name}** • Nvl {row['level']} \n"
+            rebirth_text = f"Rbrth {row['rebirths']} | " if row['rebirths'] > 0 else ""
+            
+            if i <= 3:
+                # --- FORMATO GRANDE (TOP 3) ---
+                medalla = "🥇" if i==1 else "🥈" if i==2 else "🥉"
+                # Aquí SÍ dejamos el salto de línea para destacar
+                lines.append(f"**{medalla} {name}**\n╚ {rebirth_text}Nvl {row['level']} • {row['xp']} XP")
+            else:
+                # --- FORMATO COMPACTO (4+) ---
+                # Aquí QUITAMOS el salto de línea (\n╚) y lo hacemos seguido
+                lines.append(f"**{i}. {name}** • {rebirth_text}Nvl {row['level']} • {row['xp']} XP")
+
+        # Unimos todo con saltos de línea (evita el salto extra al final)
+        desc = "\n".join(lines)
 
         title = lang_service.get_text("leaderboard_title", lang, server=ctx.guild.name)
         await ctx.reply(embed=embed_service.info(title, desc, thumbnail=ctx.guild.icon.url if ctx.guild.icon else None))
 
-    class Niveles(commands.Cog):
-    def __init__(self, bot):
-        self.bot = bot
-
-    @app_commands.command(name="rebirth", description="Reinicia tu nivel (requiere Nivel 100) para ganar un Rebirth.")
-    async def rebirth(self, interaction: discord.Interaction):
-        await interaction.response.defer()
+    @commands.hybrid_command(name="rebirth", description="Reinicia tu nivel (requiere Nivel 100) para ganar un Rebirth.")
+    async def rebirth(self, ctx: commands.Context):
+        await ctx.defer()
         
-        success, result = await db_service.do_rebirth(interaction.guild.id, interaction.user.id)
+        success, result = await db_service.do_rebirth(ctx.guild.id, ctx.author.id)
+        lang = await lang_service.get_guild_lang(ctx.guild.id)
         
         if success:
-            msg = locales.ES['rebirth_success'].format(rebirths=result)
-            # Podríamos añadir un rol especial aquí si quisieras
+            msg = lang_service.get_text("rebirth_success", lang, rebirths=result)
+            await ctx.send(embed=embed_service.success("🌀 Rebirth Exitoso", msg))
         else:
-            if isinstance(result, int):
-                msg = locales.ES['rebirth_fail_level'].format(level=result)
+            if result == "no_data":
+                msg = lang_service.get_text("rank_no_data", lang)
+            elif isinstance(result, int):
+                msg = lang_service.get_text("rebirth_fail_level", lang, level=result)
             else:
-                msg = locales.ES['rebirth_fail_generic']
-        
-        await interaction.followup.send(msg)
+                msg = lang_service.get_text("rebirth_fail_generic", lang)
+            
+            await ctx.send(embed=embed_service.error("Rebirth Fallido", msg))
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(Niveles(bot))

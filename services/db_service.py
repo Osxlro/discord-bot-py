@@ -53,7 +53,7 @@ async def init_db():
     )
     """)
     
-    # 2. Tabla Estadísticas por Servidor
+    # 2. Tabla Estadísticas por Servidor (AHORA CON REBIRTHS)
     await db.execute("""
     CREATE TABLE IF NOT EXISTS guild_stats (
         guild_id INTEGER,
@@ -99,14 +99,14 @@ async def init_db():
         "ALTER TABLE guild_config ADD COLUMN chaos_probability REAL DEFAULT 0.01",
         "ALTER TABLE guild_config ADD COLUMN language TEXT DEFAULT 'es'",
         "ALTER TABLE guild_config ADD COLUMN server_kick_msg TEXT DEFAULT NULL",
-        "ALTER TABLE guild_config ADD COLUMN server_ban_msg TEXT DEFAULT NULL"
+        "ALTER TABLE guild_config ADD COLUMN server_ban_msg TEXT DEFAULT NULL",
+        "ALTER TABLE guild_stats ADD COLUMN rebirths INTEGER DEFAULT 0"
     ]
     
     for query in migraciones:
         try:
             await db.execute(query)
         except Exception:
-            # Ignoramos error si la columna ya existe
             pass
     
     # 5. Tabla de Estados del Bot
@@ -118,6 +118,7 @@ async def init_db():
     )
     """)
     
+    # 6. Tabla Chat Logs (Aunque desactivaste IA, la DB debe estar lista por si acaso)
     await db.execute("""
     CREATE TABLE IF NOT EXISTS chat_logs (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -129,7 +130,6 @@ async def init_db():
     """)
     
     await db.execute("CREATE INDEX IF NOT EXISTS idx_chat_guild ON chat_logs(guild_id)")
-    await db.execute("CREATE INDEX IF NOT EXISTS idx_chat_content ON chat_logs(content)")
     
     # Insertar estados por defecto si la tabla está vacía
     row = await fetch_one("SELECT count(*) as count FROM bot_statuses")
@@ -144,11 +144,10 @@ async def init_db():
     
     await db.commit()
 
-# --- FUNCIONES DE XP Y NIVEL ---
+# --- FUNCIONES DE XP Y NIVEL (LÓGICA CENTRALIZADA) ---
 
 def calculate_xp_required(level):
     """Fórmula exponencial: XP requerida para el SIGUIENTE nivel."""
-    # Ejemplo: Nivel 1->2 = 100xp. Nivel 10->11 = ~1500xp
     return int(100 * (level ** 1.2)) 
 
 async def add_xp(guild_id: int, user_id: int, amount: int):
@@ -181,7 +180,7 @@ async def add_xp(guild_id: int, user_id: int, amount: int):
     
     # 3. Comprobar Level Up (Bucle por si sube varios niveles de golpe)
     while current_xp >= xp_needed:
-        current_xp -= xp_needed # Restamos la XP usada (Aquí está el fix)
+        current_xp -= xp_needed # FIX CRÍTICO: Restamos la XP usada (Reiniciamos barra)
         current_level += 1
         leveled_up = True
         xp_needed = calculate_xp_required(current_level) # Recalcular para el siguiente
@@ -206,14 +205,14 @@ async def do_rebirth(guild_id: int, user_id: int):
     )
     
     if not row:
-        return False, "No tienes datos en este servidor."
+        return False, "no_data"
         
     if row['level'] < 100:
-        return False, row['level'] # Retornamos nivel actual para el mensaje de error
+        return False, row['level'] # Retornamos nivel actual para error
         
     new_rebirths = row['rebirths'] + 1
     
-    # Resetear Stats
+    # Resetear Stats: Nivel a 1, XP a 0, +1 Rebirth
     await execute("""
         UPDATE guild_stats 
         SET level = 1, xp = 0, rebirths = ? 

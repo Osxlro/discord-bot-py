@@ -4,13 +4,13 @@ LOCALES = {
     "es": {
         # --- ERRORES GLOBALES ---
         "error_title": "Error",
-        "error_generic": "Ocurrió un error inesperado.",
-        "error_no_perms": "No tienes permisos suficientes.",
-        "error_bot_no_perms": "No tengo permisos suficientes.",
-        "error_hierarchy": "No puedo realizar esta acción por jerarquía de roles.",
-        "error_self_action": "No puedes usar este comando sobre ti mismo.",
-        "error_missing_args": "Faltan argumentos.",
-        "error_cooldown": "Estás yendo muy rápido. Espera {seconds}s.",
+        "error_generic": "❌ Ocurrió un error inesperado.",
+        "error_no_perms": "❌ No tienes permisos suficientes.",
+        "error_bot_no_perms": "❌ No tengo permisos suficientes.",
+        "error_hierarchy": "❌ No puedo realizar esta acción por jerarquía de roles.",
+        "error_self_action": "❌ No puedes usar este comando sobre ti mismo.",
+        "error_missing_args": "❌ Faltan argumentos.",
+        "error_cooldown": "⏳ Estás yendo muy rápido. Espera {seconds}s.",
         
         # --- GENERAL ---
         "ping_msg": "🏓 Pong! Latencia: **{ms}ms**",
@@ -52,13 +52,13 @@ LOCALES = {
         "profile_desc_saved": "Tu descripción ha sido guardada.",
         "profile_msg_saved": "Tu mensaje ha sido configurado.",
         
-            # --- REBIRTH SYSTEM ---
+        # --- REBIRTH SYSTEM (NUEVO) ---
         "rebirth_success": "✨ **¡RENACIMIENTO COMPLETADO!** ✨\nHas sacrificado tu nivel 100+ para renacer. Ahora tienes **{rebirths}** Rebirth(s).\nTu nivel ha vuelto a 1.",
         "rebirth_fail_level": "❌ Aún no estás listo para renacer. Necesitas ser **Nivel 100** mínimo (Eres nivel {level}).",
         "rebirth_fail_generic": "❌ No se pudo completar el renacimiento.",
         "rebirth_status": "🌀 Rebirths: {count}",
 
-        # --- SIMULACIÓN / PREVIEW ---
+        # --- SIMULACIÓN / PREVIEW (NUEVO) ---
         "simulation_title": "🔮 Simulación de Evento: {event}",
         "simulation_footer": "Este es un mensaje de prueba solo visible para ti (o en este canal).",
         "sim_welcome": "Bienvenida",
@@ -66,7 +66,7 @@ LOCALES = {
         "sim_birthday": "Cumpleaños",
         "sim_invalid": "❌ Evento no válido. Usa: `welcome`, `level`, `birthday`.",
         
-        # --- BACKUP ---
+        # --- BACKUP (NUEVO) ---
         "backup_disabled": "⚠️ El envío de backups al dueño está desactivado en settings.",
         
         # --- CUMPLEAÑOS ---
@@ -119,7 +119,7 @@ LOCALES = {
         "lang_success": "Idioma cambiado a **Español** 🇪🇸"
     },
     
-    "en": { # RECUERDA PONER LAS TRADUCCIONES DE CADA TEXTO NUEVO AQUÍ.
+    "en": {
         # --- GLOBAL ERRORS ---
         "error_title": "Error",
         "error_generic": "An unexpected error occurred.",
@@ -169,6 +169,23 @@ LOCALES = {
         "profile_update_success": "Profile Updated",
         "profile_desc_saved": "Your description has been saved.",
         "profile_msg_saved": "Your message has been set.",
+        
+        # --- REBIRTH SYSTEM ---
+        "rebirth_success": "✨ **REBIRTH COMPLETED!** ✨\nYou sacrificed level 100+ to be reborn. You now have **{rebirths}** Rebirth(s).\nYour level is back to 1.",
+        "rebirth_fail_level": "❌ You are not ready yet. You need **Level 100** minimum (You are level {level}).",
+        "rebirth_fail_generic": "❌ Rebirth could not be completed.",
+        "rebirth_status": "🌀 Rebirths: {count}",
+
+        # --- SIMULATION ---
+        "simulation_title": "🔮 Event Simulation: {event}",
+        "simulation_footer": "This is a test message only visible to you.",
+        "sim_welcome": "Welcome",
+        "sim_level": "Level Up",
+        "sim_birthday": "Birthday",
+        "sim_invalid": "❌ Invalid event. Use: `welcome`, `level`, `birthday`.",
+        
+        # --- BACKUP ---
+        "backup_disabled": "⚠️ Backup sending to owner is disabled in settings.",
         
         # --- BIRTHDAY ---
         "bday_title": "🎉 Happy Birthday! 🎂",
