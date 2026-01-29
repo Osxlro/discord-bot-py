@@ -2,4 +2,3 @@
 python-dotenv
 aiosqlite
 deep-translator
-google-genai
