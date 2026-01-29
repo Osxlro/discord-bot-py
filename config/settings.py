@@ -33,7 +33,11 @@ COLORS = {
 # 5. Configuración de Backup
 SEND_BACKUP_TO_OWNER = True 
 
-# 6. Icono del Bot (Se actualiza al iniciar)
+# 6. Configuración de XP (NUEVO)
+VOICE_XP_AMOUNT = 15      # Cantidad de XP a dar
+VOICE_XP_INTERVAL = 300   # Tiempo en segundos (300s = 5 minutos)
+
+# 7. Icono del Bot (Se actualiza al iniciar)
 _BOT_ICON_URL = None
 
 def set_bot_icon(url: str):

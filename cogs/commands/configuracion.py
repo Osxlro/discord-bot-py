@@ -8,7 +8,7 @@ class Configuracion(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    # --- COMANDO SETUP (CENTRALIZADO) ---
+    # --- COMANDO SETUP (EPHEMERAL) ---
     @commands.hybrid_command(name="setup", description="Configura canales y opciones del servidor.")
     @app_commands.describe(tipo="Qué configurar", canal="Canal (si aplica)", valor="Valor extra (opcional)")
     @commands.has_permissions(administrator=True)
@@ -17,64 +17,68 @@ class Configuracion(commands.Cog):
                     canal: discord.TextChannel = None, 
                     valor: str = None):
         
+        # Deferimos como efímero para que nadie más vea que estás configurando
+        await ctx.defer(ephemeral=True)
+        
         updates = {}
         
-        # Mapeo de lógica
+        # Lógica de mapeo
         if tipo == "Bienvenida":
-            if not canal: return await ctx.send("❌ Menciona un canal.")
+            if not canal: return await ctx.send("❌ Menciona un canal.", ephemeral=True)
             updates["welcome_channel_id"] = canal.id
             val_display = canal.mention
             
         elif tipo == "Confesiones":
-            if not canal: return await ctx.send("❌ Menciona un canal.")
+            if not canal: return await ctx.send("❌ Menciona un canal.", ephemeral=True)
             updates["confessions_channel_id"] = canal.id
             val_display = canal.mention
             
         elif tipo == "Logs":
-            if not canal: return await ctx.send("❌ Menciona un canal.")
+            if not canal: return await ctx.send("❌ Menciona un canal.", ephemeral=True)
             updates["logs_channel_id"] = canal.id
             val_display = canal.mention
 
         elif tipo == "Cumpleaños":
-            if not canal: return await ctx.send("❌ Menciona un canal.")
+            if not canal: return await ctx.send("❌ Menciona un canal.", ephemeral=True)
             updates["birthday_channel_id"] = canal.id
             val_display = canal.mention
 
         elif tipo == "Idioma":
             if not valor or valor.lower() not in ["es", "en"]:
-                return await ctx.send("❌ Idiomas válidos: `es`, `en`.")
+                return await ctx.send("❌ Idiomas válidos: `es`, `en`.", ephemeral=True)
             updates["language"] = valor.lower()
             val_display = valor.upper()
 
-        # --- AQUÍ USAMOS LA FUNCIÓN OPTIMIZADA ---
+        # Guardar en DB (Cacheado)
         await db_service.update_guild_config(ctx.guild.id, updates)
         
-        # Confirmación
+        # Confirmación invisible para otros
         lang = await lang_service.get_guild_lang(ctx.guild.id)
         msg = lang_service.get_text("setup_desc", lang, type=tipo, value=val_display)
-        await ctx.send(embed=embed_service.success(lang_service.get_text("setup_success", lang), msg))
+        await ctx.send(embed=embed_service.success(lang_service.get_text("setup_success", lang), msg), ephemeral=True)
 
-    # --- SIMULACIÓN (MANTENIDA) ---
-    @commands.hybrid_command(name="simular", description="Prueba mensajes de eventos.")
+    # --- SIMULACIÓN (EPHEMERAL) ---
+    @commands.hybrid_command(name="simular", description="Prueba mensajes de eventos (Solo tú lo verás).")
     @commands.has_permissions(administrator=True)
     async def simular(self, ctx: commands.Context, evento: Literal["Bienvenida", "Nivel", "Cumpleaños"]):
-        # Ahora usamos el caché para leer la config
+        # Simulaciones siempre privadas para no molestar
+        await ctx.defer(ephemeral=True)
+        
         config = await db_service.get_guild_config(ctx.guild.id)
-        lang = await lang_service.get_guild_lang(ctx.guild.id)
         
         if evento == "Bienvenida":
             msg = f"👋 **Simulación:** Bienvenido {ctx.author.mention}!"
-            await ctx.send(msg)
+            await ctx.send(msg, ephemeral=True)
             
         elif evento == "Nivel":
             txt = config.get('server_level_msg') or "¡{user} subió a nivel {level}!"
             final = txt.replace("{user}", ctx.author.mention).replace("{level}", "50")
-            await ctx.send(f"🆙 **Simulación:** {final}")
+            await ctx.send(f"🆙 **Simulación:** {final}", ephemeral=True)
             
         elif evento == "Cumpleaños":
             txt = config.get('server_birthday_msg') or "Feliz cumple {user}!"
             final = txt.replace("{user}", ctx.author.mention)
-            await ctx.send(f"🎂 **Simulación:** {final}")
+            await ctx.send(f"🎂 **Simulación:** {final}", ephemeral=True)
 
 async def setup(bot):
     await bot.add_cog(Configuracion(bot))
