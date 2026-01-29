@@ -10,9 +10,9 @@ DB_NAME = "database.sqlite3"
 DB_PATH = os.path.join(DATA_DIR, DB_NAME)
 _connection = None
 
-# --- CACHÉ EN MEMORIA (Optimización I/O) ---
-# Estructura: {(guild_id, user_id): {'xp': 0, 'level': 1, 'rebirths': 0, 'dirty': False}}
-_xp_cache = {}
+# --- CACHÉS EN MEMORIA ---
+_xp_cache = {}      # Para niveles (Write-behind)
+_config_cache = {}  # Para configuración (Read-through)
 
 async def get_db() -> aiosqlite.Connection:
     global _connection
@@ -23,8 +23,7 @@ async def get_db() -> aiosqlite.Connection:
 
 async def close_db():
     global _connection
-    # Antes de cerrar, aseguramos guardar todo lo pendiente
-    await flush_xp_cache()
+    await flush_xp_cache() # Guardar XP pendiente
     if _connection:
         await _connection.close()
         _connection = None
@@ -32,7 +31,7 @@ async def close_db():
 async def init_db():
     db = await get_db()
     
-    # ... (Tablas users, guild_stats, guild_config, bot_statuses, chat_logs... MANTENER IGUAL) ...
+    # Tablas Base (Usuarios, Stats, Config, Status)
     await db.execute("""
     CREATE TABLE IF NOT EXISTS users (
         user_id INTEGER PRIMARY KEY,
@@ -58,7 +57,6 @@ async def init_db():
     )
     """)
     
-    # ... (Resto de tablas omitidas para brevedad, no las borres) ...
     await db.execute("""
     CREATE TABLE IF NOT EXISTS guild_config (
         guild_id INTEGER PRIMARY KEY,
@@ -85,49 +83,95 @@ async def init_db():
         text TEXT
     )
     """)
-
-    # --- [OPTIMIZACIÓN 1.A] ÍNDICES SQL ---
-    # Esto hace que el /leaderboard sea instantáneo incluso con 10,000 usuarios
+    
+    # Índices y Migraciones
     await db.execute("CREATE INDEX IF NOT EXISTS idx_ranking ON guild_stats(guild_id, rebirths DESC, level DESC, xp DESC)")
     
-    # Migraciones
-    try:
-        await db.execute("ALTER TABLE guild_stats ADD COLUMN rebirths INTEGER DEFAULT 0")
-    except: pass
-        
+    migraciones = [
+        "ALTER TABLE guild_stats ADD COLUMN rebirths INTEGER DEFAULT 0",
+        "ALTER TABLE guild_config ADD COLUMN language TEXT DEFAULT 'es'"
+    ]
+    for q in migraciones:
+        try: await db.execute(q)
+        except: pass
+
     await db.commit()
 
-# --- LÓGICA DE CACHÉ Y XP ---
+# --- LÓGICA DE CACHÉ DE CONFIGURACIÓN (NUEVO) ---
+
+async def get_guild_config(guild_id: int):
+    """
+    Obtiene la configuración desde el CACHÉ (RAM).
+    Si no existe, la busca en DB y la guarda en caché.
+    """
+    if guild_id in _config_cache:
+        return _config_cache[guild_id]
+
+    # Si no está en RAM, buscar en DB
+    row = await fetch_one("SELECT * FROM guild_config WHERE guild_id = ?", (guild_id,))
+    
+    if row:
+        config = dict(row) # Convertir a diccionario editable
+    else:
+        # Valores por defecto si no existe configuración
+        config = {
+            "guild_id": guild_id,
+            "language": "es",
+            "chaos_enabled": 1,
+            "chaos_probability": 0.01,
+            # Añadir otros defaults según sea necesario
+        }
+    
+    _config_cache[guild_id] = config
+    return config
+
+async def update_guild_config(guild_id: int, updates: dict):
+    """
+    Actualiza la configuración en DB y refresca el CACHÉ.
+    Uso: await update_guild_config(123, {'language': 'en', 'welcome_channel_id': 456})
+    """
+    # 1. Actualizar DB
+    # Verificar si existe la fila
+    exists = await fetch_one("SELECT 1 FROM guild_config WHERE guild_id = ?", (guild_id,))
+    
+    if exists:
+        set_clause = ", ".join([f"{k} = ?" for k in updates.keys()])
+        values = list(updates.values()) + [guild_id]
+        await execute(f"UPDATE guild_config SET {set_clause} WHERE guild_id = ?", values)
+    else:
+        # Crear fila nueva
+        cols = ", ".join(["guild_id"] + list(updates.keys()))
+        placeholders = ", ".join(["?"] * (len(updates) + 1))
+        values = [guild_id] + list(updates.values())
+        await execute(f"INSERT INTO guild_config ({cols}) VALUES ({placeholders})", values)
+
+    # 2. Actualizar Caché
+    if guild_id not in _config_cache:
+        # Si no estaba en caché, forzar carga completa
+        await get_guild_config(guild_id)
+    else:
+        # Si estaba, actualizar solo los campos cambiados
+        _config_cache[guild_id].update(updates)
+
+# --- LÓGICA DE XP Y CACHÉ (MANTENIDA) ---
 
 def calculate_xp_required(level):
     return int(100 * (level ** 1.2))
 
 async def add_xp(guild_id: int, user_id: int, amount: int):
-    """
-    Añade XP en MEMORIA (Caché).
-    Solo se escribe en la DB cuando 'flush_xp_cache' se ejecuta.
-    """
+    # (Misma lógica de caché de XP que ya teníamos optimizada)
     key = (guild_id, user_id)
-    
-    # 1. Cargar en caché si no existe
     if key not in _xp_cache:
         row = await fetch_one("SELECT xp, level, rebirths FROM guild_stats WHERE guild_id = ? AND user_id = ?", (guild_id, user_id))
         if row:
-            _xp_cache[key] = {
-                'xp': row['xp'], 
-                'level': row['level'], 
-                'rebirths': row['rebirths'], 
-                'dirty': False # 'dirty' significa que tiene cambios sin guardar
-            }
+            _xp_cache[key] = {'xp': row['xp'], 'level': row['level'], 'rebirths': row['rebirths'], 'dirty': False}
         else:
             _xp_cache[key] = {'xp': 0, 'level': 1, 'rebirths': 0, 'dirty': False}
     
-    # 2. Modificar en memoria
     data = _xp_cache[key]
     data['xp'] += amount
     data['dirty'] = True 
     
-    # 3. Calcular Nivel (Igual que antes pero en RAM)
     required = calculate_xp_required(data['level'])
     leveled_up = False
     
@@ -137,28 +181,17 @@ async def add_xp(guild_id: int, user_id: int, amount: int):
         leveled_up = True
         required = calculate_xp_required(data['level'])
     
-    # Nota: No hacemos 'INSERT/UPDATE' aquí. Se hará en segundo plano.
     return data['level'], leveled_up
 
 async def flush_xp_cache():
-    """Guarda todos los usuarios con cambios ('dirty') en la base de datos."""
     if not _xp_cache: return
-    
     updates = []
-    clean_keys = []
-    
-    # Identificar qué guardar
     for key, data in _xp_cache.items():
         if data['dirty']:
-            # (xp, level, rebirths, guild_id, user_id)
             updates.append((data['xp'], data['level'], data['rebirths'], key[0], key[1]))
-            data['dirty'] = False # Marcamos como guardado
-        else:
-            # Si no ha cambiado y lleva tiempo (podríamos limpiar RAM aquí si quisiéramos)
-            pass
-
+            data['dirty'] = False
+    
     if updates:
-        # Guardado masivo (Mucho más rápido que uno por uno)
         db = await get_db()
         await db.executemany("""
             INSERT INTO guild_stats (xp, level, rebirths, guild_id, user_id) 
@@ -167,29 +200,20 @@ async def flush_xp_cache():
             xp = excluded.xp, level = excluded.level, rebirths = excluded.rebirths
         """, updates)
         await db.commit()
-       # print(f"💾 [Optimización] Se guardaron {len(updates)} perfiles de XP.")
 
 async def do_rebirth(guild_id: int, user_id: int):
-    # Primero forzamos guardar caché para asegurar que leemos datos reales
     await flush_xp_cache()
-    
     row = await fetch_one("SELECT level, rebirths FROM guild_stats WHERE guild_id = ? AND user_id = ?", (guild_id, user_id))
     
     if not row: return False, "no_data"
     if row['level'] < 100: return False, row['level']
     
     new_reb = row['rebirths'] + 1
-    
-    # Actualizamos DB
     await execute("UPDATE guild_stats SET level = 1, xp = 0, rebirths = ? WHERE guild_id = ? AND user_id = ?", (new_reb, guild_id, user_id))
     
-    # Actualizamos Caché si existe
     key = (guild_id, user_id)
     if key in _xp_cache:
-        _xp_cache[key]['level'] = 1
-        _xp_cache[key]['xp'] = 0
-        _xp_cache[key]['rebirths'] = new_reb
-        _xp_cache[key]['dirty'] = False
+        _xp_cache[key].update({'level': 1, 'xp': 0, 'rebirths': new_reb, 'dirty': False})
         
     return True, new_reb
 
