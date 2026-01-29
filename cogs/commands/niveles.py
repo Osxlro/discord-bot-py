@@ -1,5 +1,6 @@
 import discord
 from discord.ext import commands
+from config import locales
 import random
 from services import db_service, embed_service, lang_service
 
@@ -105,6 +106,27 @@ class Niveles(commands.Cog):
 
         title = lang_service.get_text("leaderboard_title", lang, server=ctx.guild.name)
         await ctx.reply(embed=embed_service.info(title, desc, thumbnail=ctx.guild.icon.url if ctx.guild.icon else None))
+
+    class Niveles(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+
+    @app_commands.command(name="rebirth", description="Reinicia tu nivel (requiere Nivel 100) para ganar un Rebirth.")
+    async def rebirth(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+        
+        success, result = await db_service.do_rebirth(interaction.guild.id, interaction.user.id)
+        
+        if success:
+            msg = locales.ES['rebirth_success'].format(rebirths=result)
+            # Podríamos añadir un rol especial aquí si quisieras
+        else:
+            if isinstance(result, int):
+                msg = locales.ES['rebirth_fail_level'].format(level=result)
+            else:
+                msg = locales.ES['rebirth_fail_generic']
+        
+        await interaction.followup.send(msg)
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(Niveles(bot))
