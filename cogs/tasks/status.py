@@ -1,6 +1,5 @@
 import discord
 from discord.ext import commands, tasks
-from itertools import cycle
 from services import db_service
 
 class Status(commands.Cog):
