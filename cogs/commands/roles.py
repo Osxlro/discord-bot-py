@@ -21,22 +21,36 @@ class Roles(commands.Cog):
                 
                 if not role:
                     msg = lang_service.get_text("role_not_found", lang)
-                    await interaction.response.send_message(msg, ephemeral=True)
+                    # CORRECCIÓN
+                    await interaction.response.send_message(
+                        embed=embed_service.error("Error", msg, lite=True), ephemeral=True
+                    )
                     return
 
                 if role in interaction.user.roles:
                     await interaction.user.remove_roles(role)
                     msg = lang_service.get_text("role_removed", lang, role=role.name)
-                    await interaction.response.send_message(msg, ephemeral=True)
+                    # CORRECCIÓN
+                    await interaction.response.send_message(
+                        embed=embed_service.warning("Rol", msg, lite=True), ephemeral=True
+                    )
                 else:
                     await interaction.user.add_roles(role)
                     msg = lang_service.get_text("role_added", lang, role=role.name)
-                    await interaction.response.send_message(msg, ephemeral=True)
+                    # CORRECCIÓN
+                    await interaction.response.send_message(
+                        embed=embed_service.success("Rol", msg, lite=True), ephemeral=True
+                    )
             
             except discord.Forbidden:
-                await interaction.response.send_message(lang_service.get_text("error_bot_no_perms", lang), ephemeral=True)
+                msg = lang_service.get_text("error_bot_no_perms", lang)
+                await interaction.response.send_message(
+                    embed=embed_service.error("Permisos", msg, lite=True), ephemeral=True
+                )
             except Exception as e:
-                await interaction.response.send_message(f"Error: {e}", ephemeral=True)
+                await interaction.response.send_message(
+                    embed=embed_service.error("Error", str(e), lite=True), ephemeral=True
+                )
 
     @commands.hybrid_command(name="botonrol", description="Crea un botón de auto-rol")
     @app_commands.describe(rol="Rol a entregar", titulo="Título Embed", descripcion="Desc Embed")
@@ -45,7 +59,7 @@ class Roles(commands.Cog):
         lang = await lang_service.get_guild_lang(ctx.guild.id)
         
         if rol.position >= ctx.guild.me.top_role.position:
-            await ctx.reply(embed=embed_service.error("Error", lang_service.get_text("error_hierarchy", lang)), ephemeral=True)
+            await ctx.reply(embed=embed_service.error("Error", lang_service.get_text("error_hierarchy", lang), lite=True), ephemeral=True)
             return
 
         embed = embed_service.info(titulo, descripcion, footer=f"ID: {rol.id}")
@@ -56,7 +70,8 @@ class Roles(commands.Cog):
         view.add_item(button)
 
         await ctx.channel.send(embed=embed, view=view)
-        await ctx.reply(lang_service.get_text("role_btn_success", lang), ephemeral=True)
+        # CORRECCIÓN FINAL
+        await ctx.reply(embed=embed_service.success("Listo", lang_service.get_text("role_btn_success", lang), lite=True), ephemeral=True)
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(Roles(bot))
