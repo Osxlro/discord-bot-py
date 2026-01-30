@@ -28,7 +28,6 @@ class Voice(commands.Cog):
             if ctx.voice_client:
                 await ctx.voice_client.move_to(channel)
             else:
-                # self_deaf=True AHORRA MUCHA RAM/CPU (No procesa audio)
                 await channel.connect(self_deaf=True, self_mute=True)
             
             msg = lang_service.get_text("voice_join", lang, channel=channel.name)

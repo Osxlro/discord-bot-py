@@ -16,7 +16,6 @@ class StatusSelect(discord.ui.Select):
     async def callback(self, interaction: discord.Interaction):
         status_id = int(self.values[0])
         await db_service.execute("DELETE FROM bot_statuses WHERE id = ?", (status_id,))
-        # Al editar, mantenemos la efimeridad del mensaje original
         await interaction.response.edit_message(
             embed=embed_service.success("Status", "🗑️ Estado eliminado de la lista."), 
             view=None
@@ -59,8 +58,7 @@ class Developer(commands.Cog):
         await db_service.execute("INSERT INTO bot_statuses (type, text) VALUES (?, ?)", (tipo, texto))
         lang = await lang_service.get_guild_lang(ctx.guild.id)
         msg = lang_service.get_text("status_add", lang, text=texto, type=tipo)
-        
-        # Confirmación privada (EPHEMERAL)
+
         await ctx.send(embed=embed_service.success("Status Guardado", msg), ephemeral=True)
 
     @status_group.command(name="eliminar", description="Elimina un estado seleccionándolo de la lista.")
@@ -80,7 +78,6 @@ class Developer(commands.Cog):
         view = StatusDeleteView(options)
         ph = lang_service.get_text("status_placeholder", lang)
         
-        # Menú privado (EPHEMERAL)
         await ctx.send(f"👇 **{ph}**", view=view, ephemeral=True)
 
     @commands.command(name="sync", hidden=True)

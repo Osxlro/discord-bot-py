@@ -1,6 +1,5 @@
 import discord
 from discord.ext import commands, tasks
-from discord import app_commands
 from typing import Literal
 from services import db_service, embed_service, lang_service
 import datetime

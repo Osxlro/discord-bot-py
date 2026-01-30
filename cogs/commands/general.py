@@ -62,7 +62,6 @@ class General(commands.Cog):
             txt = lang_service.get_text("trans_result", lang, orig=message.content[:50]+"...", trans=res['traducido'])
             await interaction.followup.send(embed=embed_service.success("Traducir", txt), ephemeral=True)
         except Exception as e:
-            # CORRECCIÓN: Usar embed de error en lugar de texto plano
             await interaction.followup.send(embed=embed_service.error("Error", str(e), lite=True), ephemeral=True)
 
 async def setup(bot: commands.Bot):

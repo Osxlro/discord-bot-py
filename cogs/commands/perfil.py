@@ -14,7 +14,7 @@ class Perfil(commands.Cog):
         target = usuario or ctx.author
         lang = await lang_service.get_guild_lang(ctx.guild.id)
         
-        # 1. Recuperamos datos (incluyendo rebirths)
+        # 1. Recuperamos datos
         user_data = await db_service.fetch_one("SELECT * FROM users WHERE user_id = ?", (target.id,))
         guild_data = await db_service.fetch_one("SELECT xp, level, rebirths FROM guild_stats WHERE guild_id = ? AND user_id = ?", (ctx.guild.id, target.id))
 

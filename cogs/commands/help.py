@@ -1,6 +1,5 @@
 import discord
 from discord.ext import commands
-from discord import app_commands
 from services import lang_service, embed_service
 
 class HelpSelect(discord.ui.Select):

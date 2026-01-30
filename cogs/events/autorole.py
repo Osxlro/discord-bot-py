@@ -8,7 +8,7 @@ class AutoRole(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
-        if member.bot: return # Ignoramos bots si quieres
+        if member.bot: return # Ignoramos bots
 
         # 1. Buscar configuración
         row = await db_service.fetch_one("SELECT autorole_id FROM guild_config WHERE guild_id = ?", (member.guild.id,))

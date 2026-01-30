@@ -54,7 +54,6 @@ class Diversion(commands.Cog):
         row = await db_service.fetch_one("SELECT confessions_channel_id FROM guild_config WHERE guild_id = ?", (interaction.guild_id,))
 
         if not row or not row['confessions_channel_id']:
-            # CORRECCIÓN: Embed de error estandarizado
             await interaction.response.send_message(
                 embed=embed_service.error("Configuración", "❌ Canal de confesiones no establecido.", lite=True), 
                 ephemeral=True
@@ -64,10 +63,9 @@ class Diversion(commands.Cog):
         canal = self.bot.get_channel(row['confessions_channel_id'])
         if not canal: return
 
-        # El mensaje público se queda con diseño custom (estilo carta)
         title = lang_service.get_text("confess_title", lang)
         embed = discord.Embed(title=title, description=f"\"{secreto}\"", color=discord.Color.random())
-        embed.set_footer(text="Anon")
+        embed.set_footer(text="Anonimo")
         await canal.send(embed=embed)
 
         msg = lang_service.get_text("confess_sent", lang, channel=canal.mention)

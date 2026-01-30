@@ -21,7 +21,6 @@ class Roles(commands.Cog):
                 
                 if not role:
                     msg = lang_service.get_text("role_not_found", lang)
-                    # CORRECCIÓN
                     await interaction.response.send_message(
                         embed=embed_service.error("Error", msg, lite=True), ephemeral=True
                     )
@@ -30,14 +29,12 @@ class Roles(commands.Cog):
                 if role in interaction.user.roles:
                     await interaction.user.remove_roles(role)
                     msg = lang_service.get_text("role_removed", lang, role=role.name)
-                    # CORRECCIÓN
                     await interaction.response.send_message(
                         embed=embed_service.warning("Rol", msg, lite=True), ephemeral=True
                     )
                 else:
                     await interaction.user.add_roles(role)
                     msg = lang_service.get_text("role_added", lang, role=role.name)
-                    # CORRECCIÓN
                     await interaction.response.send_message(
                         embed=embed_service.success("Rol", msg, lite=True), ephemeral=True
                     )

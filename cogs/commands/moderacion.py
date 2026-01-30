@@ -45,13 +45,11 @@ class Moderacion(commands.Cog):
     @app_commands.checks.has_permissions(moderate_members=True)
     async def timeout(self, ctx: commands.Context, usuario: discord.Member, tiempo: str, razon: str = "Sin motivo"):
         if usuario.top_role >= ctx.author.top_role:
-            # CORRECCIÓN
             await ctx.reply(embed=embed_service.error("Jerarquía", "❌ No puedes aislar a alguien con igual o mayor rango.", lite=True), ephemeral=True)
             return
 
         seconds = self._parse_time(tiempo)
         if seconds == 0:
-            # CORRECCIÓN
             await ctx.reply(embed=embed_service.error("Formato", "❌ Tiempo inválido. Usa: `10m`, `1h`, `1d`.", lite=True), ephemeral=True)
             return
             
@@ -69,7 +67,6 @@ class Moderacion(commands.Cog):
             await usuario.timeout(None, reason="Manual")
             await ctx.reply(embed=embed_service.success("Libre", f"🔊 **{usuario.name}** ya puede hablar.", lite=True))
         except Exception as e:
-            # CORRECCIÓN
             await ctx.reply(embed=embed_service.error("Error", str(e), lite=True), ephemeral=True)
 
     @commands.hybrid_command(name="kick", description="Expulsa a un miembro.")
@@ -79,7 +76,6 @@ class Moderacion(commands.Cog):
         lang = await lang_service.get_guild_lang(ctx.guild.id)
         
         if usuario.id == ctx.author.id:
-            # CORRECCIÓN
             await ctx.reply(embed=embed_service.warning("!", lang_service.get_text("error_self_action", lang), lite=True), ephemeral=True)
             return
 
@@ -98,7 +94,6 @@ class Moderacion(commands.Cog):
             
             await ctx.reply(embed=embed_service.success(title, desc))
         except discord.Forbidden:
-            # CORRECCIÓN
             await ctx.reply(embed=embed_service.error("Permisos", lang_service.get_text("error_hierarchy", lang), lite=True), ephemeral=True)
             
     @commands.hybrid_command(name="ban", description="Banea a un miembro.")
@@ -107,7 +102,6 @@ class Moderacion(commands.Cog):
         lang = await lang_service.get_guild_lang(ctx.guild.id)
 
         if usuario.id == ctx.author.id:
-            # CORRECCIÓN
             await ctx.reply(embed=embed_service.warning("!", lang_service.get_text("error_self_action", lang), lite=True), ephemeral=True)
             return
 
@@ -126,7 +120,6 @@ class Moderacion(commands.Cog):
 
             await ctx.reply(embed=embed_service.success(title, desc))
         except discord.Forbidden:
-            # CORRECCIÓN
             await ctx.reply(embed=embed_service.error("Permisos", lang_service.get_text("error_hierarchy", lang), lite=True), ephemeral=True)
 
 async def setup(bot: commands.Bot):
