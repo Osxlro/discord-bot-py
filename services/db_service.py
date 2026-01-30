@@ -50,8 +50,6 @@ async def init_db():
     CREATE TABLE IF NOT EXISTS guild_stats (
         guild_id INTEGER,
         user_id INTEGER,
-        xp INTEGER DEFAULT 0,
-        level INTEGER DEFAULT 1,
         rebirths INTEGER DEFAULT 0,
         PRIMARY KEY (guild_id, user_id)
     )
