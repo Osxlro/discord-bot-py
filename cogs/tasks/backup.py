@@ -19,11 +19,9 @@ class Backup(commands.Cog):
         async for message in channel.history(limit=50):
             es_mio = message.author.id == self.bot.user.id
             tiene_archivo = len(message.attachments) > 0
-            # Detectamos si es un mensaje de backup
             if es_mio and tiene_archivo and "Backup" in message.content:
                 backups_encontrados.append(message)
 
-        # Borrar viejos
         if len(backups_encontrados) > 3:
             for msg in backups_encontrados[3:]:
                 try:
@@ -31,7 +29,7 @@ class Backup(commands.Cog):
                     await asyncio.sleep(1)
                 except: pass
 
-    @tasks.loop(hours=1) # Revisamos cada hora, no cada 24h (para ser más precisos)
+    @tasks.loop(hours=12)
     async def backup_db(self):
         await self.bot.wait_until_ready()
         db_path = os.path.join(settings.BASE_DIR, "data", "database.sqlite3")
