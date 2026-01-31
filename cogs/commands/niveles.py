@@ -1,13 +1,17 @@
 import discord
 from discord.ext import commands
-from discord import app_commands
 import random
 from services import db_service, embed_service, lang_service, pagination_service
+from config import settings
 
 class Niveles(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self._cd = commands.CooldownMapping.from_cooldown(1, 60.0, commands.BucketType.user)
+        self._cd = commands.CooldownMapping.from_cooldown(
+            1, 
+            settings.XP_CONFIG["COOLDOWN"], 
+            commands.BucketType.user
+        )
 
     def get_ratelimit(self, message: discord.Message):
         bucket = self._cd.get_bucket(message)
@@ -18,7 +22,11 @@ class Niveles(commands.Cog):
         if message.author.bot or not message.guild: return
         if self.get_ratelimit(message): return
 
-        xp_ganada = random.randint(15, 25)
+        xp_ganada = random.randint(
+            settings.XP_CONFIG["MIN_XP"], 
+            settings.XP_CONFIG["MAX_XP"]
+        )
+        
         nuevo_nivel, subio_de_nivel = await db_service.add_xp(message.guild.id, message.author.id, xp_ganada)
         
         if subio_de_nivel:
@@ -50,7 +58,6 @@ class Niveles(commands.Cog):
     async def leaderboard(self, ctx: commands.Context):
         lang = await lang_service.get_guild_lang(ctx.guild.id)
         
-        # 1. Obtener más datos (LIMIT 50 en lugar de 10)
         rows = await db_service.fetch_all(
             "SELECT user_id, level, xp, rebirths FROM guild_stats WHERE guild_id = ? ORDER BY rebirths DESC, level DESC, xp DESC LIMIT 50", 
             (ctx.guild.id,)
@@ -61,7 +68,6 @@ class Niveles(commands.Cog):
             await ctx.reply(embed=embed_service.info("Vacío", msg))
             return
 
-        # 2. Dividir en páginas (Chunks de 10)
         chunk_size = 10
         chunks = [rows[i:i + chunk_size] for i in range(0, len(rows), chunk_size)]
         pages = []
@@ -70,7 +76,6 @@ class Niveles(commands.Cog):
 
         for i, chunk in enumerate(chunks):
             lines = []
-            # 'start_rank' calcula en qué número empieza esta página (1, 11, 21...)
             start_rank = (i * chunk_size) + 1
             
             for j, row in enumerate(chunk, start=start_rank):
@@ -86,12 +91,10 @@ class Niveles(commands.Cog):
                 else:
                     lines.append(f"**{j}. {name}** • {rebirth_text}Nvl {row['level']} • {row['xp']} XP")
             
-            # Crear embed para esta página
             desc = "\n".join(lines)
             embed = embed_service.info(title, desc, thumbnail=ctx.guild.icon.url if ctx.guild.icon else None)
             pages.append(embed)
 
-        # 3. Enviar con o sin paginación
         if len(pages) == 1:
             await ctx.reply(embed=pages[0])
         else:
@@ -114,6 +117,7 @@ class Niveles(commands.Cog):
                 msg = lang_service.get_text("rebirth_fail_level", lang, level=result)
             else:
                 msg = lang_service.get_text("rebirth_fail_generic", lang)
+            
             await ctx.send(embed=embed_service.error("Rebirth Fallido", msg))
 
 async def setup(bot: commands.Bot):
