@@ -95,7 +95,7 @@ class Minecraft(commands.Cog):
         # Fila 3: Ubicación
         embed.add_field(name="🌎 Mundo", value=stats.get('mundo', '?'), inline=False)
         
-        await ctx.send(embed=embed)
+        await ctx.send(embed=embed, ephemeral=True)
 
     @commands.hybrid_command(name="mc", description="Envía mensaje al juego")
     async def mc(self, ctx: commands.Context, mensaje: str):
