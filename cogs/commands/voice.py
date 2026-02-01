@@ -1,6 +1,9 @@
 import discord
+import logging
 from discord.ext import commands
 from services import embed_service, lang_service
+
+logger = logging.getLogger(__name__)
 
 class Voice(commands.Cog):
     def __init__(self, bot):
@@ -34,8 +37,10 @@ class Voice(commands.Cog):
             
             msg = lang_service.get_text("voice_join", lang, channel=channel.name)
             await ctx.send(embed=embed_service.success("Voice", msg, lite=True))
+            logger.info(f"Voice Join: {ctx.guild.name} -> {channel.name}")
             
         except Exception as e:
+            logger.error(f"Error Voice Join en {ctx.guild.name}: {e}")
             await ctx.send(embed=embed_service.error("Error", f"{e}"))
 
     @commands.hybrid_command(name="leave", description="Desconecta al bot del canal de voz.")
@@ -46,6 +51,7 @@ class Voice(commands.Cog):
             await ctx.voice_client.disconnect()
             msg = lang_service.get_text("voice_leave", lang)
             await ctx.send(embed=embed_service.success("Voice", msg, lite=True))
+            logger.info(f"Voice Leave: {ctx.guild.name}")
         else:
             # Si no está conectado, reacciona con un emoji simple
             try: await ctx.message.add_reaction("❓")

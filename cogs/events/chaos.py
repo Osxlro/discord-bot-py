@@ -1,8 +1,11 @@
 import discord
 import datetime
+import logging
 from discord.ext import commands
 from services import random_service, embed_service, db_service, lang_service
 from config import settings
+
+logger = logging.getLogger(__name__)
 
 class Chaos(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -57,11 +60,12 @@ class Chaos(commands.Cog):
                 title = lang_service.get_text("chaos_title", lang)
                 txt = lang_service.get_text("chaos_bang", lang, user=message.author.name, prob=int(config['prob']*100))
                 await message.channel.send(embed=embed_service.info(title, txt))
+                logger.info(f"Chaos activado para {message.author} en {message.guild.name}")
             except discord.Forbidden:
                 # Si el bot no tiene permisos, simplemente lo ignora para no spamear errores
                 pass
             except Exception as e:
-                print(f"Error en Chaos: {e}")
+                logger.error(f"Error en Chaos: {e}")
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(Chaos(bot))

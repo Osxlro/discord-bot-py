@@ -1,4 +1,7 @@
 import discord
+import logging
+
+logger = logging.getLogger(__name__)
 
 class Paginator(discord.ui.View):
     def __init__(self, pages: list[discord.Embed], author_id: int, timeout: float = 120):
@@ -25,6 +28,7 @@ class Paginator(discord.ui.View):
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         # Solo quien ejecutó el comando puede cambiar de página
         if interaction.user.id != self.author_id:
+            logger.debug(f"Intento de paginación no autorizado: {interaction.user} en menú de {self.author_id}")
             await interaction.response.send_message("❌ No puedes controlar este menú.", ephemeral=True)
             return False
         return True

@@ -1,8 +1,11 @@
 import discord
+import logging
 from discord import app_commands
 from discord.ext import commands
 from typing import Literal
 from services import db_service, embed_service, lang_service
+
+logger = logging.getLogger(__name__)
 
 class StatusSelect(discord.ui.Select):
     def __init__(self, options):
@@ -16,6 +19,7 @@ class StatusSelect(discord.ui.Select):
     async def callback(self, interaction: discord.Interaction):
         status_id = int(self.values[0])
         await db_service.execute("DELETE FROM bot_statuses WHERE id = ?", (status_id,))
+        logger.info(f"Status eliminado (ID: {status_id}) por {interaction.user}")
         await interaction.response.edit_message(
             embed=embed_service.success("Status", "🗑️ Estado eliminado de la lista."), 
             view=None
@@ -56,6 +60,7 @@ class Developer(commands.Cog):
     @app_commands.describe(tipo="Actividad", texto="Lo que se mostrará")
     async def agregar(self, ctx: commands.Context, tipo: Literal["playing", "watching", "listening", "competing"], texto: str):
         await db_service.execute("INSERT INTO bot_statuses (type, text) VALUES (?, ?)", (tipo, texto))
+        logger.info(f"Status agregado: [{tipo}] {texto} por {ctx.author}")
         lang = await lang_service.get_guild_lang(ctx.guild.id)
         msg = lang_service.get_text("status_add", lang, text=texto, type=tipo)
 

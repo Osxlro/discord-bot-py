@@ -47,7 +47,8 @@ class Minecraft(commands.Cog):
             data = await request.json()
             self.player_stats = data
             return web.Response(text="OK")
-        except:
+        except Exception as e:
+            logger.error(f"Error recibiendo update Minecraft: {e}")
             return web.Response(status=400)
 
     async def handle_chat_in(self, request):
@@ -85,6 +86,7 @@ class Minecraft(commands.Cog):
     async def set_bridge(self, ctx: commands.Context):
         lang = await lang_service.get_guild_lang(ctx.guild.id)
         self.chat_channel_id = ctx.channel.id
+        logger.info(f"Minecraft Bridge vinculado al canal {ctx.channel.id} por {ctx.author}")
         msg = lang_service.get_text("mc_bridge_set", lang, channel=ctx.channel.mention)
         await ctx.send(msg, ephemeral=True)
 
@@ -124,6 +126,7 @@ class Minecraft(commands.Cog):
         if len(self.pending_messages) > 50:
             self.pending_messages.pop(0)
             
+        logger.info(f"Mensaje enviado a MC por {ctx.author}: {mensaje}")
         msg = lang_service.get_text("mc_msg_sent", lang, message=mensaje)
         await ctx.reply(msg, ephemeral=True)
         # Si es el canal bridge, borramos el comando del usuario para que se vea limpio (opcional)

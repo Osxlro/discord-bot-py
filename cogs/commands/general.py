@@ -1,7 +1,10 @@
 import discord
+import logging
 from discord.ext import commands
 from discord import app_commands
 from services import embed_service, translator_service, lang_service
+
+logger = logging.getLogger(__name__)
 
 class General(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -50,6 +53,7 @@ class General(commands.Cog):
             await ctx.reply(embed=embed_service.success("Math", txt))
             
         except ValueError as e:
+            logger.warning(f"Error Calc ({ctx.author}): {e}")
             txt = lang_service.get_text("calc_error", lang, error=str(e))
             await ctx.reply(embed=embed_service.error("Error", txt, lite=True))
 
@@ -62,6 +66,7 @@ class General(commands.Cog):
             txt = lang_service.get_text("trans_result", lang, orig=message.content[:50]+"...", trans=res['traducido'])
             await interaction.followup.send(embed=embed_service.success("Traducir", txt), ephemeral=True)
         except Exception as e:
+            logger.error(f"Error Traductor: {e}")
             await interaction.followup.send(embed=embed_service.error("Error", str(e), lite=True), ephemeral=True)
 
 async def setup(bot: commands.Bot):
