@@ -53,7 +53,7 @@ class Minecraft(commands.Cog):
             if self.chat_channel_id:
                 channel = self.bot.get_channel(self.chat_channel_id)
                 if channel:
-                    await channel.send(f"** {autor}:** {contenido}")
+                    await channel.send(f"**{autor}:** {contenido}")
             
             return web.Response(text="Enviado")
         except Exception as e:
