@@ -27,6 +27,7 @@ class Moderacion(commands.Cog):
     @app_commands.checks.has_permissions(manage_messages=True)
     async def clear(self, ctx: commands.Context, cantidad: int):
         lang = await lang_service.get_guild_lang(ctx.guild.id)
+        # Usamos .get() de forma segura desde settings
         max_msg = settings.CONFIG.get("moderation_config", {}).get("max_clear_msg", 100)
 
         if cantidad > max_msg:
@@ -34,11 +35,19 @@ class Moderacion(commands.Cog):
             return
 
         await ctx.defer(ephemeral=True)
-        deleted = await ctx.channel.purge(limit=cantidad)
         
-        title = lang_service.get_text("clear_success", lang)
-        desc = lang_service.get_text("clear_desc", lang, count=len(deleted))
-        await ctx.send(embed=embed_service.success(title, desc, lite=True), delete_after=5)
+        try:
+            # MEJORA: Control de error para mensajes viejos (>14 días)
+            deleted = await ctx.channel.purge(limit=cantidad)
+            count = len(deleted)
+            
+            title = lang_service.get_text("clear_success", lang)
+            desc = lang_service.get_text("clear_desc", lang, count=count)
+            await ctx.send(embed=embed_service.success(title, desc, lite=True), delete_after=5)
+            
+        except discord.HTTPException:
+            # Si falla (generalmente por mensajes viejos), avisamos
+            await ctx.send(embed=embed_service.warning("Aviso", "No puedo borrar mensajes de hace más de 14 días (Limitación de Discord).", lite=True), ephemeral=True)
 
     @commands.hybrid_command(name="aislar", description="Aísla (Timeout) a un usuario.")
     @app_commands.describe(usuario="Miembro", tiempo="Ej: 10m, 1h", razon="Motivo")
@@ -82,8 +91,10 @@ class Moderacion(commands.Cog):
         try:
             await usuario.kick(reason=razon)
             
-            row = await db_service.fetch_one("SELECT server_kick_msg FROM guild_config WHERE guild_id = ?", (ctx.guild.id,))
-            msg_custom = row['server_kick_msg'] if row and row['server_kick_msg'] else None
+            # --- OPTIMIZACIÓN: USAR CACHÉ EN LUGAR DE SQL DIRECTO ---
+            # Antes: row = await db_service.fetch_one(...)
+            config = await db_service.get_guild_config(ctx.guild.id)
+            msg_custom = config.get('server_kick_msg')
             
             if msg_custom:
                 desc = msg_custom.replace("{user}", usuario.name).replace("{reason}", razon)
@@ -108,8 +119,9 @@ class Moderacion(commands.Cog):
         try:
             await usuario.ban(reason=razon)
             
-            row = await db_service.fetch_one("SELECT server_ban_msg FROM guild_config WHERE guild_id = ?", (ctx.guild.id,))
-            msg_custom = row['server_ban_msg'] if row and row['server_ban_msg'] else None
+            # --- OPTIMIZACIÓN: USAR CACHÉ EN LUGAR DE SQL DIRECTO ---
+            config = await db_service.get_guild_config(ctx.guild.id)
+            msg_custom = config.get('server_ban_msg')
             
             if msg_custom:
                 desc = msg_custom.replace("{user}", usuario.name).replace("{reason}", razon)
