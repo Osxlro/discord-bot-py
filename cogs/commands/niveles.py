@@ -81,18 +81,25 @@ class Niveles(commands.Cog):
             for j, row in enumerate(chunk, start=start_rank):
                 user_id = row['user_id']
                 member = ctx.guild.get_member(user_id)
-                name = member.display_name if member else f"Usuario {user_id}"
+                
+                # Escapamos nombres para evitar roturas de formato visual
+                name = discord.utils.escape_markdown(member.display_name) if member else f"Usuario {user_id}"
                 
                 rebirth_text = f"🌀 {row['rebirths']} | " if row['rebirths'] > 0 else ""
+                xp_fmt = f"{row['xp']:,}" # Formato con comas (ej: 1,200)
                 
-                if j <= 3:
-                    medalla = "🥇" if j==1 else "🥈" if j==2 else "🥉"
-                    lines.append(f"**{medalla} {name}**\n╚ {rebirth_text}Nvl {row['level']} • {row['xp']} XP")
+                if j == 1:
+                    lines.append(f"🥇 **{name}**\n> 👑 {rebirth_text}Nvl **{row['level']}** • ✨ `{xp_fmt}` XP")
+                elif j == 2:
+                    lines.append(f"🥈 **{name}**\n> 🛡️ {rebirth_text}Nvl **{row['level']}** • ✨ `{xp_fmt}` XP")
+                elif j == 3:
+                    lines.append(f"🥉 **{name}**\n> ⚔️ {rebirth_text}Nvl **{row['level']}** • ✨ `{xp_fmt}` XP")
                 else:
-                    lines.append(f"**{j}. {name}** • {rebirth_text}Nvl {row['level']} • {row['xp']} XP")
+                    lines.append(f"`#{j}` **{name}** • {rebirth_text}Nvl {row['level']} • `{xp_fmt}` XP")
             
             desc = "\n".join(lines)
             embed = embed_service.info(title, desc, thumbnail=ctx.guild.icon.url if ctx.guild.icon else None)
+            embed.set_footer(text=f"Página {i+1}/{len(chunks)}")
             pages.append(embed)
 
         if len(pages) == 1:
