@@ -53,7 +53,7 @@ class Minecraft(commands.Cog):
             if self.chat_channel_id:
                 channel = self.bot.get_channel(self.chat_channel_id)
                 if channel:
-                    await channel.send(f"**🧱 <{autor}>** {contenido}")
+                    await channel.send(f"** {autor}:** {contenido}")
             
             return web.Response(text="Enviado")
         except Exception as e:
@@ -72,13 +72,13 @@ class Minecraft(commands.Cog):
     @commands.has_permissions(administrator=True)
     async def set_bridge(self, ctx: commands.Context):
         self.chat_channel_id = ctx.channel.id
-        await ctx.send(f"✅ Canal de chat vinculado: {ctx.channel.mention}")
+        await ctx.send(f"✅ Canal de chat vinculado: {ctx.channel.mention}", ephemeral=True)
 
     @commands.hybrid_command(name="estadomc", description="Muestra estadísticas detalladas del jugador")
     async def estado(self, ctx: commands.Context):
         stats = self.player_stats
         if not stats:
-            return await ctx.send("❌ No hay datos. ¿El jugador está conectado?")
+            return await ctx.send("❌ No hay datos. ¿El jugador está conectado?", ephemeral=True)
 
         embed = discord.Embed(title=f"Estado de {stats.get('jugador')}", color=discord.Color.blue())
         
