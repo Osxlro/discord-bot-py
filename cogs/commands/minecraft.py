@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 from aiohttp import web
-import asyncio
+import os
 
 class MinecraftBridge(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -19,10 +19,13 @@ class MinecraftBridge(commands.Cog):
         
         self.runner = web.AppRunner(app)
         await self.runner.setup()
+        
         # Escuchamos en el puerto 8080 (mismo que pusimos en el Mod de Java)
-        self.site = web.TCPSite(self.runner, 'localhost', 8080)
+        port = int(os.environ.get("PORT", 5058)) 
+        
+        self.site = web.TCPSite(self.runner, '0.0.0.0', port)
         await self.site.start()
-        print("🌍 Servidor Bridge de Minecraft iniciado en puerto 8080")
+        print(f"🌍 Servidor Bridge de Minecraft escuchando en puerto {port}")
 
     async def cog_unload(self):
         if self.site: await self.site.stop()
