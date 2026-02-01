@@ -27,6 +27,8 @@ class Voice(commands.Cog):
         try:
             if ctx.voice_client:
                 await ctx.voice_client.move_to(channel)
+                # Aseguramos que siga en modo "Chill" (Sordo/Mute) al moverse
+                await ctx.guild.me.edit(deafen=True, mute=True)
             else:
                 await channel.connect(self_deaf=True, self_mute=True)
             

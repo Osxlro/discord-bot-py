@@ -1,7 +1,11 @@
 import discord
+import logging
 from discord.ext import commands
 from aiohttp import web
-import os
+from config import settings
+from services import lang_service
+
+logger = logging.getLogger(__name__)
 
 class Minecraft(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -14,6 +18,9 @@ class Minecraft(commands.Cog):
         self.chat_channel_id = None
 
     async def cog_load(self):
+        if not settings.MINECRAFT_CONFIG.get("ENABLED", True):
+            return
+
         app = web.Application()
         app.router.add_post('/minecraft/update', self.handle_update)
         app.router.add_post('/minecraft/chat_in', self.handle_chat_in) # Nuevo endpoint
@@ -22,10 +29,11 @@ class Minecraft(commands.Cog):
         self.runner = web.AppRunner(app)
         await self.runner.setup()
         
-        # Puerto configurable o por defecto 8080 (Para Cybrancee usa os.environ.get("PORT"))
-        self.site = web.TCPSite(self.runner, '0.0.0.0', 5058)
+        # Puerto desde settings
+        port = settings.MINECRAFT_CONFIG.get("PORT", 5058)
+        self.site = web.TCPSite(self.runner, '0.0.0.0', port)
         await self.site.start()
-        # print(f"🌍 Bridge Minecraft online en puerto {port}")
+        logger.info(f"🌍 Bridge Minecraft online en puerto {port}")
 
     async def cog_unload(self):
         if self.site: await self.site.stop()
@@ -46,18 +54,22 @@ class Minecraft(commands.Cog):
         """Recibe mensajes de chat DESDE Minecraft"""
         try:
             data = await request.json()
-            autor = data.get("autor", "Steve")
+            default_name = settings.MINECRAFT_CONFIG.get("DEFAULT_NAME", "Steve")
+            autor = data.get("autor", default_name)
             contenido = data.get("contenido", "")
             
             # Si tenemos un canal configurado, enviamos el mensaje allí
             if self.chat_channel_id:
                 channel = self.bot.get_channel(self.chat_channel_id)
                 if channel:
-                    await channel.send(f"**{autor}:** {contenido}")
+                    guild_id = channel.guild.id
+                    lang = await lang_service.get_guild_lang(guild_id)
+                    msg = lang_service.get_text("mc_chat_format", lang, user=autor, content=contenido)
+                    await channel.send(msg)
             
             return web.Response(text="Enviado")
         except Exception as e:
-            print(f"Error chat in: {e}")
+            logger.error(f"Error chat in: {e}")
             return web.Response(status=400)
 
     async def handle_read(self, request):
@@ -71,36 +83,49 @@ class Minecraft(commands.Cog):
     @commands.hybrid_command(name="setbridgemc", description="Establece este canal para recibir el chat de Minecraft")
     @commands.has_permissions(administrator=True)
     async def set_bridge(self, ctx: commands.Context):
+        lang = await lang_service.get_guild_lang(ctx.guild.id)
         self.chat_channel_id = ctx.channel.id
-        await ctx.send(f"✅ Canal de chat vinculado: {ctx.channel.mention}", ephemeral=True)
+        msg = lang_service.get_text("mc_bridge_set", lang, channel=ctx.channel.mention)
+        await ctx.send(msg, ephemeral=True)
 
     @commands.hybrid_command(name="estadomc", description="Muestra estadísticas detalladas del jugador")
     async def estado(self, ctx: commands.Context):
+        lang = await lang_service.get_guild_lang(ctx.guild.id)
         stats = self.player_stats
         if not stats:
-            return await ctx.send("❌ No hay datos. ¿El jugador está conectado?", ephemeral=True)
+            msg = lang_service.get_text("mc_no_stats", lang)
+            return await ctx.send(msg, ephemeral=True)
 
-        embed = discord.Embed(title=f"Estado de {stats.get('jugador')}", color=discord.Color.blue())
+        title = lang_service.get_text("mc_stats_title", lang, player=stats.get('jugador'))
+        embed = discord.Embed(title=title, color=settings.COLORS["MINECRAFT"])
+        unknown = lang_service.get_text("mc_unknown", lang)
         
         # Fila 1: Vitales
-        embed.add_field(name="❤️ Vida", value=f"{stats.get('vida', 0):.1f}", inline=True)
-        embed.add_field(name="🍖 Comida", value=str(stats.get('comida', 0)), inline=True)
-        embed.add_field(name="🛡️ Armadura", value=str(stats.get('armadura', 0)), inline=True)
+        embed.add_field(name=lang_service.get_text("mc_field_life", lang), value=f"{stats.get('vida', 0):.1f}", inline=True)
+        embed.add_field(name=lang_service.get_text("mc_field_food", lang), value=str(stats.get('comida', 0)), inline=True)
+        embed.add_field(name=lang_service.get_text("mc_field_armor", lang), value=str(stats.get('armadura', 0)), inline=True)
         
         # Fila 2: Progreso
-        embed.add_field(name="✨ Nivel XP", value=str(stats.get('xp', 0)), inline=True)
-        embed.add_field(name="📍 Coordenadas", value=stats.get('coords', '?'), inline=True)
-        embed.add_field(name="🌲 Bioma", value=stats.get('bioma', '?').replace("minecraft:", "").title(), inline=True)
+        embed.add_field(name=lang_service.get_text("mc_field_xp", lang), value=str(stats.get('xp', 0)), inline=True)
+        embed.add_field(name=lang_service.get_text("mc_field_coords", lang), value=stats.get('coords', unknown), inline=True)
+        embed.add_field(name=lang_service.get_text("mc_field_biome", lang), value=stats.get('bioma', unknown).replace("minecraft:", "").title(), inline=True)
 
         # Fila 3: Ubicación
-        embed.add_field(name="🌎 Mundo", value=stats.get('mundo', '?'), inline=False)
+        embed.add_field(name=lang_service.get_text("mc_field_world", lang), value=stats.get('mundo', unknown), inline=False)
         
         await ctx.send(embed=embed, ephemeral=True)
 
     @commands.hybrid_command(name="mc", description="Envía mensaje al juego")
     async def mc(self, ctx: commands.Context, mensaje: str):
+        lang = await lang_service.get_guild_lang(ctx.guild.id)
         self.pending_messages.append({"autor": ctx.author.display_name, "mensaje": mensaje})
-        await ctx.reply(f"📨 Enviado: `{mensaje}`", ephemeral=True)
+        
+        # Optimización: Limitar la cola para evitar fugas de memoria si el servidor MC cae
+        if len(self.pending_messages) > 50:
+            self.pending_messages.pop(0)
+            
+        msg = lang_service.get_text("mc_msg_sent", lang, message=mensaje)
+        await ctx.reply(msg, ephemeral=True)
         # Si es el canal bridge, borramos el comando del usuario para que se vea limpio (opcional)
         if ctx.channel.id == self.chat_channel_id:
             try: await ctx.message.delete()

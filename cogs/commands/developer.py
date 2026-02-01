@@ -64,13 +64,14 @@ class Developer(commands.Cog):
     @status_group.command(name="eliminar", description="Elimina un estado seleccionándolo de la lista.")
     async def eliminar(self, ctx: commands.Context):
         lang = await lang_service.get_guild_lang(ctx.guild.id)
-        rows = await db_service.fetch_all("SELECT id, type, text FROM bot_statuses")
+        # Optimización: Traer solo los últimos 25 registros en lugar de toda la tabla
+        rows = await db_service.fetch_all("SELECT id, type, text FROM bot_statuses ORDER BY id DESC LIMIT 25")
         
         if not rows:
             return await ctx.send(embed=embed_service.warning("Status", lang_service.get_text("status_empty", lang)), ephemeral=True)
 
         options = []
-        for row in rows[-25:]:
+        for row in rows:
             label = f"[{row['type'].title()}] {row['text']}"
             if len(label) > 100: label = label[:97] + "..."
             options.append(discord.SelectOption(label=label, value=str(row['id']), emoji="🔸"))

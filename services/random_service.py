@@ -1,11 +1,12 @@
 import random
+from config import settings
 
 def obtener_cara_cruz() -> tuple[str, str]:
     """Retorna una tupla (Texto, URL_GIF)."""
     # Usamos los enlaces directos de CDN para asegurar que carguen siempre
     opciones = [
-        ("SOL", "https://cdn.discordapp.com/emojis/745519235303735376.gif"), 
-        ("LUNA", "https://cdn.discordapp.com/emojis/745519477935964212.gif")
+        ("SOL", settings.ASSETS["COINFLIP_HEADS"]), 
+        ("LUNA", settings.ASSETS["COINFLIP_TAILS"])
     ]
     return random.choice(opciones)
 

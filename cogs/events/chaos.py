@@ -2,6 +2,7 @@ import discord
 import datetime
 from discord.ext import commands
 from services import random_service, embed_service, db_service, lang_service
+from config import settings
 
 class Chaos(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -23,7 +24,11 @@ class Chaos(commands.Cog):
                 }
             else:
                 # Valores por defecto si no está configurado
-                self.cache[guild_id] = {'enabled': True, 'prob': 0.01}
+                defaults = settings.CHAOS_CONFIG
+                self.cache[guild_id] = {
+                    'enabled': defaults.get("DEFAULT_ENABLED", True), 
+                    'prob': defaults.get("DEFAULT_PROB", 0.01)
+                }
         
         return self.cache[guild_id]
 
@@ -49,8 +54,9 @@ class Chaos(commands.Cog):
                 await message.author.timeout(datetime.timedelta(minutes=1), reason="Chaos Roulette")
                 
                 # Mensaje visual
+                title = lang_service.get_text("chaos_title", lang)
                 txt = lang_service.get_text("chaos_bang", lang, user=message.author.name, prob=int(config['prob']*100))
-                await message.channel.send(embed=embed_service.info("🔫 Bang!", txt))
+                await message.channel.send(embed=embed_service.info(title, txt))
             except discord.Forbidden:
                 # Si el bot no tiene permisos, simplemente lo ignora para no spamear errores
                 pass

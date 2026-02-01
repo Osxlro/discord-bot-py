@@ -13,6 +13,8 @@ data_dir.mkdir(exist_ok=True)
 handler = logging.FileHandler(filename=data_dir / 'discord.log', encoding='utf-8', mode='w')
 discord.utils.setup_logging(handler=handler, level=logging.INFO)
 
+logger = logging.getLogger("bot")
+
 # Configuración de Intents
 intents = discord.Intents.default()
 intents.message_content = True
@@ -40,7 +42,7 @@ class BotPersonal(commands.Bot):
         )
 
     async def setup_hook(self):
-        print("--- ⚙️  CARGANDO EXTENSIONES ---")
+        logger.info("--- ⚙️  CARGANDO EXTENSIONES ---")
         
         # Usamos pathlib para recorrer la carpeta cogs de forma recursiva (rglob)
         # Esto funciona perfecto en Windows, Linux y Mac sin trucos raros.
@@ -57,25 +59,25 @@ class BotPersonal(commands.Bot):
             
             try:
                 await self.load_extension(extension_name)
-                print(f'✅ Extensión cargada: {extension_name}')
+                logger.info(f'✅ Extensión cargada: {extension_name}')
             except Exception as e:
-                print(f'❌ Error cargando {extension_name}: {e}')
+                logger.error(f'❌ Error cargando {extension_name}: {e}')
         
-        print("--- 💾 INICIANDO BASE DE DATOS ---")
+        logger.info("--- 💾 INICIANDO BASE DE DATOS ---")
         await db_service.init_db()
 
-        print("--- 🔄 SINCRONIZANDO COMANDOS ---")
+        logger.info("--- 🔄 SINCRONIZANDO COMANDOS ---")
         try:
             synced = await self.tree.sync()
-            print(f"✨ Se han sincronizado {len(synced)} comandos.")
+            logger.info(f"✨ Se han sincronizado {len(synced)} comandos.")
         except Exception as e:
-            print(f"❌ Error al sincronizar: {e}")
+            logger.error(f"❌ Error al sincronizar: {e}")
 
     async def on_ready(self):
-        print(f'------------------------------------')
-        print(f'🤖 Bot conectado: {self.user}')
-        print(f'🆔 ID: {self.user.id}')
-        print(f'------------------------------------')
+        logger.info(f'------------------------------------')
+        logger.info(f'🤖 Bot conectado: {self.user}')
+        logger.info(f'🆔 ID: {self.user.id}')
+        logger.info(f'------------------------------------')
         settings.set_bot_icon(self.user.display_avatar.url)
 
 async def main():
@@ -84,11 +86,11 @@ async def main():
         try:
             await bot.start(settings.TOKEN)
         finally:
-            print("--- 🛑 APAGANDO SERVICIOS ---")
+            logger.info("--- 🛑 APAGANDO SERVICIOS ---")
             await db_service.close_db()
 
 if __name__ == '__main__':
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        print("🛑 Apagando bot...")
+        pass # El logger ya registrará el cierre en finally

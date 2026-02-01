@@ -22,7 +22,7 @@ class General(commands.Cog):
 
     @commands.hybrid_command(name="calc", description="Calculadora flexible. Ej: /calc + 5 10")
     @app_commands.describe(operacion="Usa símbolos (+, -, *, /)", num1="Primer número", num2="Segundo número")
-    async def calc(self, ctx: commands.Context, operacion: str, num1: int, num2: int):
+    async def calc(self, ctx: commands.Context, operacion: str, num1: float, num2: float):
         lang = await lang_service.get_guild_lang(ctx.guild.id)
         op_map = {
             "sumar": "+", "suma": "+", "add": "+", "+": "+", "mas": "+",

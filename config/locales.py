@@ -146,7 +146,23 @@ LOCALES = {
         "setup_autorol_on": "✅ Auto-Rol activado: {role}",
         "setup_autorol_off": "⚪ Auto-Rol desactivado.",
         "setup_chaos_desc": "{status}\n🔫 Probabilidad: **{prob}%**",
-        "lang_success": "Idioma cambiado a **Español** 🇪🇸"
+        "chaos_title": "🔫 ¡Bang!",
+        "lang_success": "Idioma cambiado a **Español** 🇪🇸",
+
+        # --- MINECRAFT ---
+        "mc_bridge_set": "✅ Canal de chat vinculado: {channel}",
+        "mc_no_stats": "❌ No hay datos. ¿El jugador está conectado?",
+        "mc_stats_title": "Estado de {player}",
+        "mc_field_life": "❤️ Vida",
+        "mc_field_food": "🍖 Comida",
+        "mc_field_armor": "🛡️ Armadura",
+        "mc_field_xp": "✨ Nivel XP",
+        "mc_field_coords": "📍 Coordenadas",
+        "mc_field_biome": "🌲 Bioma",
+        "mc_field_world": "🌎 Mundo",
+        "mc_msg_sent": "📨 Enviado: `{message}`",
+        "mc_chat_format": "**{user}:** {content}",
+        "mc_unknown": "?"
     },
     
     "en": {
@@ -293,6 +309,22 @@ LOCALES = {
         "setup_autorol_on": "✅ Auto-Role enabled: {role}",
         "setup_autorol_off": "⚪ Auto-Role disabled.",
         "setup_chaos_desc": "{status}\n🔫 Probability: **{prob}%**",
-        "lang_success": "Language changed to **English** 🇺🇸"
+        "chaos_title": "🔫 Bang!",
+        "lang_success": "Language changed to **English** 🇺🇸",
+
+        # --- MINECRAFT ---
+        "mc_bridge_set": "✅ Chat bridge linked: {channel}",
+        "mc_no_stats": "❌ No data found. Is the player online?",
+        "mc_stats_title": "{player}'s Status",
+        "mc_field_life": "❤️ Health",
+        "mc_field_food": "🍖 Food",
+        "mc_field_armor": "🛡️ Armor",
+        "mc_field_xp": "✨ XP Level",
+        "mc_field_coords": "📍 Coordinates",
+        "mc_field_biome": "🌲 Biome",
+        "mc_field_world": "🌎 World",
+        "mc_msg_sent": "📨 Sent: `{message}`",
+        "mc_chat_format": "**{user}:** {content}",
+        "mc_unknown": "?"
     }
 }

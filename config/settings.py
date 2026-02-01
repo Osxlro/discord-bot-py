@@ -48,7 +48,8 @@ COLORS = {
     "INFO": 0x5865F2,     # Azul Blurple
     "WARNING": 0xFEE75C,  # Amarillo
     "XP": 0x9B59B6,       # Violeta
-    "FUN": 0xE91E63       # Rosa
+    "FUN": 0xE91E63,      # Rosa
+    "MINECRAFT": 0x2ECC71 # Verde Minecraft
 }
 
 # --- 7. ESTADOS POR DEFECTO ---
@@ -68,6 +69,25 @@ def set_bot_icon(url: str):
 
 def get_bot_icon() -> str:
     return _BOT_ICON_URL or ""
+
+# --- 9. CONFIGURACIÓN MINECRAFT ---
+MINECRAFT_CONFIG = {
+    "ENABLED": True,      # True: Carga el servidor web. False: No inicia el puente.
+    "PORT": 5058,         # Puerto para recibir datos del plugin de Minecraft
+    "DEFAULT_NAME": "Steve" # Nombre por defecto si el plugin no envía el autor
+}
+
+# --- 10. CONFIGURACIÓN CHAOS ---
+CHAOS_CONFIG = {
+    "DEFAULT_ENABLED": True,
+    "DEFAULT_PROB": 0.01
+}
+
+# --- 11. ASSETS (IMÁGENES / GIFS) ---
+ASSETS = {
+    "COINFLIP_HEADS": "https://cdn.discordapp.com/emojis/745519235303735376.gif",
+    "COINFLIP_TAILS": "https://cdn.discordapp.com/emojis/745519477935964212.gif"
+}
 
 # Helper para compatibilidad (convierte nombre de color a entero)
 def get_color(key: str) -> int:
