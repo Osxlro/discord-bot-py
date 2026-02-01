@@ -97,7 +97,7 @@ class Niveles(commands.Cog):
                 else:
                     lines.append(f"`#{j}` **{name}** • {rebirth_text}Nvl {row['level']} • `{xp_fmt}` XP")
             
-            desc = "\n".join(lines)
+            desc = "\n\n".join(lines)
             embed = embed_service.info(title, desc, thumbnail=ctx.guild.icon.url if ctx.guild.icon else None)
             embed.set_footer(text=f"Página {i+1}/{len(chunks)}")
             pages.append(embed)
