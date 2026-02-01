@@ -23,8 +23,7 @@ class Minecraft(commands.Cog):
         await self.runner.setup()
         
         # Puerto configurable o por defecto 8080 (Para Cybrancee usa os.environ.get("PORT"))
-        port = int(os.environ.get("PORT", 8080))
-        self.site = web.TCPSite(self.runner, '0.0.0.0', port)
+        self.site = web.TCPSite(self.runner, '0.0.0.0', 5058)
         await self.site.start()
         # print(f"🌍 Bridge Minecraft online en puerto {port}")
 
