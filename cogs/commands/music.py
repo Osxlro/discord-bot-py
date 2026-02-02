@@ -64,16 +64,27 @@ class Music(commands.Cog):
 
     async def cog_load(self):
         """Conecta a Lavalink al cargar el Cog."""
+        # Usamos create_task para no bloquear el arranque del bot si Lavalink está caído
+        self.bot.loop.create_task(self.connect_nodes())
+
+    async def connect_nodes(self):
+        """Intenta conectar a Lavalink en segundo plano."""
+        await self.bot.wait_until_ready()
+        
         if not wavelink.Pool.nodes:
-            node_config = settings.LAVALINK_CONFIG
-            nodes = [
-                wavelink.Node(
-                    uri=f"http://{node_config['HOST']}:{node_config['PORT']}",
-                    password=node_config['PASSWORD']
-                )
-            ]
-            await wavelink.Pool.connect(nodes=nodes, client=self.bot, cache_capacity=100)
-            logger.info("🔗 [Music] Conectando a nodos Lavalink...")
+            try:
+                node_config = settings.LAVALINK_CONFIG
+                nodes = [
+                    wavelink.Node(
+                        uri=f"http://{node_config['HOST']}:{node_config['PORT']}",
+                        password=node_config['PASSWORD']
+                    )
+                ]
+                await wavelink.Pool.connect(nodes=nodes, client=self.bot, cache_capacity=100)
+                logger.info("🔗 [Music] Conectando a nodos Lavalink...")
+            except Exception as e:
+                logger.error(f"❌ [Music] No se pudo conectar a Lavalink: {e}")
+                logger.warning("⚠️ El bot inició, pero la música no funcionará hasta que Lavalink esté online.")
 
     @commands.Cog.listener()
     async def on_wavelink_node_ready(self, payload: wavelink.NodeReadyEventPayload):

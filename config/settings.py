@@ -97,10 +97,10 @@ ASSETS = {
 
 # --- 12. CONFIGURACIÓN MÚSICA (LAVALINK) ---
 LAVALINK_CONFIG = {
-    "HOST": "127.0.0.1",      # IP de tu servidor Lavalink
-    "PORT": 2333,             # Puerto de Lavalink
-    "PASSWORD": "youshallnotpass", # Contraseña de Lavalink
-    "SECURE": False,          # True para HTTPS/WSS
+    "HOST": "lavalink.ajieanthony.pw", # Ejemplo de nodo público
+    "PORT": 443,                       # Los nodos públicos suelen usar 443 (SSL)
+    "PASSWORD": "youshallnotpass",     # Contraseña del nodo público
+    "SECURE": True,                    # True si el puerto es 443/SSL
     "DEFAULT_VOLUME": 50,     # Volumen inicial (0-100)
     "SEARCH_PROVIDER": "yt",  # 'yt' (YouTube), 'sc' (SoundCloud), 'sp' (Spotify - requiere plugin)
     "INACTIVITY_TIMEOUT": 300 # Segundos para desconectarse si no hay música
