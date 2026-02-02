@@ -10,16 +10,23 @@ logger = logging.getLogger(__name__)
 
 class MusicControls(discord.ui.View):
     """Botones interactivos para controlar la música."""
-    def __init__(self, player: wavelink.Player, author_id: int, lang: str):
+    def __init__(self, player: wavelink.Player, author_id: int = None, lang: str = "es"):
         super().__init__(timeout=None)
         self.player = player
         self.author_id = author_id
         self.lang = lang
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
-        if interaction.user.id != self.author_id:
+        # Si se definió un autor específico (modo estricto)
+        if self.author_id and interaction.user.id != self.author_id:
             await interaction.response.send_message("❌ No puedes controlar esta sesión.", ephemeral=True)
             return False
+        
+        # Si es modo público (author_id=None), validar que esté en el mismo canal de voz
+        if not interaction.user.voice or (self.player.channel and interaction.user.voice.channel != self.player.channel):
+             await interaction.response.send_message("❌ Debes estar en el canal de voz para usar los botones.", ephemeral=True)
+             return False
+
         return True
 
     @discord.ui.button(emoji="⏯️", style=discord.ButtonStyle.primary, row=0)
@@ -243,6 +250,66 @@ class Music(commands.Cog):
             view = pagination_service.Paginator(pages, ctx.author.id)
             await ctx.send(embed=pages[0], view=view)
 
+    @commands.hybrid_command(name="pause", description="Pausa o reanuda la música.")
+    async def pause(self, ctx: commands.Context):
+        lang = await lang_service.get_guild_lang(ctx.guild.id)
+        if not ctx.voice_client or not ctx.voice_client.playing:
+             return await ctx.send(embed=embed_service.error("Error", lang_service.get_text("music_error_nothing", lang), lite=True), ephemeral=True)
+        
+        player: wavelink.Player = ctx.voice_client
+        await player.pause(not player.paused)
+        
+        msg = lang_service.get_text("music_paused" if player.paused else "music_resumed", lang)
+        await ctx.send(embed=embed_service.success("Music", msg, lite=True))
+
+    @commands.hybrid_command(name="shuffle", description="Mezcla aleatoriamente la cola de reproducción.")
+    async def shuffle(self, ctx: commands.Context):
+        lang = await lang_service.get_guild_lang(ctx.guild.id)
+        if not ctx.voice_client:
+             return await ctx.send(embed=embed_service.error("Error", lang_service.get_text("music_error_nothing", lang), lite=True), ephemeral=True)
+        
+        player: wavelink.Player = ctx.voice_client
+        player.queue.shuffle()
+        msg = lang_service.get_text("music_shuffled", lang)
+        await ctx.send(embed=embed_service.success("Shuffle", msg, lite=True))
+
+    @commands.hybrid_command(name="autoplay", description="Activa/Desactiva la reproducción automática recomendada.")
+    async def autoplay(self, ctx: commands.Context):
+        lang = await lang_service.get_guild_lang(ctx.guild.id)
+        if not ctx.voice_client:
+             return await ctx.send(embed=embed_service.error("Error", lang_service.get_text("music_error_nothing", lang), lite=True), ephemeral=True)
+        
+        player: wavelink.Player = ctx.voice_client
+        
+        if player.autoplay == wavelink.AutoPlayMode.enabled:
+            player.autoplay = wavelink.AutoPlayMode.disabled
+            msg = lang_service.get_text("music_autoplay_off", lang)
+        else:
+            player.autoplay = wavelink.AutoPlayMode.enabled
+            msg = lang_service.get_text("music_autoplay_on", lang)
+            
+        await ctx.send(embed=embed_service.success("Autoplay", msg, lite=True))
+
+    @commands.hybrid_command(name="loop", description="Cambia el modo de repetición (Pista / Cola / Apagado).")
+    async def loop(self, ctx: commands.Context):
+        lang = await lang_service.get_guild_lang(ctx.guild.id)
+        if not ctx.voice_client:
+             return await ctx.send(embed=embed_service.error("Error", lang_service.get_text("music_error_nothing", lang), lite=True), ephemeral=True)
+        
+        player: wavelink.Player = ctx.voice_client
+        
+        if player.queue.mode == wavelink.QueueMode.normal:
+            player.queue.mode = wavelink.QueueMode.loop
+            msg = lang_service.get_text("music_loop_track", lang)
+        elif player.queue.mode == wavelink.QueueMode.loop:
+            player.queue.mode = wavelink.QueueMode.loop_all
+            msg = lang_service.get_text("music_loop_queue", lang)
+        else:
+            player.queue.mode = wavelink.QueueMode.normal
+            msg = lang_service.get_text("music_loop_off", lang)
+            
+        await ctx.send(embed=embed_service.success("Loop", msg, lite=True))
+
     @commands.hybrid_command(name="volume", description="Ajusta el volumen (0-100).")
     @app_commands.describe(nivel="Nivel de volumen")
     async def volume(self, ctx: commands.Context, nivel: int):
@@ -297,17 +364,9 @@ class Music(commands.Cog):
         if track.artwork: embed.set_thumbnail(url=track.artwork)
         embed.add_field(name="👤 Autor", value=track.author, inline=True)
         
-        # Usamos el ID del bot como author_id para que cualquiera pueda ver los botones, 
-        # pero el control se valida dentro de la View (actualmente restringido al que puso /play, 
-        # podrías cambiarlo a cualquiera en el canal de voz si prefieres).
-        # Para simplificar, pasamos el ID del bot y quitamos la restricción estricta o usamos el último requester.
-        # Aquí usaremos un truco: pasamos 0 para indicar "público" o guardamos el requester en el track.
-        
-        # Nota: Para que los botones funcionen para quien pidió la canción, idealmente deberíamos guardar `requester` en el track.
-        # Por ahora, permitiremos que cualquiera use los botones o el último que usó el comando.
-        view = MusicControls(player, player.guild.me.id, lang) 
-        # Hack: Sobreescribimos el check de la view para permitir a todos en el canal de voz (opcional)
-        view.interaction_check = lambda i: i.user.voice and i.user.voice.channel == player.channel
+        # Usamos author_id=None para permitir que cualquiera en el canal use los botones
+        # Esto soluciona el problema de que los botones no funcionaran al inicio
+        view = MusicControls(player, author_id=None, lang=lang) 
 
         player.last_msg = await player.home.send(embed=embed, view=view)
 
