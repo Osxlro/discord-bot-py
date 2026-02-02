@@ -4,7 +4,7 @@ import logging
 from discord import app_commands
 from discord.ext import commands
 from config import settings
-from services import embed_service, lang_service
+from services import embed_service, lang_service, pagination_service
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +22,7 @@ class MusicControls(discord.ui.View):
             return False
         return True
 
-    @discord.ui.button(emoji="⏯️", style=discord.ButtonStyle.primary)
+    @discord.ui.button(emoji="⏯️", style=discord.ButtonStyle.primary, row=0)
     async def pause_resume(self, interaction: discord.Interaction, button: discord.ui.Button):
         if self.player.paused:
             await self.player.pause(False)
@@ -32,26 +32,68 @@ class MusicControls(discord.ui.View):
             msg = lang_service.get_text("music_paused", self.lang)
         await interaction.response.send_message(msg, ephemeral=True)
 
-    @discord.ui.button(emoji="⏭️", style=discord.ButtonStyle.secondary)
+    @discord.ui.button(emoji="⏭️", style=discord.ButtonStyle.secondary, row=0)
     async def skip(self, interaction: discord.Interaction, button: discord.ui.Button):
         await self.player.skip(force=True)
         msg = lang_service.get_text("music_skipped", self.lang)
         await interaction.response.send_message(msg, ephemeral=True)
 
-    @discord.ui.button(emoji="⏹️", style=discord.ButtonStyle.danger)
+    @discord.ui.button(emoji="⏹️", style=discord.ButtonStyle.danger, row=0)
     async def stop(self, interaction: discord.Interaction, button: discord.ui.Button):
         await self.player.disconnect()
         msg = lang_service.get_text("music_stopped", self.lang)
         await interaction.response.send_message(msg, ephemeral=True)
         self.stop() # Detiene la vista
 
-    @discord.ui.button(emoji="🔉", style=discord.ButtonStyle.secondary)
+    @discord.ui.button(emoji="🔀", style=discord.ButtonStyle.secondary, row=0)
+    async def shuffle(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.player.queue.shuffle()
+        msg = lang_service.get_text("music_shuffled", self.lang)
+        await interaction.response.send_message(msg, ephemeral=True)
+
+    @discord.ui.button(emoji="🔁", style=discord.ButtonStyle.secondary, row=1)
+    async def loop(self, interaction: discord.Interaction, button: discord.ui.Button):
+        # Ciclo: Normal -> Track -> Queue -> Normal
+        if self.player.queue.mode == wavelink.QueueMode.normal:
+            self.player.queue.mode = wavelink.QueueMode.loop
+            msg = lang_service.get_text("music_loop_track", self.lang)
+            button.emoji = "🔂"
+            button.style = discord.ButtonStyle.success
+        elif self.player.queue.mode == wavelink.QueueMode.loop:
+            self.player.queue.mode = wavelink.QueueMode.loop_all
+            msg = lang_service.get_text("music_loop_queue", self.lang)
+            button.emoji = "🔁"
+            button.style = discord.ButtonStyle.success
+        else:
+            self.player.queue.mode = wavelink.QueueMode.normal
+            msg = lang_service.get_text("music_loop_off", self.lang)
+            button.emoji = "🔁"
+            button.style = discord.ButtonStyle.secondary
+        
+        await interaction.response.edit_message(view=self)
+        await interaction.followup.send(msg, ephemeral=True)
+
+    @discord.ui.button(emoji="♾️", style=discord.ButtonStyle.secondary, row=1)
+    async def autoplay(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if self.player.autoplay == wavelink.AutoPlayMode.enabled:
+            self.player.autoplay = wavelink.AutoPlayMode.disabled
+            msg = lang_service.get_text("music_autoplay_off", self.lang)
+            button.style = discord.ButtonStyle.secondary
+        else:
+            self.player.autoplay = wavelink.AutoPlayMode.enabled
+            msg = lang_service.get_text("music_autoplay_on", self.lang)
+            button.style = discord.ButtonStyle.success
+        
+        await interaction.response.edit_message(view=self)
+        await interaction.followup.send(msg, ephemeral=True)
+
+    @discord.ui.button(emoji="🔉", style=discord.ButtonStyle.secondary, row=1)
     async def vol_down(self, interaction: discord.Interaction, button: discord.ui.Button):
         new_vol = max(self.player.volume - 10, 0)
         await self.player.set_volume(new_vol)
         await interaction.response.send_message(f"🔉 {new_vol}%", ephemeral=True)
 
-    @discord.ui.button(emoji="🔊", style=discord.ButtonStyle.secondary)
+    @discord.ui.button(emoji="🔊", style=discord.ButtonStyle.secondary, row=1)
     async def vol_up(self, interaction: discord.Interaction, button: discord.ui.Button):
         new_vol = min(self.player.volume + 10, 100)
         await self.player.set_volume(new_vol)
@@ -103,12 +145,16 @@ class Music(commands.Cog):
         # 2. Obtener o crear Player
         if not ctx.voice_client:
             try:
-                player: wavelink.Player = await ctx.author.voice.channel.connect(cls=wavelink.Player)
+                # self_deaf=True para no escuchar a los usuarios (ahorra recursos)
+                player: wavelink.Player = await ctx.author.voice.channel.connect(cls=wavelink.Player, self_deaf=True)
                 await player.set_volume(settings.LAVALINK_CONFIG.get("DEFAULT_VOLUME", 50))
             except Exception as e:
                 return await ctx.send(embed=embed_service.error("Error", str(e)))
         else:
             player: wavelink.Player = ctx.voice_client
+
+        # Guardamos el canal de texto para enviar mensajes de "Now Playing"
+        player.home = ctx.channel
 
         # 3. Buscar canción
         await ctx.defer()
@@ -129,20 +175,7 @@ class Music(commands.Cog):
         # 4. Reproducir o Encolar
         if not player.playing:
             await player.play(track)
-            
-            # Embed de "Now Playing"
-            embed = discord.Embed(
-                title=lang_service.get_text("music_playing", lang),
-                description=f"[{track.title}]({track.uri})",
-                color=settings.COLORS["XP"] # Usamos un color bonito
-            )
-            if track.artwork:
-                embed.set_thumbnail(url=track.artwork)
-            embed.add_field(name="👤 Autor", value=track.author, inline=True)
-            embed.add_field(name="⏳ Duración", value=f"{track.length // 1000}s", inline=True)
-            
-            view = MusicControls(player, ctx.author.id, lang)
-            await ctx.send(embed=embed, view=view)
+            # El mensaje se enviará en on_wavelink_track_start
         else:
             await player.queue.put_wait(track)
             msg = lang_service.get_text("music_track_enqueued", lang, title=track.title)
@@ -179,20 +212,36 @@ class Music(commands.Cog):
             msg = lang_service.get_text("music_queue_empty", lang)
             return await ctx.send(embed=embed_service.info("Cola", msg, lite=True))
 
-        desc = ""
-        if player.playing:
-            desc += f"**Actualmente:** [{player.current.title}]({player.current.uri})\n\n"
-        
-        if not player.queue.is_empty:
-            desc += "**Próximas:**\n"
-            for i, track in enumerate(player.queue[:10]): # Mostrar solo las primeras 10
-                desc += f"`{i+1}.` {track.title} - *{track.author}*\n"
-        
-        embed = discord.Embed(title="📜 Cola de Música", description=desc, color=settings.COLORS["INFO"])
-        if len(player.queue) > 10:
-            embed.set_footer(text=f"Y {len(player.queue) - 10} más...")
+        # Construcción de páginas para el Paginator
+        pages = []
+        queue_list = list(player.queue)
+        chunk_size = 10
+        chunks = [queue_list[i:i + chunk_size] for i in range(0, len(queue_list), chunk_size)]
+
+        # Si la cola está vacía pero hay canción sonando (caso raro pero posible)
+        if not chunks and player.playing:
+            chunks = [[]]
+
+        for i, chunk in enumerate(chunks):
+            desc = ""
+            if player.playing:
+                desc += f"**💿 Actualmente:** {player.current.title}\n\n"
             
-        await ctx.send(embed=embed)
+            if chunk:
+                desc += "**📜 Próximas:**\n"
+                for j, track in enumerate(chunk):
+                    idx = (i * chunk_size) + j + 1
+                    desc += f"`{idx}.` {track.title} - *{track.author}*\n"
+            
+            embed = discord.Embed(title="Cola de Reproducción", description=desc, color=settings.COLORS["INFO"])
+            embed.set_footer(text=f"Página {i+1}/{len(chunks)} • Total: {len(player.queue)} pistas")
+            pages.append(embed)
+
+        if len(pages) == 1:
+            await ctx.send(embed=pages[0])
+        else:
+            view = pagination_service.Paginator(pages, ctx.author.id)
+            await ctx.send(embed=pages[0], view=view)
 
     @commands.hybrid_command(name="volume", description="Ajusta el volumen (0-100).")
     @app_commands.describe(nivel="Nivel de volumen")
@@ -207,16 +256,74 @@ class Music(commands.Cog):
         msg = lang_service.get_text("music_volume", lang, vol=nivel)
         await ctx.send(embed=embed_service.success("Volumen", msg, lite=True))
 
+    @commands.hybrid_command(name="nowlistening", aliases=["np"], description="Muestra la canción actual.")
+    async def nowlistening(self, ctx: commands.Context):
+        lang = await lang_service.get_guild_lang(ctx.guild.id)
+        if not ctx.voice_client or not ctx.voice_client.playing:
+            return await ctx.send(embed=embed_service.error("Error", lang_service.get_text("music_error_nothing", lang), lite=True))
+        
+        track = ctx.voice_client.current
+        embed = discord.Embed(
+            title=lang_service.get_text("music_now_listening", lang),
+            description=f"{track.title}",
+            color=settings.COLORS["XP"]
+        )
+        if track.artwork: embed.set_thumbnail(url=track.artwork)
+        embed.add_field(name="👤 Autor", value=track.author, inline=True)
+        embed.add_field(name="⏳ Duración", value=f"{track.length // 1000}s", inline=True)
+        
+        await ctx.send(embed=embed)
+
+    # --- EVENTOS ---
+
+    @commands.Cog.listener()
+    async def on_wavelink_track_start(self, payload: wavelink.TrackStartEventPayload):
+        player = payload.player
+        if not hasattr(player, "home") or not player.home: return
+        
+        # Borrar mensaje anterior si existe para no hacer spam
+        if hasattr(player, "last_msg") and player.last_msg:
+            try: await player.last_msg.delete()
+            except: pass
+
+        track = payload.track
+        lang = await lang_service.get_guild_lang(player.guild.id)
+        
+        embed = discord.Embed(
+            title=lang_service.get_text("music_now_playing_title", lang),
+            description=f"{track.title}",
+            color=settings.COLORS["XP"]
+        )
+        if track.artwork: embed.set_thumbnail(url=track.artwork)
+        embed.add_field(name="👤 Autor", value=track.author, inline=True)
+        
+        # Usamos el ID del bot como author_id para que cualquiera pueda ver los botones, 
+        # pero el control se valida dentro de la View (actualmente restringido al que puso /play, 
+        # podrías cambiarlo a cualquiera en el canal de voz si prefieres).
+        # Para simplificar, pasamos el ID del bot y quitamos la restricción estricta o usamos el último requester.
+        # Aquí usaremos un truco: pasamos 0 para indicar "público" o guardamos el requester en el track.
+        
+        # Nota: Para que los botones funcionen para quien pidió la canción, idealmente deberíamos guardar `requester` en el track.
+        # Por ahora, permitiremos que cualquiera use los botones o el último que usó el comando.
+        view = MusicControls(player, player.guild.me.id, lang) 
+        # Hack: Sobreescribimos el check de la view para permitir a todos en el canal de voz (opcional)
+        view.interaction_check = lambda i: i.user.voice and i.user.voice.channel == player.channel
+
+        player.last_msg = await player.home.send(embed=embed, view=view)
+
     # Evento para reproducir siguiente canción automáticamente
     @commands.Cog.listener()
     async def on_wavelink_track_end(self, payload: wavelink.TrackEndEventPayload):
         player = payload.player
+        
+        # Si hay canciones en la cola, reproducir la siguiente
         if not player.queue.is_empty:
             next_track = player.queue.get()
             await player.play(next_track)
-            
-            # Opcional: Enviar mensaje de "Now Playing" al canal donde se inició
-            # Requiere guardar el ctx o channel_id en el player
+        
+        # Si la cola está vacía y Autoplay está activado, Wavelink (v3) debería encargarse automáticamente
+        # si player.autoplay == wavelink.AutoPlayMode.enabled.
+        # No necesitamos hacer nada extra aquí para autoplay nativo.
 
 async def setup(bot):
     await bot.add_cog(Music(bot))

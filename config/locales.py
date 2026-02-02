@@ -179,7 +179,15 @@ LOCALES = {
         "music_error_join": "❌ Entra a un canal de voz primero.",
         "music_error_nothing": "❌ No hay nada reproduciéndose.",
         "music_node_connected": "🔗 Nodo Lavalink conectado.",
-        "music_search_empty": "❌ No encontré resultados para `{query}`."
+        "music_search_empty": "❌ No encontré resultados para `{query}`.",
+        "music_loop_track": "🔂 Loop: **Pista**",
+        "music_loop_queue": "🔁 Loop: **Cola**",
+        "music_loop_off": "➡️ Loop: **Apagado**",
+        "music_shuffled": "🔀 Cola mezclada.",
+        "music_autoplay_on": "♾️ Autoplay: **Activado**",
+        "music_autoplay_off": "♾️ Autoplay: **Desactivado**",
+        "music_now_playing_title": "🎶 Reproduciendo Ahora",
+        "music_now_listening": "🎧 Escuchando Ahora"
     },
     
     "en": {
@@ -359,6 +367,14 @@ LOCALES = {
         "music_error_join": "❌ Join a voice channel first.",
         "music_error_nothing": "❌ Nothing is playing.",
         "music_node_connected": "🔗 Lavalink node connected.",
-        "music_search_empty": "❌ No results found for `{query}`."
+        "music_search_empty": "❌ No results found for `{query}`.",
+        "music_loop_track": "🔂 Loop: **Track**",
+        "music_loop_queue": "🔁 Loop: **Queue**",
+        "music_loop_off": "➡️ Loop: **Off**",
+        "music_shuffled": "🔀 Queue shuffled.",
+        "music_autoplay_on": "♾️ Autoplay: **On**",
+        "music_autoplay_off": "♾️ Autoplay: **Off**",
+        "music_now_playing_title": "🎶 Now Playing",
+        "music_now_listening": "🎧 Now Listening"
     }
 }
