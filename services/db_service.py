@@ -1,6 +1,6 @@
-import aiosqlite
-import os
 import logging
+import os
+import aiosqlite
 from config import settings
 
 # --- CONFIGURACIÓN ---
@@ -49,7 +49,8 @@ async def init_db():
     db = await get_db()
     
     # --- OPTIMIZACIÓN: MODO WAL (Más velocidad y concurrencia) ---
-    await db.execute("PRAGMA journal_mode=WAL;")
+    # WAL permite que las lecturas no bloqueen las escrituras y viceversa.
+    await db.execute("PRAGMA journal_mode=WAL;") 
     await db.execute("PRAGMA synchronous=NORMAL;")
     
     # Compactar base de datos al inicio para liberar espacio en disco
@@ -118,7 +119,7 @@ async def init_db():
     # Índice para leaderboard rápido
     await db.execute("CREATE INDEX IF NOT EXISTS idx_ranking ON guild_stats(guild_id, rebirths DESC, level DESC, xp DESC)")
     
-    # Migraciones silenciosas por si acaso
+    # Migraciones manuales: Se ejecutan al arrancar para asegurar que la estructura sea la correcta.
     migraciones = [
         "ALTER TABLE guild_stats ADD COLUMN rebirths INTEGER DEFAULT 0",
         "ALTER TABLE guild_config ADD COLUMN language TEXT DEFAULT 'es'"
@@ -172,6 +173,7 @@ async def flush_xp_cache():
     
     updates = []
     # Recolectamos solo los datos "sucios" (modificados)
+    # Esto reduce la carga de trabajo al procesar solo lo que realmente cambió.
     for key, data in _xp_cache.items():
         if data['dirty']:
             updates.append((data['xp'], data['level'], data['rebirths'], key[0], key[1]))
@@ -180,6 +182,7 @@ async def flush_xp_cache():
     if updates:
         try:
             db = await get_db()
+            # Uso de ON CONFLICT para manejar inserciones y actualizaciones en una sola consulta (Upsert).
             await db.executemany("""
                 INSERT INTO guild_stats (xp, level, rebirths, guild_id, user_id) 
                 VALUES (?, ?, ?, ?, ?)

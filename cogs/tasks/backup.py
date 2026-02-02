@@ -1,10 +1,10 @@
-import discord
-from discord.ext import commands, tasks
+import asyncio
+import datetime
+import logging
 import pathlib
 import shutil
-import datetime
-import asyncio
-import logging
+import discord
+from discord.ext import commands, tasks
 from config import settings
 from services import db_service
 
@@ -58,7 +58,8 @@ class Backup(commands.Cog):
             ultimo_backup = None
             dm_channel = await owner.create_dm()
             
-            async for message in dm_channel.history(limit=20):
+            # Revisamos el historial reciente para no saturar al dueño con archivos duplicados.
+            async for message in dm_channel.history(limit=20): 
                 if message.author.id == self.bot.user.id and len(message.attachments) > 0 and "Backup" in message.content:
                     ultimo_backup = message
                     break

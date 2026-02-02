@@ -1,8 +1,11 @@
+import logging
+import random
 import discord
 from discord.ext import commands
-import random
-from services import db_service, embed_service, lang_service, pagination_service
 from config import settings
+from services import db_service, embed_service, lang_service, pagination_service
+
+logger = logging.getLogger(__name__)
 
 class Niveles(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -20,8 +23,14 @@ class Niveles(commands.Cog):
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
         if message.author.bot or not message.guild: return
-        if self.get_ratelimit(message): return
+        
+        # Evitar dar XP por comandos para prevenir el spam de niveles.
+        prefix = await self.bot.get_prefix(message)
+        if isinstance(prefix, list) and any(message.content.startswith(p) for p in prefix): return
+        if isinstance(prefix, str) and message.content.startswith(prefix): return
 
+        # Sistema de Cooldown para evitar el farmeo rápido de XP.
+        if self.get_ratelimit(message): return
         xp_ganada = random.randint(
             settings.XP_CONFIG["MIN_XP"], 
             settings.XP_CONFIG["MAX_XP"]
@@ -52,7 +61,7 @@ class Niveles(commands.Cog):
             
             await message.channel.send(msg_final)
         except Exception as e:
-            print(f"Error enviando nivel: {e}")
+            logger.error(f"Error enviando nivel: {e}")
 
     @commands.hybrid_command(name="leaderboard", description="Muestra el top de XP del servidor")
     async def leaderboard(self, ctx: commands.Context):

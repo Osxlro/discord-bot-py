@@ -21,6 +21,10 @@ class Minecraft(commands.Cog):
         if not settings.MINECRAFT_CONFIG.get("ENABLED", True):
             return
 
+        # Configuración del servidor web interno para el puente con Minecraft.
+        # NOTA DE SEGURIDAD: En un entorno de producción, se recomienda añadir 
+        # una capa de autenticación (API Key) para validar las peticiones entrantes.
+        
         app = web.Application()
         app.router.add_post('/minecraft/update', self.handle_update)
         app.router.add_post('/minecraft/chat_in', self.handle_chat_in) # Nuevo endpoint
@@ -74,6 +78,8 @@ class Minecraft(commands.Cog):
             return web.Response(status=400)
 
     async def handle_read(self, request):
+        # El plugin de Minecraft consulta este endpoint periódicamente (polling)
+        # para obtener mensajes enviados desde Discord.
         if self.pending_messages:
             msg = self.pending_messages.pop(0)
             return web.json_response(msg)

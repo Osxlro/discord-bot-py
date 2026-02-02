@@ -1,7 +1,10 @@
+import gc
+import logging
 import discord
 from discord.ext import commands, tasks
 from services import db_service
-import gc # Garbage Collector (Recolector de basura de Python)
+
+logger = logging.getLogger(__name__)
 
 class OptimizationTasks(commands.Cog):
     def __init__(self, bot):
@@ -20,7 +23,7 @@ class OptimizationTasks(commands.Cog):
         try:
             await db_service.flush_xp_cache()
         except Exception as e:
-            print(f"⚠️ Error guardando XP caché: {e}")
+            logger.error(f"⚠️ Error guardando XP caché: {e}")
 
     # TAREA 2: Limpieza de RAM (Lenta - cada 6 horas)
     # Libera memoria acumulada de configuraciones viejas.
@@ -36,9 +39,9 @@ class OptimizationTasks(commands.Cog):
             
             # 3. Forzamos a Python a liberar memoria no usada
             gc.collect()
-            print("🧹 [Sistema] Mantenimiento de memoria completado (RAM liberada).")
+            logger.info("🧹 [Sistema] Mantenimiento de memoria completado (RAM liberada).")
         except Exception as e:
-            print(f"⚠️ Error en limpieza de memoria: {e}")
+            logger.error(f"⚠️ Error en limpieza de memoria: {e}")
 
     @cache_flush_loop.before_loop
     async def before_flush(self):

@@ -1,4 +1,3 @@
-import discord
 import logging
 from discord.ext import commands
 from services import embed_service, lang_service

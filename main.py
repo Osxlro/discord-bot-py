@@ -1,9 +1,9 @@
-import discord
 import asyncio
 import logging
-import pathlib 
-from config import settings
+import pathlib
+import discord
 from discord.ext import commands
+from config import settings
 from services import db_service
 
 # --- CONFIGURACIÓN DE LOGS ---
@@ -22,6 +22,8 @@ intents.members = True
 
 # --- LÓGICA DE PREFIX DINÁMICO ---
 async def get_prefix(bot, message):
+    # Permite que cada usuario tenga su propio prefijo si así lo desea,
+    # de lo contrario usa el prefijo global definido en settings.
     if not message.guild:
         return settings.CONFIG["bot_config"]["prefix"]
     try:
@@ -43,13 +45,13 @@ class BotPersonal(commands.AutoShardedBot):
 
     async def setup_hook(self):
         """Configuración inicial del bot en orden lógico."""
-        # 1. Base de Datos (La base de todo)
+        # 1. Base de Datos: Debe estar lista antes de cargar cualquier lógica.
         await self._init_database()
         
-        # 2. Extensiones (La lógica del bot)
+        # 2. Extensiones: Carga todos los Cogs (comandos, eventos, tareas).
         await self._load_extensions()
 
-        # 3. Sincronización (El puente con Discord)
+        # 3. Sincronización: Registra los Slash Commands en la API de Discord.
         await self._sync_commands()
 
     async def _init_database(self):
