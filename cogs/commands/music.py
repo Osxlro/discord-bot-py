@@ -1,6 +1,7 @@
 import discord
 import wavelink
 import logging
+import random
 from discord import app_commands
 from discord.ext import commands
 from config import settings
@@ -82,14 +83,17 @@ class MusicControls(discord.ui.View):
 
     @discord.ui.button(emoji="♾️", style=discord.ButtonStyle.secondary, row=1)
     async def autoplay(self, interaction: discord.Interaction, button: discord.ui.Button):
-        if self.player.autoplay == wavelink.AutoPlayMode.enabled:
-            self.player.autoplay = wavelink.AutoPlayMode.disabled
-            msg = lang_service.get_text("music_autoplay_off", self.lang)
-            button.style = discord.ButtonStyle.secondary
-        else:
-            self.player.autoplay = wavelink.AutoPlayMode.enabled
+        # Toggle Smart Autoplay
+        current = getattr(self.player, "smart_autoplay", False)
+        self.player.smart_autoplay = not current
+        self.player.autoplay = wavelink.AutoPlayMode.disabled # Forzamos nativo OFF para usar el nuestro
+        
+        if self.player.smart_autoplay:
             msg = lang_service.get_text("music_autoplay_on", self.lang)
             button.style = discord.ButtonStyle.success
+        else:
+            msg = lang_service.get_text("music_autoplay_off", self.lang)
+            button.style = discord.ButtonStyle.secondary
         
         await interaction.response.edit_message(view=self)
         await interaction.followup.send(msg, ephemeral=True)
@@ -155,6 +159,40 @@ class Music(commands.Cog):
             return choices
         except Exception:
             return []
+
+    async def _get_smart_recommendation(self, player: wavelink.Player) -> wavelink.Playable:
+        """Genera una recomendación basada en el historial y contexto."""
+        if not player.queue.history:
+            return None
+            
+        # 1. Analizar historial (Últimas 10 canciones) para evitar repeticiones
+        history = list(player.queue.history)[-10:]
+        played_ids = {t.identifier for t in player.queue.history}
+        
+        # 2. Seleccionar Semilla (Seed)
+        # 70% probabilidad de usar la última, 30% de usar una reciente para variar el flujo
+        seed_track = history[-1]
+        if len(history) > 1 and random.random() > 0.7:
+            seed_track = random.choice(history[:-1])
+            
+        # 3. Estrategia de Búsqueda (Mix de estrategias)
+        queries = [
+            f"ytsearch:{seed_track.author} official audio", # Prioridad: Mismo artista
+            f"ytsearch:{seed_track.title} similar",         # Similaridad
+        ]
+        
+        for query in queries:
+            try:
+                tracks = await wavelink.Playable.search(query)
+                if not tracks: continue
+                
+                for track in tracks:
+                    # Filtramos si ya sonó o si es la misma que la semilla
+                    if track.identifier not in played_ids and track.title != seed_track.title:
+                        return track
+            except:
+                continue
+        return None
 
     @commands.hybrid_command(name="play", description="Reproduce música desde YouTube, SoundCloud, etc.")
     @app_commands.describe(busqueda="Nombre de la canción o URL")
@@ -305,12 +343,15 @@ class Music(commands.Cog):
         
         player: wavelink.Player = ctx.voice_client
         
-        if player.autoplay == wavelink.AutoPlayMode.enabled:
-            player.autoplay = wavelink.AutoPlayMode.disabled
-            msg = lang_service.get_text("music_autoplay_off", lang)
-        else:
-            player.autoplay = wavelink.AutoPlayMode.enabled
+        # Toggle Smart Autoplay
+        current = getattr(player, "smart_autoplay", False)
+        player.smart_autoplay = not current
+        player.autoplay = wavelink.AutoPlayMode.disabled # Forzamos nativo OFF
+        
+        if player.smart_autoplay:
             msg = lang_service.get_text("music_autoplay_on", lang)
+        else:
+            msg = lang_service.get_text("music_autoplay_off", lang)
             
         await ctx.send(embed=embed_service.success("Autoplay", msg, lite=True))
 
@@ -438,6 +479,13 @@ class Music(commands.Cog):
         if not player.queue.is_empty:
             next_track = player.queue.get()
             await player.play(next_track)
+            return
+
+        # 4. Smart Autoplay (Si la cola está vacía)
+        if getattr(player, "smart_autoplay", False):
+            recommendation = await self._get_smart_recommendation(player)
+            if recommendation:
+                await player.play(recommendation)
 
 async def setup(bot):
     await bot.add_cog(Music(bot))
