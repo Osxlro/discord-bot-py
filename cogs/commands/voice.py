@@ -1,5 +1,6 @@
 import logging
 import asyncio
+import wavelink
 from discord.ext import commands
 from services import embed_service, lang_service
 
@@ -30,16 +31,21 @@ class Voice(commands.Cog):
         # 3. Conectar (u mover si ya está en otro)
         try:
             if ctx.voice_client:
-                # Si el cliente está en un estado inconsistente, forzamos desconexión primero
-                if not ctx.voice_client.is_connected():
+                # Si el cliente NO es un Player de Wavelink (ej. conexión antigua), reconectamos
+                if not isinstance(ctx.voice_client, wavelink.Player):
                     await ctx.voice_client.disconnect(force=True)
-                    await channel.connect(self_deaf=True, self_mute=True)
+                    await channel.connect(cls=wavelink.Player, self_deaf=True, self_mute=True)
+                
+                # Si el cliente está en un estado inconsistente, forzamos desconexión primero
+                elif not ctx.voice_client.is_connected():
+                    await ctx.voice_client.disconnect(force=True)
+                    await channel.connect(cls=wavelink.Player, self_deaf=True, self_mute=True)
                 else:
                     await ctx.voice_client.move_to(channel)
                     # Aseguramos que siga en modo "Chill" (Sordo/Mute) al moverse
                     await ctx.guild.me.edit(deafen=True, mute=True)
             else:
-                await channel.connect(self_deaf=True, self_mute=True)
+                await channel.connect(cls=wavelink.Player, self_deaf=True, self_mute=True)
             
             self.voice_targets[ctx.guild.id] = channel.id
             msg = lang_service.get_text("voice_join", lang, channel=channel.name)
@@ -96,7 +102,7 @@ class Voice(commands.Cog):
                     return # Ya se reconectó
                 
                 logger.info(f"🔄 [Voice] Intento de reconexión {i+1}/{len(backoff)} en {guild.name}...")
-                await channel.connect(self_deaf=True, self_mute=True)
+                await channel.connect(cls=wavelink.Player, self_deaf=True, self_mute=True)
                 logger.info(f"✅ [Voice] Reconexión exitosa en {guild.name}.")
                 return
             except Exception as e:

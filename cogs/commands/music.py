@@ -146,10 +146,13 @@ class Music(commands.Cog):
         try:
             # Búsqueda rápida en YouTube para autocompletado
             tracks = await wavelink.Playable.search(f"ytsearch:{current}")
-            return [
-                app_commands.Choice(name=f"{track.title[:80]} - {track.author[:15]}", value=track.uri or track.title)
-                for track in tracks[:10]
-            ]
+            choices = []
+            for track in tracks[:10]:
+                seconds = track.length // 1000
+                duration = f"{seconds // 60}:{seconds % 60:02}"
+                name = f"[{duration}] {track.title[:70]} - {track.author[:15]}"
+                choices.append(app_commands.Choice(name=name, value=track.uri or track.title))
+            return choices
         except Exception:
             return []
 
@@ -173,6 +176,9 @@ class Music(commands.Cog):
                 return await ctx.send(embed=embed_service.error("Error", str(e)))
         else:
             player: wavelink.Player = ctx.voice_client
+            # Si el bot está muteado (por ejemplo, por /join de voice.py), lo desmuteamos
+            if ctx.guild.me.voice.self_mute:
+                await ctx.guild.me.edit(mute=False)
 
         # Guardamos el canal de texto para enviar mensajes de "Now Playing"
         player.home = ctx.channel
