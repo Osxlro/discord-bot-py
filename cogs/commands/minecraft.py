@@ -71,6 +71,10 @@ class Minecraft(commands.Cog):
                     lang = await lang_service.get_guild_lang(guild_id)
                     msg = lang_service.get_text("mc_chat_format", lang, user=autor, content=contenido)
                     await channel.send(msg)
+                else:
+                    # El canal configurado ya no existe, evitamos error y logueamos warning
+                    logger.warning(f"Canal Bridge MC ({self.chat_channel_id}) no encontrado. Desactivando envío.")
+                    self.chat_channel_id = None
             
             return web.Response(text="Enviado")
         except Exception as e:

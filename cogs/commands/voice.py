@@ -28,9 +28,14 @@ class Voice(commands.Cog):
         # 3. Conectar (u mover si ya está en otro)
         try:
             if ctx.voice_client:
-                await ctx.voice_client.move_to(channel)
-                # Aseguramos que siga en modo "Chill" (Sordo/Mute) al moverse
-                await ctx.guild.me.edit(deafen=True, mute=True)
+                # Si el cliente está en un estado inconsistente, forzamos desconexión primero
+                if not ctx.voice_client.is_connected():
+                    await ctx.voice_client.disconnect(force=True)
+                    await channel.connect(self_deaf=True, self_mute=True)
+                else:
+                    await ctx.voice_client.move_to(channel)
+                    # Aseguramos que siga en modo "Chill" (Sordo/Mute) al moverse
+                    await ctx.guild.me.edit(deafen=True, mute=True)
             else:
                 await channel.connect(self_deaf=True, self_mute=True)
             
@@ -55,6 +60,16 @@ class Voice(commands.Cog):
             # Si no está conectado, reacciona con un emoji simple
             try: await ctx.message.add_reaction("❓")
             except: pass
+
+    @commands.Cog.listener()
+    async def on_voice_state_update(self, member, before, after):
+        """Detecta desconexiones forzadas o inesperadas."""
+        # Si el bot es el que cambió de estado
+        if member.id == self.bot.user.id:
+            # Si estaba en un canal y ahora no (Desconexión)
+            if before.channel is not None and after.channel is None:
+                # Aquí podrías implementar lógica de reconexión automática si lo deseas
+                logger.warning(f"⚠️ [Voice] Bot desconectado de {before.channel.name} en {member.guild.name}.")
 
 async def setup(bot):
     await bot.add_cog(Voice(bot))

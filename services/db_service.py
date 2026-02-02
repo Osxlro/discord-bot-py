@@ -167,6 +167,18 @@ def clear_memory_cache():
     _config_cache.clear()
     # Nota: No limpiamos _xp_cache aquí porque puede tener datos sin guardar.
 
+def clear_xp_cache_safe():
+    """
+    Limpia entradas de XP en memoria que ya han sido guardadas en DB.
+    Esto previene que el diccionario crezca infinitamente (Memory Leak).
+    """
+    global _xp_cache
+    # Solo eliminamos las entradas que NO tienen cambios pendientes ('dirty': False)
+    keys_to_remove = [k for k, v in _xp_cache.items() if not v['dirty']]
+    
+    for k in keys_to_remove:
+        del _xp_cache[k]
+
 async def flush_xp_cache():
     """Vuelca los datos de XP acumulados en RAM hacia la base de datos."""
     if not _xp_cache: return

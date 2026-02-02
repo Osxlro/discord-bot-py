@@ -37,7 +37,11 @@ class OptimizationTasks(commands.Cog):
             if hasattr(db_service, 'clear_memory_cache'):
                 db_service.clear_memory_cache()
             
-            # 3. Forzamos a Python a liberar memoria no usada
+            # 3. Limpiamos usuarios inactivos de la RAM (XP Cache)
+            if hasattr(db_service, 'clear_xp_cache_safe'):
+                db_service.clear_xp_cache_safe()
+            
+            # 4. Forzamos a Python a liberar memoria no usada
             gc.collect()
             logger.info("🧹 [Sistema] Mantenimiento de memoria completado (RAM liberada).")
         except Exception as e:
