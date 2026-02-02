@@ -1,46 +1,70 @@
-# Discord Bot Py
+# 🤖 Discord Bot Py
 
-Un bot de Discord modular y optimizado escrito en Python utilizando `discord.py`. Este proyecto está diseñado para ser eficiente en el consumo de recursos (ideal para VPS pequeños) y ofrece un sistema completo de gestión de comunidades, niveles y utilidades.
+[!Python Version](https://www.python.org/)
+[!discord.py](https://github.com/Rapptz/discord.py)
+[!License](LICENSE)
 
-## Características Principales
+Un bot de Discord modular, multilingüe y optimizado, diseñado para ofrecer una gestión integral de comunidades con un consumo mínimo de recursos. Ideal para despliegues en VPS pequeños.
 
-El bot está dividido en módulos (Cogs) para facilitar su mantenimiento y escalabilidad.
+---
 
-### Sistema de Niveles y Experiencia
+## 📌 Tabla de Contenidos
+- Características Principales
+- Tecnologías Utilizadas
+- Requisitos Previos
+- Instalación y Configuración
+- Estructura del Proyecto
+- Comandos Destacados
+- Contribución
 
-* **Progresión Exponencial:** Sistema de XP calculado para aumentar la dificultad progresivamente.
-* **Sistema de Renacimiento (Rebirth):** Permite a los usuarios reiniciar su nivel al llegar al 100 a cambio de marcas de prestigio.
-* **Rankings y Perfiles:** Comandos para visualizar tablas de clasificación y tarjetas de perfil personalizables.
-* **Optimización de I/O:** Implementa un sistema de caché en memoria RAM para reducir las escrituras en disco (base de datos), guardando datos por intervalos.
+---
 
-### Moderación y Administración
+## ✨ Características Principales
 
-* **Herramientas de Moderación:** Comandos estándar para expulsar, banear y limpiar mensajes masivamente.
-* **Auto-Roles:** Asignación automática de roles a nuevos usuarios.
-* **Logs y Auditoría:** Registro de eventos importantes del servidor.
-* **Gestión de Estados:** Sistema rotativo de presencia del bot, configurable mediante comandos con menús interactivos.
+### 📈 Sistema de Niveles y Experiencia
+* **Progresión Dinámica:** Algoritmo de XP exponencial para mantener el interés a largo plazo.
+* **Sistema de Prestigio (Rebirth):** Los usuarios pueden reiniciar su nivel al llegar al 100 para obtener marcas de prestigio.
+* **Optimización de I/O:** Sistema de caché inteligente que agrupa escrituras en la base de datos para reducir el desgaste del disco.
+* **Perfiles Visuales:** Comandos para consultar rangos y estadísticas personales.
 
-### Utilidades y Configuración
+### 🛡️ Moderación y Administración
+* **Herramientas de Gestión:** Comandos de `kick`, `ban`, `clear` y `timeout` con soporte para jerarquías de roles.
+* **Auto-Roles:** Asignación automática de roles configurables al unirse nuevos miembros.
+* **Logs y Auditoría:** Registro detallado de eventos importantes y acciones administrativas.
+* **Gestión de Estados:** Sistema rotativo de presencia configurable mediante menús interactivos.
 
-* **Configuración por Servidor:** Panel de ajustes para personalizar canales de bienvenida, mensajes de nivel, idiomas y roles.
-* **Modo de Voz AFK:** Funcionalidad para mantener al bot conectado en canales de voz con consumo de recursos nulo (modo sordo/muteado).
-* **Copias de Seguridad:** Tareas automáticas de respaldo de la base de datos enviadas al propietario.
-* **Sistema de Ayuda Dinámico:** Menú de ayuda que se actualiza automáticamente según los módulos cargados.
+### 🎮 Integración con Minecraft
+* **Bridge Bidireccional:** Servidor web interno (`aiohttp`) que permite la comunicación entre el chat de Discord y el servidor de Minecraft.
+* **Estadísticas en Tiempo Real:** Visualización de vida, bioma, coordenadas y XP del jugador desde Discord.
+
+### ⚙️ Utilidades y Configuración
+* **Multi-idioma:** Soporte nativo para múltiples idiomas mediante un sistema de localización centralizado.
+* **Backups Automáticos:** Copias de seguridad de la base de datos enviadas directamente al DM del propietario cada 12 horas.
+* **Modo de Voz AFK:** Mantiene al bot conectado en canales de voz con consumo de recursos nulo.
+
+---
+
+## 🛠️ Tecnologías Utilizadas
+* **Lenguaje:** Python 3.9+
+* **Librería Principal:** discord.py
+* **Base de Datos:** SQLite3
+* **Servidor Web:** aiohttp (para el bridge de Minecraft)
+* **Gestión de Entorno:** python-dotenv
+
+---
 
 ## Requisitos Previos
-
 * Python 3.9 o superior.
 * Una cuenta de desarrollador de Discord y un Token de Bot.
 
-## Instalación
+---
 
-Sigue estos pasos para desplegar el bot en tu entorno local o servidor.
+## 🚀 Instalación y Configuración
 
-1. **Clonar el repositorio:**
+### 1. Clonar el repositorio
 ```bash
 git clone https://github.com/tu-usuario/discord-bot-py.git
 cd discord-bot-py
-
 ```
 
 
