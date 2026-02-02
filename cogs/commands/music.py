@@ -192,6 +192,7 @@ class Music(commands.Cog):
             provider = settings.LAVALINK_CONFIG.get("SEARCH_PROVIDER", "yt")
             if provider == "yt": search_query = f"ytsearch:{busqueda}"
             elif provider == "sc": search_query = f"scsearch:{busqueda}"
+            elif provider == "sp": search_query = f"spsearch:{busqueda}"
 
         tracks = await wavelink.Playable.search(search_query)
         if not tracks:
@@ -353,14 +354,25 @@ class Music(commands.Cog):
             return await ctx.send(embed=embed_service.error("Error", lang_service.get_text("music_error_nothing", lang), lite=True))
         
         track = ctx.voice_client.current
+        player = ctx.voice_client
+        
+        # Barra de progreso
+        position = player.position
+        length = track.length
+        total_blocks = 15
+        progress = int((position / length) * total_blocks) if length > 0 else 0
+        bar = "▬" * progress + "🔘" + "▬" * (total_blocks - progress)
+        
+        pos_str = f"{int(position // 1000 // 60)}:{int(position // 1000 % 60):02}"
+        len_str = f"{int(length // 1000 // 60)}:{int(length // 1000 % 60):02}"
+
         embed = discord.Embed(
             title=lang_service.get_text("music_now_listening", lang),
-            description=f"{track.title}",
+            description=f"[{track.title}]({track.uri})\n\n`{pos_str}` [{bar}] `{len_str}`",
             color=settings.COLORS["XP"]
         )
         if track.artwork: embed.set_thumbnail(url=track.artwork)
         embed.add_field(name="👤 Autor", value=track.author, inline=True)
-        embed.add_field(name="⏳ Duración", value=f"{track.length // 1000}s", inline=True)
         
         await ctx.send(embed=embed)
 
@@ -379,6 +391,10 @@ class Music(commands.Cog):
         track = payload.track
         lang = await lang_service.get_guild_lang(player.guild.id)
         
+        # Duración formateada
+        seconds = track.length // 1000
+        duration_str = f"{seconds // 60}:{seconds % 60:02}"
+
         embed = discord.Embed(
             title=lang_service.get_text("music_now_playing_title", lang),
             description=f"{track.title}",
@@ -386,6 +402,7 @@ class Music(commands.Cog):
         )
         if track.artwork: embed.set_thumbnail(url=track.artwork)
         embed.add_field(name="👤 Autor", value=track.author, inline=True)
+        embed.add_field(name="⏳ Duración", value=duration_str, inline=True)
         
         # Usamos author_id=None para permitir que cualquiera en el canal use los botones
         # Esto soluciona el problema de que los botones no funcionaran al inicio

@@ -102,8 +102,13 @@ LAVALINK_CONFIG = {
     "PASSWORD": "https://dsc.gg/ajidevserver",   # Contraseña del nodo
     "SECURE": True,                    # True si el puerto es 443/SSL
     "DEFAULT_VOLUME": 50,     # Volumen inicial (0-100)
-    "SEARCH_PROVIDER": "yt",  # 'yt' (YouTube), 'sc' (SoundCloud), 'sp' (Spotify - requiere plugin)
-    "INACTIVITY_TIMEOUT": 300 # Segundos para desconectarse si no hay música
+    "SEARCH_PROVIDER": "yt",  # 'yt' (YouTube), 'sc' (SoundCloud), 'sp' (Spotify - requiere nodo con Lavasrc)
+    "INACTIVITY_TIMEOUT": 300, # Segundos para desconectarse si no hay música
+    # Credenciales de Spotify (Opcional: Solo si usas un nodo propio que lo requiera en su config)
+    "SPOTIFY": {
+        "CLIENT_ID": os.getenv("SPOTIFY_CLIENT_ID", ""),
+        "CLIENT_SECRET": os.getenv("SPOTIFY_CLIENT_SECRET", "")
+    }
 }
 
 # Helper para compatibilidad (convierte nombre de color a entero)
