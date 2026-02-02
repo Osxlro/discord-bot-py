@@ -6,6 +6,14 @@ from services import embed_service, translator_service, lang_service
 
 logger = logging.getLogger(__name__)
 
+EMOJI_MAP = {
+    "General": "💡", "Moderacion": "🛡️", "Niveles": "📊",
+    "Diversion": "🎲", "Configuracion": "⚙️", "Developer": "💻",
+    "Cumpleaños": "🎂", "Roles": "🎭", "Voice": "🎙️", 
+    "Perfil": "👤", "Status": "🟢", "Backup": "💾",
+    "Usuario": "👤", "Minecraft": "🧱"
+}
+
 class HelpSelect(discord.ui.Select):
     def __init__(self, bot, ctx, lang):
         self.bot = bot
@@ -21,13 +29,6 @@ class HelpSelect(discord.ui.Select):
             )
         ]
 
-        emoji_map = {
-            "General": "💡", "Moderacion": "🛡️", "Niveles": "📊",
-            "Diversion": "🎲", "Configuracion": "⚙️", "Developer": "💻",
-            "Cumpleaños": "🎂", "Roles": "🎭", "Voice": "🎙️", 
-            "Perfil": "👤", "Status": "🟢", "Backup": "💾"
-        }
-
         for name, cog in bot.cogs.items():
             cmds = cog.get_commands()
             if not cmds: continue
@@ -41,7 +42,7 @@ class HelpSelect(discord.ui.Select):
                 label=name,
                 description=description[:100],
                 value=name,
-                emoji=emoji_map.get(name, "📂")
+                emoji=EMOJI_MAP.get(name, "📂")
             ))
 
         super().__init__(
@@ -69,23 +70,27 @@ class HelpSelect(discord.ui.Select):
             title = lang_service.get_text("help_module_title", self.lang, module=value)
             module_desc = lang_service.get_text("help_module_desc", self.lang, module=value)
             
-            lista_txt = ""
+            embed = discord.Embed(
+                title=f"{EMOJI_MAP.get(value, '📂')} {title}",
+                description=f"*{module_desc}*\n\n",
+                color=self.ctx.guild.me.color if self.ctx.guild else discord.Color.blurple()
+            )
+
+            cmds_list = []
             for cmd in cog.get_commands():
                 if cmd.hidden: continue
                 
                 if isinstance(cmd, (commands.HybridGroup, commands.Group)):
                     for sub in cmd.commands:
                         desc_cmd = sub.description or sub.short_doc or "..."
-                        lista_txt += f"🔹 `/{cmd.name} {sub.name}` - {desc_cmd}\n"
-                
+                        cmds_list.append(f"**/{cmd.name} {sub.name}**\n> └ {desc_cmd}")
                 else:
                     desc_cmd = cmd.description or cmd.short_doc or "..."
-                    lista_txt += f"🔹 `/{cmd.name}` - {desc_cmd}\n"
+                    cmds_list.append(f"**/{cmd.name}**\n> └ {desc_cmd}")
 
-            if not lista_txt:
-                lista_txt = lang_service.get_text("help_no_cmds", self.lang)
+            embed.description += "\n".join(cmds_list) if cmds_list else lang_service.get_text("help_no_cmds", self.lang)
+            embed.set_footer(text=f"Total: {len(cmds_list)} comandos", icon_url=self.bot.user.display_avatar.url)
 
-            embed = embed_service.info(title, f"{module_desc}\n\n{lista_txt}")
             await interaction.response.edit_message(embed=embed)
 
 class HelpView(discord.ui.View):
@@ -112,15 +117,24 @@ class General(commands.Cog):
         title = lang_service.get_text("help_title", lang)
         desc = lang_service.get_text("help_desc", lang, user=ctx.author.display_name)
         stats = lang_service.get_text("help_stats", lang, cats=cogs_count, cmds=total_cmds)
+        # Limpiamos el texto de stats para que se vea mejor
+        stats = stats.replace("•", ">").replace("\n", "\n")
         
-        cats = [f"• {name}" for name in ctx.bot.cogs.keys() if ctx.bot.get_cog(name).get_commands()]
-        cats_formatted = "\n".join(cats)
+        embed = discord.Embed(
+            title=f"✨ {title}",
+            description=f"{desc}\n\n📊 **Estadísticas**\n{stats}",
+            color=ctx.guild.me.color if ctx.guild else discord.Color.blurple()
+        )
         
-        embed = embed_service.info(title, f"{desc}\n\n{stats}")
-        embed.add_field(name=lang_service.get_text("help_categories", lang), value=f"```\n{cats_formatted}\n```", inline=False)
+        cats_text = ""
+        for name in ctx.bot.cogs.keys():
+            if ctx.bot.get_cog(name).get_commands():
+                cats_text += f"{EMOJI_MAP.get(name, '📂')} **{name}**\n"
         
-        if ctx.bot.user.avatar:
-            embed.set_thumbnail(url=ctx.bot.user.avatar.url)
+        embed.add_field(name=f"📂 {lang_service.get_text('help_categories', lang)}", value=cats_text, inline=False)
+        embed.set_thumbnail(url=ctx.bot.user.display_avatar.url)
+        embed.set_footer(text="Selecciona una categoría abajo 👇", icon_url=ctx.bot.user.display_avatar.url)
+        
         return embed
 
     @commands.hybrid_command(name="help", description="Muestra el panel de ayuda y comandos.")

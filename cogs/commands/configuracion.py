@@ -55,29 +55,5 @@ class Configuracion(commands.Cog):
         msg = lang_service.get_text("setup_desc", lang, type=tipo, value=val_display)
         await ctx.send(embed=embed_service.success(lang_service.get_text("setup_success", lang), msg), ephemeral=True)
 
-    # SIMULAR
-    @commands.hybrid_command(name="simular", description="Prueba mensajes de eventos (Solo tú lo verás).")
-    @commands.has_permissions(administrator=True)
-    async def simular(self, ctx: commands.Context, evento: Literal["Bienvenida", "Nivel", "Cumpleaños"]):
-        await ctx.defer(ephemeral=True)
-        
-        # Obtener configuración del servidor
-        config = await db_service.get_guild_config(ctx.guild.id)
-        
-        # Simular según el evento
-        if evento == "Bienvenida":
-            msg = f"👋 **Simulación:** Bienvenido {ctx.author.mention}!"
-            await ctx.send(msg, ephemeral=True)
-            
-        elif evento == "Nivel":
-            txt = config.get('server_level_msg') or "¡{user} subió a nivel {level}!"
-            final = txt.replace("{user}", ctx.author.mention).replace("{level}", "50")
-            await ctx.send(f"🆙 **Simulación:** {final}", ephemeral=True)
-            
-        elif evento == "Cumpleaños":
-            txt = config.get('server_birthday_msg') or "Feliz cumple {user}!"
-            final = txt.replace("{user}", ctx.author.mention)
-            await ctx.send(f"🎂 **Simulación:** {final}", ephemeral=True)
-
 async def setup(bot):
     await bot.add_cog(Configuracion(bot))
