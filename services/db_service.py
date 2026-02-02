@@ -213,11 +213,11 @@ async def flush_xp_cache():
     updates = []
     # Recolectamos solo los datos "sucios" (modificados)
     # Esto reduce la carga de trabajo al procesar solo lo que realmente cambió.
-    keys_to_clean = []
+    pending_clean = {} # Usamos un dict para guardar el snapshot de XP
     for key, data in _xp_cache.items():
         if data['dirty']:
             updates.append((data['xp'], data['level'], data['rebirths'], key[0], key[1]))
-            keys_to_clean.append(key)
+            pending_clean[key] = data['xp'] # Guardamos la XP exacta que estamos enviando a DB
     
     if updates:
         try:
@@ -234,9 +234,11 @@ async def flush_xp_cache():
             await _execute_with_retry(_do_update)
             
             # CRÍTICO: Solo marcamos como limpios si la DB confirmó el guardado
-            for key in keys_to_clean:
+            # Y si la XP no ha cambiado mientras esperábamos (Race Condition fix)
+            for key, saved_xp in pending_clean.items():
                 if key in _xp_cache:
-                    _xp_cache[key]['dirty'] = False
+                    if _xp_cache[key]['xp'] == saved_xp:
+                        _xp_cache[key]['dirty'] = False
         except Exception as e:
             logger.error(f"⚠️ Error guardando caché de XP: {e}")
 
