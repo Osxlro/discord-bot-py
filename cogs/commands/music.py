@@ -2,6 +2,7 @@ import discord
 import wavelink
 import logging
 import random
+import re
 from discord import app_commands
 from discord.ext import commands
 from config import settings
@@ -153,8 +154,11 @@ class Music(commands.Cog):
             choices = []
             for track in tracks[:10]:
                 seconds = track.length // 1000
-                duration = f"{seconds // 60}:{seconds % 60:02}"
-                name = f"[{duration}] {track.title[:70]} - {track.author[:15]}"
+                if track.is_stream:
+                    duration = "🔴 LIVE"
+                else:
+                    duration = f"{seconds // 60}:{seconds % 60:02}"
+                name = f"[{duration}] {track.title[:65]} - {track.author[:15]}"
                 choices.append(app_commands.Choice(name=name, value=track.uri or track.title))
             return choices
         except Exception:
@@ -225,8 +229,9 @@ class Music(commands.Cog):
         await ctx.defer()
         
         # Auto-selección de proveedor (YouTube por defecto si no es URL)
+        url_rx = re.compile(r'https?://(?:www\.)?.+')
         search_query = busqueda
-        if not ("http" in busqueda or "www" in busqueda):
+        if not url_rx.match(busqueda):
             provider = settings.LAVALINK_CONFIG.get("SEARCH_PROVIDER", "yt")
             if provider == "yt": search_query = f"ytsearch:{busqueda}"
             elif provider == "sc": search_query = f"scsearch:{busqueda}"
@@ -236,16 +241,29 @@ class Music(commands.Cog):
         if not tracks:
             return await ctx.send(embed=embed_service.warning("Music", lang_service.get_text("music_search_empty", lang, query=busqueda)))
 
-        track = tracks[0]
-        
-        # 4. Reproducir o Encolar
-        if not player.playing:
-            await player.play(track)
-            # El mensaje se enviará en on_wavelink_track_start
-        else:
-            await player.queue.put_wait(track)
-            msg = lang_service.get_text("music_track_enqueued", lang, title=track.title)
+        # 4. Reproducir o Encolar (Soporte Playlist)
+        if isinstance(tracks, wavelink.Playlist):
+            # Es una Playlist
+            for track in tracks:
+                await player.queue.put_wait(track)
+            
+            msg = f"✅ **Playlist añadida:** {tracks.name} ({len(tracks)} canciones)"
             await ctx.send(embed=embed_service.success("Cola", msg, lite=True))
+            
+            # Si no suena nada, reproducir la primera
+            if not player.playing:
+                await player.play(player.queue.get())
+                
+        else:
+            # Es una búsqueda (Search), tomamos el primero
+            track = tracks[0]
+            
+            if not player.playing:
+                await player.play(track)
+            else:
+                await player.queue.put_wait(track)
+                msg = lang_service.get_text("music_track_enqueued", lang, title=track.title)
+                await ctx.send(embed=embed_service.success("Cola", msg, lite=True))
 
     @commands.hybrid_command(name="stop", description="Detiene la música y desconecta al bot.")
     async def stop(self, ctx: commands.Context):
@@ -400,12 +418,17 @@ class Music(commands.Cog):
         # Barra de progreso
         position = player.position
         length = track.length
-        total_blocks = 15
-        progress = int((position / length) * total_blocks) if length > 0 else 0
-        bar = "▬" * progress + "🔘" + "▬" * (total_blocks - progress)
         
-        pos_str = f"{int(position // 1000 // 60)}:{int(position // 1000 % 60):02}"
-        len_str = f"{int(length // 1000 // 60)}:{int(length // 1000 % 60):02}"
+        if track.is_stream:
+            pos_str = "🔴 LIVE"
+            len_str = "∞"
+            bar = "▬" * 15 + "🔘"
+        else:
+            total_blocks = 15
+            progress = int((position / length) * total_blocks) if length > 0 else 0
+            bar = "▬" * progress + "🔘" + "▬" * (total_blocks - progress)
+            pos_str = f"{int(position // 1000 // 60)}:{int(position // 1000 % 60):02}"
+            len_str = f"{int(length // 1000 // 60)}:{int(length // 1000 % 60):02}"
 
         embed = discord.Embed(
             title=lang_service.get_text("music_now_listening", lang),
@@ -433,8 +456,11 @@ class Music(commands.Cog):
         lang = await lang_service.get_guild_lang(player.guild.id)
         
         # Duración formateada
-        seconds = track.length // 1000
-        duration_str = f"{seconds // 60}:{seconds % 60:02}"
+        if track.is_stream:
+            duration_str = "🔴 LIVE"
+        else:
+            seconds = track.length // 1000
+            duration_str = f"{seconds // 60}:{seconds % 60:02}"
 
         embed = discord.Embed(
             title=lang_service.get_text("music_now_playing_title", lang),
