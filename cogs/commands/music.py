@@ -140,8 +140,22 @@ class Music(commands.Cog):
     async def on_wavelink_node_ready(self, payload: wavelink.NodeReadyEventPayload):
         logger.info(f"✅ [Music] Nodo Lavalink conectado: {payload.node.identifier}")
 
+    async def play_autocomplete(self, interaction: discord.Interaction, current: str) -> list[app_commands.Choice[str]]:
+        if not current:
+            return []
+        try:
+            # Búsqueda rápida en YouTube para autocompletado
+            tracks = await wavelink.Playable.search(f"ytsearch:{current}")
+            return [
+                app_commands.Choice(name=f"{track.title[:80]} - {track.author[:15]}", value=track.uri or track.title)
+                for track in tracks[:10]
+            ]
+        except Exception:
+            return []
+
     @commands.hybrid_command(name="play", description="Reproduce música desde YouTube, SoundCloud, etc.")
     @app_commands.describe(busqueda="Nombre de la canción o URL")
+    @app_commands.autocomplete(busqueda=play_autocomplete)
     async def play(self, ctx: commands.Context, busqueda: str):
         lang = await lang_service.get_guild_lang(ctx.guild.id)
         
@@ -215,9 +229,9 @@ class Music(commands.Cog):
         lang = await lang_service.get_guild_lang(ctx.guild.id)
         player: wavelink.Player = ctx.voice_client
         
-        if not player or (not player.playing and player.queue.is_empty):
-            msg = lang_service.get_text("music_queue_empty", lang)
-            return await ctx.send(embed=embed_service.info("Cola", msg, lite=True))
+        if not player or not player.playing:
+            msg = lang_service.get_text("music_error_nothing", lang)
+            return await ctx.send(embed=embed_service.warning("Cola", msg, lite=True))
 
         # Construcción de páginas para el Paginator
         pages = []
@@ -265,10 +279,13 @@ class Music(commands.Cog):
     @commands.hybrid_command(name="shuffle", description="Mezcla aleatoriamente la cola de reproducción.")
     async def shuffle(self, ctx: commands.Context):
         lang = await lang_service.get_guild_lang(ctx.guild.id)
-        if not ctx.voice_client:
+        if not ctx.voice_client or not ctx.voice_client.playing:
              return await ctx.send(embed=embed_service.error("Error", lang_service.get_text("music_error_nothing", lang), lite=True), ephemeral=True)
         
         player: wavelink.Player = ctx.voice_client
+        if player.queue.is_empty:
+             return await ctx.send(embed=embed_service.warning("Shuffle", lang_service.get_text("music_queue_empty", lang), lite=True), ephemeral=True)
+
         player.queue.shuffle()
         msg = lang_service.get_text("music_shuffled", lang)
         await ctx.send(embed=embed_service.success("Shuffle", msg, lite=True))
@@ -293,7 +310,7 @@ class Music(commands.Cog):
     @commands.hybrid_command(name="loop", description="Cambia el modo de repetición (Pista / Cola / Apagado).")
     async def loop(self, ctx: commands.Context):
         lang = await lang_service.get_guild_lang(ctx.guild.id)
-        if not ctx.voice_client:
+        if not ctx.voice_client or not ctx.voice_client.playing:
              return await ctx.send(embed=embed_service.error("Error", lang_service.get_text("music_error_nothing", lang), lite=True), ephemeral=True)
         
         player: wavelink.Player = ctx.voice_client
