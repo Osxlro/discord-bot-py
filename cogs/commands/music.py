@@ -74,9 +74,10 @@ class Music(commands.Cog):
         if not wavelink.Pool.nodes:
             try:
                 node_config = settings.LAVALINK_CONFIG
+                protocol = "https" if node_config.get("SECURE") else "http"
                 nodes = [
                     wavelink.Node(
-                        uri=f"http://{node_config['HOST']}:{node_config['PORT']}",
+                        uri=f"{protocol}://{node_config['HOST']}:{node_config['PORT']}",
                         password=node_config['PASSWORD']
                     )
                 ]
