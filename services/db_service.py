@@ -1,5 +1,7 @@
 import logging
 import os
+import asyncio
+import sqlite3
 import aiosqlite
 from config import settings
 
@@ -141,21 +143,27 @@ async def init_db():
 
 async def execute(query: str, params: tuple = ()):
     """Ejecuta una consulta de escritura (INSERT, UPDATE, DELETE)."""
-    db = await get_db()
-    await db.execute(query, params)
-    await db.commit()
+    async def _op():
+        db = await get_db()
+        await db.execute(query, params)
+        await db.commit()
+    await _execute_with_retry(_op)
 
 async def fetch_one(query: str, params: tuple = ()):
     """Ejecuta una consulta de lectura y retorna un solo resultado."""
-    db = await get_db()
-    async with db.execute(query, params) as c: 
-        return await c.fetchone()
+    async def _op():
+        db = await get_db()
+        async with db.execute(query, params) as c: 
+            return await c.fetchone()
+    return await _execute_with_retry(_op)
 
 async def fetch_all(query: str, params: tuple = ()):
     """Ejecuta una consulta de lectura y retorna todos los resultados."""
-    db = await get_db()
-    async with db.execute(query, params) as c: 
-        return await c.fetchall()
+    async def _op():
+        db = await get_db()
+        async with db.execute(query, params) as c: 
+            return await c.fetchall()
+    return await _execute_with_retry(_op)
 
 # =============================================================================
 # 3. GESTIÓN DE CACHÉ Y MEMORIA
@@ -179,6 +187,25 @@ def clear_xp_cache_safe():
     for k in keys_to_remove:
         del _xp_cache[k]
 
+async def _execute_with_retry(func, *args, **kwargs):
+    """
+    Wrapper para reintentar operaciones de DB si está bloqueada (SQLite Locked).
+    """
+    retries = 3
+    base_delay = 0.1
+    
+    for i in range(retries):
+        try:
+            return await func(*args, **kwargs)
+        except sqlite3.OperationalError as e:
+            # Si la base de datos está bloqueada, esperamos y reintentamos
+            if "locked" in str(e) and i < retries - 1:
+                await asyncio.sleep(base_delay * (i + 1))
+                continue
+            raise e
+        except Exception as e:
+            raise e
+
 async def flush_xp_cache():
     """Vuelca los datos de XP acumulados en RAM hacia la base de datos."""
     if not _xp_cache: return
@@ -186,22 +213,30 @@ async def flush_xp_cache():
     updates = []
     # Recolectamos solo los datos "sucios" (modificados)
     # Esto reduce la carga de trabajo al procesar solo lo que realmente cambió.
+    keys_to_clean = []
     for key, data in _xp_cache.items():
         if data['dirty']:
             updates.append((data['xp'], data['level'], data['rebirths'], key[0], key[1]))
-            data['dirty'] = False
+            keys_to_clean.append(key)
     
     if updates:
         try:
-            db = await get_db()
-            # Uso de ON CONFLICT para manejar inserciones y actualizaciones en una sola consulta (Upsert).
-            await db.executemany("""
-                INSERT INTO guild_stats (xp, level, rebirths, guild_id, user_id) 
-                VALUES (?, ?, ?, ?, ?)
-                ON CONFLICT(guild_id, user_id) DO UPDATE SET 
-                xp = excluded.xp, level = excluded.level, rebirths = excluded.rebirths
-            """, updates)
-            await db.commit()
+            async def _do_update():
+                db = await get_db()
+                await db.executemany("""
+                    INSERT INTO guild_stats (xp, level, rebirths, guild_id, user_id) 
+                    VALUES (?, ?, ?, ?, ?)
+                    ON CONFLICT(guild_id, user_id) DO UPDATE SET 
+                    xp = excluded.xp, level = excluded.level, rebirths = excluded.rebirths
+                """, updates)
+                await db.commit()
+
+            await _execute_with_retry(_do_update)
+            
+            # CRÍTICO: Solo marcamos como limpios si la DB confirmó el guardado
+            for key in keys_to_clean:
+                if key in _xp_cache:
+                    _xp_cache[key]['dirty'] = False
         except Exception as e:
             logger.error(f"⚠️ Error guardando caché de XP: {e}")
 

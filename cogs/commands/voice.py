@@ -1,4 +1,5 @@
 import logging
+import asyncio
 from discord.ext import commands
 from services import embed_service, lang_service
 
@@ -7,6 +8,7 @@ logger = logging.getLogger(__name__)
 class Voice(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.voice_targets = {} # {guild_id: channel_id} - Dónde debería estar el bot
 
     @commands.hybrid_command(name="join", description="Conecta el bot a tu canal de voz (Modo Chill).")
     async def join(self, ctx: commands.Context):
@@ -39,6 +41,7 @@ class Voice(commands.Cog):
             else:
                 await channel.connect(self_deaf=True, self_mute=True)
             
+            self.voice_targets[ctx.guild.id] = channel.id
             msg = lang_service.get_text("voice_join", lang, channel=channel.name)
             await ctx.send(embed=embed_service.success("Voice", msg, lite=True))
             logger.info(f"Voice Join: {ctx.guild.name} -> {channel.name}")
@@ -52,6 +55,10 @@ class Voice(commands.Cog):
         lang = await lang_service.get_guild_lang(ctx.guild.id)
         
         if ctx.voice_client:
+            # Eliminamos la persistencia porque el usuario pidió salir
+            if ctx.guild.id in self.voice_targets:
+                del self.voice_targets[ctx.guild.id]
+                
             await ctx.voice_client.disconnect()
             msg = lang_service.get_text("voice_leave", lang)
             await ctx.send(embed=embed_service.success("Voice", msg, lite=True))
@@ -68,8 +75,36 @@ class Voice(commands.Cog):
         if member.id == self.bot.user.id:
             # Si estaba en un canal y ahora no (Desconexión)
             if before.channel is not None and after.channel is None:
-                # Aquí podrías implementar lógica de reconexión automática si lo deseas
-                logger.warning(f"⚠️ [Voice] Bot desconectado de {before.channel.name} en {member.guild.name}.")
+                target_channel_id = self.voice_targets.get(member.guild.id)
+                
+                # Si tenemos un objetivo guardado, intentamos reconectar
+                if target_channel_id and target_channel_id == before.channel.id:
+                    logger.warning(f"⚠️ [Voice] Desconexión inesperada en {member.guild.name}. Iniciando reconexión...")
+                    self.bot.loop.create_task(self._reconnect_voice(member.guild, target_channel_id))
+
+    async def _reconnect_voice(self, guild, channel_id):
+        """Intenta reconectar al canal de voz con backoff exponencial."""
+        channel = guild.get_channel(channel_id)
+        if not channel: return
+
+        backoff = [5, 10, 30] # Segundos de espera entre intentos
+        
+        for i, wait in enumerate(backoff):
+            await asyncio.sleep(wait)
+            try:
+                if guild.voice_client and guild.voice_client.is_connected():
+                    return # Ya se reconectó
+                
+                logger.info(f"🔄 [Voice] Intento de reconexión {i+1}/{len(backoff)} en {guild.name}...")
+                await channel.connect(self_deaf=True, self_mute=True)
+                logger.info(f"✅ [Voice] Reconexión exitosa en {guild.name}.")
+                return
+            except Exception as e:
+                logger.error(f"❌ [Voice] Fallo reconexión ({i+1}): {e}")
+        
+        # Si falla todo, limpiamos el target
+        if guild.id in self.voice_targets:
+            del self.voice_targets[guild.id]
 
 async def setup(bot):
     await bot.add_cog(Voice(bot))

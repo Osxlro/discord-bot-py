@@ -25,6 +25,11 @@ class OptimizationTasks(commands.Cog):
         except Exception as e:
             logger.error(f"⚠️ Error guardando XP caché: {e}")
 
+    @cache_flush_loop.error
+    async def cache_flush_error(self, error):
+        logger.critical(f"🔥 Error CRÍTICO en tarea de guardado (Flush): {error}")
+        # La tarea intentará reiniciarse automáticamente en la siguiente iteración si no se cancela
+
     # TAREA 2: Limpieza de RAM (Lenta - cada 6 horas)
     # Libera memoria acumulada de configuraciones viejas.
     @tasks.loop(hours=6)
@@ -46,6 +51,10 @@ class OptimizationTasks(commands.Cog):
             logger.info("🧹 [Sistema] Mantenimiento de memoria completado (RAM liberada).")
         except Exception as e:
             logger.error(f"⚠️ Error en limpieza de memoria: {e}")
+
+    @memory_cleanup_loop.error
+    async def memory_cleanup_error(self, error):
+        logger.critical(f"🔥 Error CRÍTICO en tarea de limpieza (Cleanup): {error}")
 
     @cache_flush_loop.before_loop
     async def before_flush(self):

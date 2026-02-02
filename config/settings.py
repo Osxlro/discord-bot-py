@@ -79,7 +79,8 @@ def get_bot_icon() -> str:
 MINECRAFT_CONFIG = {
     "ENABLED": True,      # True: Carga el servidor web. False: No inicia el puente.
     "PORT": 5058,         # Puerto para recibir datos del plugin de Minecraft
-    "DEFAULT_NAME": "Steve" # Nombre por defecto si el plugin no envía el autor
+    "DEFAULT_NAME": "Steve", # Nombre por defecto si el plugin no envía el autor
+    "TOKEN": "CAMBIAME_POR_UN_TOKEN_SEGURO" # Token de seguridad para el Bridge
 }
 
 # --- 10. CONFIGURACIÓN CHAOS ---

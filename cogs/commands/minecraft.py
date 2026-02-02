@@ -34,10 +34,19 @@ class Minecraft(commands.Cog):
         await self.runner.setup()
         
         # Puerto desde settings
-        port = settings.MINECRAFT_CONFIG.get("PORT", 5058)
-        self.site = web.TCPSite(self.runner, '0.0.0.0', port)
-        await self.site.start()
-        logger.info(f"🌍 Bridge Minecraft online en puerto {port}")
+        base_port = settings.MINECRAFT_CONFIG.get("PORT", 5058)
+        
+        # Intento de inicio robusto (Puerto principal o fallback)
+        for port in range(base_port, base_port + 3):
+            try:
+                self.site = web.TCPSite(self.runner, '0.0.0.0', port)
+                await self.site.start()
+                logger.info(f"🌍 Bridge Minecraft online en puerto {port}")
+                break
+            except OSError:
+                logger.warning(f"⚠️ Puerto {port} ocupado, intentando siguiente...")
+        else:
+            logger.error("❌ No se pudo iniciar el Bridge Minecraft: Todos los puertos ocupados.")
 
     async def cog_unload(self):
         if self.site: await self.site.stop()
@@ -45,10 +54,27 @@ class Minecraft(commands.Cog):
 
     # --- ENDPOINTS ---
     
+    def _validate_request(self, request):
+        """Valida autenticación y tamaño del payload."""
+        # 1. Validar Token de Seguridad
+        token = settings.MINECRAFT_CONFIG.get("TOKEN")
+        if token and request.headers.get("Authorization") != token:
+            return False, web.Response(status=401, text="Unauthorized")
+        
+        # 2. Validar Tamaño (Max 50KB)
+        if request.content_length > 50 * 1024:
+            return False, web.Response(status=413, text="Payload too large")
+            
+        return True, None
+
     async def handle_update(self, request):
         """Recibe estadísticas (Vida, Bioma, XP, etc)"""
+        valid, response = self._validate_request(request)
+        if not valid: return response
+
         try:
             data = await request.json()
+            if not isinstance(data, dict): raise ValueError("JSON inválido")
             self.player_stats = data
             return web.Response(text="OK")
         except Exception as e:
@@ -57,8 +83,13 @@ class Minecraft(commands.Cog):
 
     async def handle_chat_in(self, request):
         """Recibe mensajes de chat DESDE Minecraft"""
+        valid, response = self._validate_request(request)
+        if not valid: return response
+
         try:
             data = await request.json()
+            if not isinstance(data, dict): raise ValueError("JSON inválido")
+            
             default_name = settings.MINECRAFT_CONFIG.get("DEFAULT_NAME", "Steve")
             autor = data.get("autor", default_name)
             contenido = data.get("contenido", "")
