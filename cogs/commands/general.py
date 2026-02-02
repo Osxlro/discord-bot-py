@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 EMOJI_MAP = {
     "General": "💡", "Moderacion": "🛡️", "Niveles": "📊",
     "Diversion": "🎲", "Configuracion": "⚙️", "Developer": "💻",
-    "Cumpleaños": "🎂", "Roles": "🎭", "Voice": "🎙️", 
+    "Cumpleanos": "🎂", "Roles": "🎭", "Voice": "🎙️", 
     "Perfil": "👤", "Status": "🟢", "Backup": "💾",
     "Usuario": "👤", "Minecraft": "🧱"
 }
@@ -126,12 +126,10 @@ class General(commands.Cog):
             color=ctx.guild.me.color if ctx.guild else discord.Color.blurple()
         )
         
-        cats_text = ""
-        for name in ctx.bot.cogs.keys():
-            if ctx.bot.get_cog(name).get_commands():
-                cats_text += f"{EMOJI_MAP.get(name, '📂')} **{name}**\n"
+        cats = [f"• {name}" for name in ctx.bot.cogs.keys() if ctx.bot.get_cog(name).get_commands()]
+        cats_formatted = "\n".join(cats)
         
-        embed.add_field(name=f"📂 {lang_service.get_text('help_categories', lang)}", value=cats_text, inline=False)
+        embed.add_field(name=f"📂 {lang_service.get_text('help_categories', lang)}", value=f"```\n{cats_formatted}\n```", inline=False)
         embed.set_thumbnail(url=ctx.bot.user.display_avatar.url)
         embed.set_footer(text="Selecciona una categoría abajo 👇", icon_url=ctx.bot.user.display_avatar.url)
         
