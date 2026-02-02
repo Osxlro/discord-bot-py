@@ -95,6 +95,17 @@ ASSETS = {
     "COINFLIP_TAILS": "https://cdn.discordapp.com/emojis/745519477935964212.gif"
 }
 
+# --- 12. CONFIGURACIÓN MÚSICA (LAVALINK) ---
+LAVALINK_CONFIG = {
+    "HOST": "127.0.0.1",      # IP de tu servidor Lavalink
+    "PORT": 2333,             # Puerto de Lavalink
+    "PASSWORD": "youshallnotpass", # Contraseña de Lavalink
+    "SECURE": False,          # True para HTTPS/WSS
+    "DEFAULT_VOLUME": 50,     # Volumen inicial (0-100)
+    "SEARCH_PROVIDER": "yt",  # 'yt' (YouTube), 'sc' (SoundCloud), 'sp' (Spotify - requiere plugin)
+    "INACTIVITY_TIMEOUT": 300 # Segundos para desconectarse si no hay música
+}
+
 # Helper para compatibilidad (convierte nombre de color a entero)
 def get_color(key: str) -> int:
     return COLORS.get(key.upper(), 0xFFFFFF)

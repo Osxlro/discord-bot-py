@@ -138,6 +138,8 @@ LOCALES = {
         "help_desc_perfil": "Gestión de tu tarjeta de usuario.",
         "help_desc_backup": "Copias de seguridad.",
         "help_desc_optimizationtasks": "Tareas de mantenimiento interno.",
+        "help_desc_usuario": "Perfil, cumpleaños y personalización.",
+        "help_desc_music": "Reproducción de música de alta calidad.",
         
         # --- CONFIGURACIÓN ---
         "setup_success": "Configuración Actualizada",
@@ -162,7 +164,22 @@ LOCALES = {
         "mc_field_world": "🌎 Mundo",
         "mc_msg_sent": "📨 Enviado: `{message}`",
         "mc_chat_format": "**{user}:** {content}",
-        "mc_unknown": "?"
+        "mc_unknown": "?",
+
+        # --- MÚSICA ---
+        "music_joined": "✅ Conectado a **{channel}**.",
+        "music_track_enqueued": "🎵 Añadido a la cola: **{title}**",
+        "music_playing": "🎶 Reproduciendo ahora",
+        "music_paused": "⏸️ Música pausada.",
+        "music_resumed": "▶️ Música reanudada.",
+        "music_skipped": "⏭️ Canción saltada.",
+        "music_stopped": "⏹️ Reproducción detenida y desconectado.",
+        "music_queue_empty": "📭 La cola está vacía.",
+        "music_volume": "🔊 Volumen ajustado a **{vol}%**.",
+        "music_error_join": "❌ Entra a un canal de voz primero.",
+        "music_error_nothing": "❌ No hay nada reproduciéndose.",
+        "music_node_connected": "🔗 Nodo Lavalink conectado.",
+        "music_search_empty": "❌ No encontré resultados para `{query}`."
     },
     
     "en": {
@@ -301,6 +318,8 @@ LOCALES = {
         "help_desc_perfil": "User profile management.",
         "help_desc_backup": "System backups.",
         "help_desc_optimizationtasks": "Internal maintenance tasks.",
+        "help_desc_usuario": "Profile, birthday and customization.",
+        "help_desc_music": "High quality music playback.",
         
         # --- CONFIGURATION ---
         "setup_success": "Configuration Updated",
@@ -325,6 +344,21 @@ LOCALES = {
         "mc_field_world": "🌎 World",
         "mc_msg_sent": "📨 Sent: `{message}`",
         "mc_chat_format": "**{user}:** {content}",
-        "mc_unknown": "?"
+        "mc_unknown": "?",
+
+        # --- MUSIC ---
+        "music_joined": "✅ Connected to **{channel}**.",
+        "music_track_enqueued": "🎵 Added to queue: **{title}**",
+        "music_playing": "🎶 Now Playing",
+        "music_paused": "⏸️ Music paused.",
+        "music_resumed": "▶️ Music resumed.",
+        "music_skipped": "⏭️ Track skipped.",
+        "music_stopped": "⏹️ Playback stopped and disconnected.",
+        "music_queue_empty": "📭 Queue is empty.",
+        "music_volume": "🔊 Volume set to **{vol}%**.",
+        "music_error_join": "❌ Join a voice channel first.",
+        "music_error_nothing": "❌ Nothing is playing.",
+        "music_node_connected": "🔗 Lavalink node connected.",
+        "music_search_empty": "❌ No results found for `{query}`."
     }
 }

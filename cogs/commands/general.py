@@ -11,7 +11,7 @@ EMOJI_MAP = {
     "Diversion": "🎲", "Configuracion": "⚙️", "Developer": "💻",
     "Cumpleanos": "🎂", "Roles": "🎭", "Voice": "🎙️", 
     "Perfil": "👤", "Status": "🟢", "Backup": "💾",
-    "Usuario": "👤", "Minecraft": "🧱"
+    "Usuario": "👤", "Minecraft": "🧱", "Music": "🎵"
 }
 
 class HelpSelect(discord.ui.Select):
