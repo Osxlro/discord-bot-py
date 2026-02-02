@@ -375,14 +375,29 @@ class Music(commands.Cog):
     async def on_wavelink_track_end(self, payload: wavelink.TrackEndEventPayload):
         player = payload.player
         
-        # Si hay canciones en la cola, reproducir la siguiente
+        # Evitamos errores si el bot fue desconectado
+        if not player.guild.voice_client:
+            return
+
+        # 1. Si Autoplay está activado, Wavelink gestiona TODO (Cola + Recomendaciones).
+        # No intervenimos para evitar conflictos de doble reproducción.
+        if player.autoplay == wavelink.AutoPlayMode.enabled:
+            return
+
+        # 2. Gestión Manual (Cuando Autoplay está OFF)
+        # Soporte para Loop de Pista (Repetir la misma)
+        if player.queue.mode == wavelink.QueueMode.loop:
+            await player.play(payload.track)
+            return
+
+        # Soporte para Loop de Cola (Mover al final)
+        if player.queue.mode == wavelink.QueueMode.loop_all:
+            await player.queue.put_wait(payload.track)
+
+        # Reproducir siguiente canción de la cola si existe
         if not player.queue.is_empty:
             next_track = player.queue.get()
             await player.play(next_track)
-        
-        # Si la cola está vacía y Autoplay está activado, Wavelink (v3) debería encargarse automáticamente
-        # si player.autoplay == wavelink.AutoPlayMode.enabled.
-        # No necesitamos hacer nada extra aquí para autoplay nativo.
 
 async def setup(bot):
     await bot.add_cog(Music(bot))
