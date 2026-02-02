@@ -1,9 +1,14 @@
 import discord
 from discord.ext import commands, tasks
-import os
+import pathlib
+import shutil
 import datetime
 import asyncio
+import logging
 from config import settings
+from services import db_service
+
+logger = logging.getLogger(__name__)
 
 class Backup(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -27,16 +32,24 @@ class Backup(commands.Cog):
                 try:
                     await msg.delete()
                     await asyncio.sleep(1)
-                except: pass
+                except discord.HTTPException:
+                    pass
 
     @tasks.loop(hours=12)
     async def backup_db(self):
         await self.bot.wait_until_ready()
-        db_path = os.path.join(settings.BASE_DIR, "data", "database.sqlite3")
         
-        if not os.path.exists(db_path): return
+        # Rutas usando pathlib
+        db_path = pathlib.Path(settings.BASE_DIR) / "data" / "database.sqlite3"
+        temp_backup_path = db_path.with_name("temp_backup.sqlite3")
+        
+        if not db_path.exists():
+            return
 
         try:
+            # 1. Forzar el guardado de la XP que está en RAM a la DB antes del backup
+            await db_service.flush_xp_cache()
+
             app_info = await self.bot.application_info()
             owner = app_info.owner
             
@@ -58,16 +71,23 @@ class Backup(commands.Cog):
                 if diff.total_seconds() < 84600: 
                     return 
 
-            # --- ENVIAR BACKUP ---
+            # 2. Crear copia temporal para evitar bloqueos/corrupción durante el envío
+            shutil.copy2(db_path, temp_backup_path)
+
+            # 3. ENVIAR BACKUP
             fecha = datetime.date.today().strftime("%Y-%m-%d")
-            archivo = discord.File(db_path, filename=f"backup_{fecha}.sqlite3")
+            archivo = discord.File(temp_backup_path, filename=f"backup_{fecha}.sqlite3")
             msg = await owner.send(content=f"📦 **Backup** {fecha}", file=archivo)
             
             await self._cleanup_dm(msg.channel)
-            print(f"✅ [Backup] Enviado a {owner.name}")
+            logger.info(f"✅ Backup de base de datos enviado a {owner.name}")
 
         except Exception as e:
-            print(f"❌ [Backup] Error: {e}")
+            logger.error(f"❌ Error en el sistema de Backup: {e}")
+        finally:
+            # 4. Limpiar el archivo temporal siempre
+            if temp_backup_path.exists():
+                temp_backup_path.unlink()
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(Backup(bot))

@@ -6,6 +6,11 @@ load_dotenv()
 # 1. Token y Claves
 TOKEN = os.getenv("DISCORD_TOKEN")
 
+# Para escalado futuro:
+DATABASE_URL = os.getenv("DATABASE_URL") # Ejemplo: postgresql://user:pass@localhost/dbname
+REDIS_URL = os.getenv("REDIS_URL")       # Ejemplo: redis://localhost:6379/0
+IS_PRODUCTION = os.getenv("PRODUCTION", "False") == "True"
+
 # 2. Rutas
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 

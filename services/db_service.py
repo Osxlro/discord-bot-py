@@ -1,6 +1,10 @@
 import aiosqlite
 import os
+import logging
 from config import settings
+
+# --- CONFIGURACIÓN ---
+logger = logging.getLogger(__name__)
 
 DATA_DIR = os.path.join(settings.BASE_DIR, "data")
 if not os.path.exists(DATA_DIR):
@@ -11,10 +15,17 @@ DB_PATH = os.path.join(DATA_DIR, DB_NAME)
 _connection = None
 
 # --- CACHÉS EN MEMORIA ---
-_xp_cache = {}      # Para niveles (Write-behind)
-_config_cache = {}  # Para configuración (Read-through)
+# _xp_cache: Write-behind (Escritura diferida). Se guarda en RAM y se vuelca a DB cada X tiempo.
+# _config_cache: Read-through (Lectura a través). Se lee de DB si no está en RAM.
+_xp_cache = {}      
+_config_cache = {}  
+
+# =============================================================================
+# 1. GESTIÓN DE CONEXIÓN Y BASE DE DATOS
+# =============================================================================
 
 async def get_db() -> aiosqlite.Connection:
+    """Obtiene o crea la conexión a la base de datos."""
     global _connection
     if _connection is None:
         _connection = await aiosqlite.connect(DB_PATH)
@@ -22,13 +33,19 @@ async def get_db() -> aiosqlite.Connection:
     return _connection
 
 async def close_db():
+    """Cierra la conexión de forma segura, guardando datos pendientes."""
     global _connection
-    await flush_xp_cache() # Guardar XP pendiente antes de cerrar
-    if _connection:
-        await _connection.close()
-        _connection = None
+    try:
+        await flush_xp_cache() # Guardar XP pendiente antes de cerrar
+        if _connection:
+            await _connection.close()
+            logger.info("💾 Base de datos cerrada correctamente.")
+            _connection = None
+    except Exception as e:
+        logger.error(f"❌ Error cerrando base de datos: {e}")
 
 async def init_db():
+    """Inicializa la base de datos, tablas y migraciones."""
     db = await get_db()
     
     # --- OPTIMIZACIÓN: MODO WAL (Más velocidad y concurrencia) ---
@@ -38,7 +55,9 @@ async def init_db():
     # Compactar base de datos al inicio para liberar espacio en disco
     await db.execute("VACUUM;")
 
-    # Tablas Base (Usuarios, Stats, Config, Status)
+    # --- DEFINICIÓN DE TABLAS ---
+    
+    # 1. Usuarios (Preferencias globales)
     await db.execute("""
     CREATE TABLE IF NOT EXISTS users (
         user_id INTEGER PRIMARY KEY,
@@ -53,6 +72,7 @@ async def init_db():
     )
     """)
     
+    # 2. Estadísticas por Servidor (XP, Niveles, Rebirths)
     await db.execute("""
     CREATE TABLE IF NOT EXISTS guild_stats (
         guild_id INTEGER,
@@ -64,6 +84,7 @@ async def init_db():
     )
     """)
     
+    # 3. Configuración del Servidor
     await db.execute("""
     CREATE TABLE IF NOT EXISTS guild_config (
         guild_id INTEGER PRIMARY KEY,
@@ -83,6 +104,7 @@ async def init_db():
     )
     """)
 
+    # 4. Estados Rotativos del Bot
     await db.execute("""
     CREATE TABLE IF NOT EXISTS bot_statuses (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -91,7 +113,9 @@ async def init_db():
     )
     """)
     
-    # Índices y Migraciones
+    # --- ÍNDICES Y MIGRACIONES ---
+    
+    # Índice para leaderboard rápido
     await db.execute("CREATE INDEX IF NOT EXISTS idx_ranking ON guild_stats(guild_id, rebirths DESC, level DESC, xp DESC)")
     
     # Migraciones silenciosas por si acaso
@@ -104,11 +128,77 @@ async def init_db():
         except: pass
 
     await db.commit()
+    
+    # Sugerencia de escalado: 
+    # Si settings.REDIS_URL existe, inicializar cliente de Redis aquí
+    # para mover _xp_cache y _config_cache fuera de la memoria local.
+    logger.info("💾 Base de datos inicializada.")
 
-# --- LÓGICA DE CACHÉ DE CONFIGURACIÓN ---
+# =============================================================================
+# 2. HELPERS DE CONSULTA (CORE)
+# =============================================================================
 
-async def get_guild_config(guild_id: int):
-    """Obtiene la configuración desde el CACHÉ (RAM)."""
+async def execute(query: str, params: tuple = ()):
+    """Ejecuta una consulta de escritura (INSERT, UPDATE, DELETE)."""
+    db = await get_db()
+    await db.execute(query, params)
+    await db.commit()
+
+async def fetch_one(query: str, params: tuple = ()):
+    """Ejecuta una consulta de lectura y retorna un solo resultado."""
+    db = await get_db()
+    async with db.execute(query, params) as c: 
+        return await c.fetchone()
+
+async def fetch_all(query: str, params: tuple = ()):
+    """Ejecuta una consulta de lectura y retorna todos los resultados."""
+    db = await get_db()
+    async with db.execute(query, params) as c: 
+        return await c.fetchall()
+
+# =============================================================================
+# 3. GESTIÓN DE CACHÉ Y MEMORIA
+# =============================================================================
+
+def clear_memory_cache():
+    """Limpia el caché de configuración de la RAM para liberar memoria."""
+    global _config_cache
+    _config_cache.clear()
+    # Nota: No limpiamos _xp_cache aquí porque puede tener datos sin guardar.
+
+async def flush_xp_cache():
+    """Vuelca los datos de XP acumulados en RAM hacia la base de datos."""
+    if not _xp_cache: return
+    
+    updates = []
+    # Recolectamos solo los datos "sucios" (modificados)
+    for key, data in _xp_cache.items():
+        if data['dirty']:
+            updates.append((data['xp'], data['level'], data['rebirths'], key[0], key[1]))
+            data['dirty'] = False
+    
+    if updates:
+        try:
+            db = await get_db()
+            await db.executemany("""
+                INSERT INTO guild_stats (xp, level, rebirths, guild_id, user_id) 
+                VALUES (?, ?, ?, ?, ?)
+                ON CONFLICT(guild_id, user_id) DO UPDATE SET 
+                xp = excluded.xp, level = excluded.level, rebirths = excluded.rebirths
+            """, updates)
+            await db.commit()
+        except Exception as e:
+            logger.error(f"⚠️ Error guardando caché de XP: {e}")
+
+# =============================================================================
+# 4. LÓGICA DE NEGOCIO: CONFIGURACIÓN (GUILD CONFIG)
+# =============================================================================
+
+async def get_guild_config(guild_id: int) -> dict:
+    """
+    Obtiene la configuración de un servidor.
+    Usa caché en RAM para evitar lecturas constantes a disco.
+    """
     if guild_id in _config_cache:
         return _config_cache[guild_id]
 
@@ -117,6 +207,7 @@ async def get_guild_config(guild_id: int):
     if row:
         config = dict(row)
     else:
+        # Valores por defecto si no existe configuración
         config = {
             "guild_id": guild_id,
             "language": "es",
@@ -148,20 +239,22 @@ async def update_guild_config(guild_id: int, updates: dict):
     else:
         _config_cache[guild_id].update(updates)
 
-# --- NUEVO: FUNCIÓN DE LIMPIEZA DE MEMORIA ---
-def clear_memory_cache():
-    """Limpia el caché de configuración de la RAM para liberar memoria."""
-    global _config_cache
-    _config_cache.clear()
-    # Nota: No limpiamos _xp_cache aquí porque puede tener datos sin guardar.
+# =============================================================================
+# 5. LÓGICA DE NEGOCIO: XP Y NIVELES
+# =============================================================================
 
-# --- LÓGICA DE XP Y CACHÉ (MANTENIDA) ---
-
-def calculate_xp_required(level):
+def calculate_xp_required(level: int) -> int:
+    """Calcula la XP necesaria para alcanzar el siguiente nivel."""
     return int(100 * (level ** 1.2))
 
-async def add_xp(guild_id: int, user_id: int, amount: int):
+async def add_xp(guild_id: int, user_id: int, amount: int) -> tuple[int, bool]:
+    """
+    Añade XP a un usuario en memoria (Write-behind).
+    Retorna: (Nuevo Nivel, ¿Subió de nivel?)
+    """
     key = (guild_id, user_id)
+    
+    # Si no está en caché, cargamos de DB o inicializamos
     if key not in _xp_cache:
         row = await fetch_one("SELECT xp, level, rebirths FROM guild_stats WHERE guild_id = ? AND user_id = ?", (guild_id, user_id))
         if row:
@@ -184,50 +277,27 @@ async def add_xp(guild_id: int, user_id: int, amount: int):
     
     return data['level'], leveled_up
 
-async def flush_xp_cache():
-    if not _xp_cache: return
-    updates = []
-    for key, data in _xp_cache.items():
-        if data['dirty']:
-            updates.append((data['xp'], data['level'], data['rebirths'], key[0], key[1]))
-            data['dirty'] = False
-    
-    if updates:
-        db = await get_db()
-        await db.executemany("""
-            INSERT INTO guild_stats (xp, level, rebirths, guild_id, user_id) 
-            VALUES (?, ?, ?, ?, ?)
-            ON CONFLICT(guild_id, user_id) DO UPDATE SET 
-            xp = excluded.xp, level = excluded.level, rebirths = excluded.rebirths
-        """, updates)
-        await db.commit()
-
-async def do_rebirth(guild_id: int, user_id: int):
+async def do_rebirth(guild_id: int, user_id: int) -> tuple[bool, any]:
+    """
+    Realiza un renacimiento si el usuario es nivel 100+.
+    Retorna: (Éxito, Nuevo conteo de Rebirths o Error)
+    """
+    # Forzamos guardado de caché para asegurar consistencia
     await flush_xp_cache()
+    
     row = await fetch_one("SELECT level, rebirths FROM guild_stats WHERE guild_id = ? AND user_id = ?", (guild_id, user_id))
     
     if not row: return False, "no_data"
     if row['level'] < 100: return False, row['level']
     
     new_reb = row['rebirths'] + 1
+    
+    # Actualizamos DB directamente
     await execute("UPDATE guild_stats SET level = 1, xp = 0, rebirths = ? WHERE guild_id = ? AND user_id = ?", (new_reb, guild_id, user_id))
     
+    # Actualizamos caché si existe
     key = (guild_id, user_id)
     if key in _xp_cache:
         _xp_cache[key].update({'level': 1, 'xp': 0, 'rebirths': new_reb, 'dirty': False})
         
     return True, new_reb
-
-# --- HELPERS ---
-async def execute(query, params=()):
-    db = await get_db()
-    await db.execute(query, params)
-    await db.commit()
-
-async def fetch_one(query, params=()):
-    db = await get_db()
-    async with db.execute(query, params) as c: return await c.fetchone()
-
-async def fetch_all(query, params=()):
-    db = await get_db()
-    async with db.execute(query, params) as c: return await c.fetchall()

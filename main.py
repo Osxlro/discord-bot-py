@@ -28,44 +28,49 @@ async def get_prefix(bot, message):
         row = await db_service.fetch_one("SELECT custom_prefix FROM users WHERE user_id = ?", (message.author.id,))
         if row and row['custom_prefix']:
             return row['custom_prefix']
-    except:
-        pass
+    except Exception as e:
+        logger.error(f"Error obteniendo prefijo dinámico: {e}")
     return settings.CONFIG["bot_config"]["prefix"]
 
-class BotPersonal(commands.Bot):
+class BotPersonal(commands.AutoShardedBot):
     def __init__(self):
         super().__init__(
-            command_prefix=get_prefix, 
+            command_prefix=get_prefix,
             intents=intents,
             help_command=None,
             activity=discord.Game(name="Iniciando sistemas...")
         )
 
     async def setup_hook(self):
-        logger.info("--- ⚙️  CARGANDO EXTENSIONES ---")
+        """Configuración inicial del bot en orden lógico."""
+        # 1. Base de Datos (La base de todo)
+        await self._init_database()
         
-        # Usamos pathlib para recorrer la carpeta cogs de forma recursiva (rglob)
-        # Esto funciona perfecto en Windows, Linux y Mac sin trucos raros.
+        # 2. Extensiones (La lógica del bot)
+        await self._load_extensions()
+
+        # 3. Sincronización (El puente con Discord)
+        await self._sync_commands()
+
+    async def _init_database(self):
+        logger.info("--- 💾 INICIANDO BASE DE DATOS ---")
+        await db_service.init_db()
+
+    async def _load_extensions(self):
+        logger.info("--- ⚙️  CARGANDO EXTENSIONES ---")
         cogs_dir = pathlib.Path("./cogs")
         
         for file in cogs_dir.rglob("*.py"):
-            # Ignoramos archivos __init__.py si existen
             if file.name == "__init__.py": continue
             
-            # Convertimos la ruta de archivo a formato de punto (cogs.commands.general)
-            # parts separa la ruta en ('cogs', 'commands', 'general.py')
-            # [:-3] quita el .py del nombre final
             extension_name = ".".join(file.parts).replace(".py", "")
-            
             try:
                 await self.load_extension(extension_name)
                 logger.info(f'✅ Extensión cargada: {extension_name}')
             except Exception as e:
                 logger.error(f'❌ Error cargando {extension_name}: {e}')
-        
-        logger.info("--- 💾 INICIANDO BASE DE DATOS ---")
-        await db_service.init_db()
 
+    async def _sync_commands(self):
         logger.info("--- 🔄 SINCRONIZANDO COMANDOS ---")
         try:
             synced = await self.tree.sync()
@@ -74,10 +79,10 @@ class BotPersonal(commands.Bot):
             logger.error(f"❌ Error al sincronizar: {e}")
 
     async def on_ready(self):
-        logger.info(f'------------------------------------')
+        logger.info('------------------------------------')
         logger.info(f'🤖 Bot conectado: {self.user}')
         logger.info(f'🆔 ID: {self.user.id}')
-        logger.info(f'------------------------------------')
+        logger.info('------------------------------------')
         settings.set_bot_icon(self.user.display_avatar.url)
 
 async def main():
