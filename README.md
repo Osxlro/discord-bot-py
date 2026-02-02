@@ -27,6 +27,12 @@ Un bot de Discord modular, multilingüe y optimizado, diseñado para ofrecer una
 * **Optimización de I/O:** Sistema de caché inteligente que agrupa escrituras en la base de datos para reducir el desgaste del disco.
 * **Perfiles Visuales:** Comandos para consultar rangos y estadísticas personales.
 
+### 🎵 Sistema de Música (Nuevo)
+* **Alta Calidad:** Reproducción de música utilizando **Lavalink** (Wavelink) para un rendimiento óptimo sin lag.
+* **Control Total:** Comandos intuitivos (`/play`, `/pause`, `/skip`, `/volume`) y panel de botones interactivos.
+* **Funciones Avanzadas:** Soporte para **Autoplay** (reproducción infinita), **Loop** (pista/cola), **Shuffle** y búsqueda con autocompletado.
+* **Listas de Reproducción:** Gestión de colas con paginación para servidores con mucha actividad.
+
 ### 🛡️ Moderación y Administración
 * **Herramientas de Gestión:** Comandos de `kick`, `ban`, `clear` y `timeout` con soporte para jerarquías de roles.
 * **Auto-Roles:** Asignación automática de roles configurables al unirse nuevos miembros.
@@ -35,12 +41,15 @@ Un bot de Discord modular, multilingüe y optimizado, diseñado para ofrecer una
 
 ### 🎮 Integración con Minecraft
 * **Bridge Bidireccional:** Servidor web interno (`aiohttp`) que permite la comunicación entre el chat de Discord y el servidor de Minecraft.
+* **Seguridad Mejorada:** Validación de Tokens y payloads para evitar accesos no autorizados.
+* **Robustez:** Selección automática de puertos y manejo de errores de conexión.
 * **Estadísticas en Tiempo Real:** Visualización de vida, bioma, coordenadas y XP del jugador desde Discord.
 
 ### ⚙️ Utilidades y Configuración
 * **Multi-idioma:** Soporte nativo para múltiples idiomas mediante un sistema de localización centralizado.
 * **Backups Automáticos:** Copias de seguridad de la base de datos enviadas directamente al DM del propietario cada 12 horas.
 * **Modo de Voz AFK:** Mantiene al bot conectado en canales de voz con consumo de recursos nulo.
+* **Estabilidad:** Sistema de reconexión automática de voz y protección contra fugas de memoria (RAM).
 
 ---
 
@@ -48,6 +57,7 @@ Un bot de Discord modular, multilingüe y optimizado, diseñado para ofrecer una
 * **Lenguaje:** Python 3.9+
 * **Librería Principal:** discord.py
 * **Base de Datos:** SQLite3
+* **Música:** Wavelink (Cliente Lavalink)
 * **Servidor Web:** aiohttp (para el bridge de Minecraft)
 * **Gestión de Entorno:** python-dotenv
 
@@ -55,6 +65,7 @@ Un bot de Discord modular, multilingüe y optimizado, diseñado para ofrecer una
 
 ## Requisitos Previos
 * Python 3.9 o superior.
+* Servidor Lavalink (v4+) para el módulo de música (Local o Externo).
 * Una cuenta de desarrollador de Discord y un Token de Bot.
 
 ---
