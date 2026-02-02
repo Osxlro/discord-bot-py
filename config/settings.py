@@ -97,9 +97,9 @@ ASSETS = {
 
 # --- 12. CONFIGURACIÓN MÚSICA (LAVALINK) ---
 LAVALINK_CONFIG = {
-    "HOST": "lavalink.lexis.host",     # Nodo público más estable
+    "HOST": "lavalinkv4.serenetia.com",     # Nodo público más estable
     "PORT": 443,                       # Puerto SSL estándar
-    "PASSWORD": "lexishostlavalink",   # Contraseña del nodo
+    "PASSWORD": "https://dsc.gg/ajidevserver",   # Contraseña del nodo
     "SECURE": True,                    # True si el puerto es 443/SSL
     "DEFAULT_VOLUME": 50,     # Volumen inicial (0-100)
     "SEARCH_PROVIDER": "yt",  # 'yt' (YouTube), 'sc' (SoundCloud), 'sp' (Spotify - requiere plugin)
