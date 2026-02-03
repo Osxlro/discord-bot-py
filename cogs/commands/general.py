@@ -185,7 +185,10 @@ class General(commands.Cog):
             await ctx.reply(embed=embed_service.error("Error", txt, lite=True))
 
     @commands.hybrid_command(name="serverinfo", description="Muestra información y configuración del servidor.")
+    @commands.guild_only()
     async def serverinfo(self, ctx: commands.Context):
+        await ctx.defer()
+        
         lang = await lang_service.get_guild_lang(ctx.guild.id)
         config = await db_service.get_guild_config(ctx.guild.id)
         guild = ctx.guild
@@ -223,7 +226,7 @@ class General(commands.Cog):
         # Campo 3: Configuración del Bot
         lang_name = "Español 🇪🇸" if config.get("language") == "es" else "English 🇺🇸"
         conf_txt = lang_service.get_text("serverinfo_conf_desc", lang,
-            lang=lang_name,
+            language=lang_name,
             welcome=fmt(config.get("welcome_channel_id"), "ch"),
             confess=fmt(config.get("confessions_channel_id"), "ch"),
             logs=fmt(config.get("logs_channel_id"), "ch"),

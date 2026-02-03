@@ -231,7 +231,7 @@ LOCALES = {
         "serverinfo_stats": "📊 Estadísticas",
         "serverinfo_stats_desc": "👥 **Usuarios:** {total} ({humans} 👤 / {bots} 🤖)\n🎭 **Roles:** {roles}\n🚀 **Boosts:** {boosts}\n📂 **Canales:** {channels} ({cats} Cats | {text} 💬 | {voice} 🔊)",
         "serverinfo_config": "⚙️ Configuración",
-        "serverinfo_conf_desc": "🌐 **Idioma:** {lang}\n👋 **Bienvenida:** {welcome}\n🤫 **Confesiones:** {confess}\n📜 **Logs:** {logs}\n🎂 **Cumpleaños:** {bday}\n🎭 **Auto-Rol:** {autorole}"
+        "serverinfo_conf_desc": "🌐 **Idioma:** {language}\n👋 **Bienvenida:** {welcome}\n🤫 **Confesiones:** {confess}\n📜 **Logs:** {logs}\n🎂 **Cumpleaños:** {bday}\n🎭 **Auto-Rol:** {autorole}"
     },
     
     "en": {
@@ -463,6 +463,6 @@ LOCALES = {
         "serverinfo_stats": "📊 Statistics",
         "serverinfo_stats_desc": "👥 **Users:** {total} ({humans} 👤 / {bots} 🤖)\n🎭 **Roles:** {roles}\n🚀 **Boosts:** {boosts}\n📂 **Channels:** {channels} ({cats} Cats | {text} 💬 | {voice} 🔊)",
         "serverinfo_config": "⚙️ Configuration",
-        "serverinfo_conf_desc": "🌐 **Language:** {lang}\n👋 **Welcome:** {welcome}\n🤫 **Confessions:** {confess}\n📜 **Logs:** {logs}\n🎂 **Birthday:** {bday}\n🎭 **Auto-Role:** {autorole}"
+        "serverinfo_conf_desc": "🌐 **Language:** {language}\n👋 **Welcome:** {welcome}\n🤫 **Confessions:** {confess}\n📜 **Logs:** {logs}\n🎂 **Birthday:** {bday}\n🎭 **Auto-Role:** {autorole}"
     }
 }
