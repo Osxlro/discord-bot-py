@@ -8,9 +8,9 @@ from services import db_service, embed_service, lang_service, pagination_service
 logger = logging.getLogger(__name__)
 
 class StatusSelect(discord.ui.Select):
-    def __init__(self, options):
+    def __init__(self, options, placeholder_text):
         super().__init__(
-            placeholder="Selecciona un estado para eliminar...",
+            placeholder=placeholder_text,
             min_values=1,
             max_values=1,
             options=options
@@ -20,15 +20,17 @@ class StatusSelect(discord.ui.Select):
         status_id = int(self.values[0])
         await db_service.execute("DELETE FROM bot_statuses WHERE id = ?", (status_id,))
         logger.info(f"Status eliminado (ID: {status_id}) por {interaction.user}")
+        
+        lang = await lang_service.get_guild_lang(interaction.guild_id)
         await interaction.response.edit_message(
-            embed=embed_service.success("Status", "🗑️ Estado eliminado de la lista."), 
+            embed=embed_service.success(lang_service.get_text("title_status", lang), lang_service.get_text("dev_status_deleted", lang)), 
             view=None
         )
 
 class StatusDeleteView(discord.ui.View):
-    def __init__(self, options):
+    def __init__(self, options, placeholder_text):
         super().__init__(timeout=60)
-        self.add_item(StatusSelect(options))
+        self.add_item(StatusSelect(options, placeholder_text))
 
 class Developer(commands.Cog):
     def __init__(self, bot):
@@ -47,7 +49,7 @@ class Developer(commands.Cog):
         rows = await db_service.fetch_all("SELECT type, text FROM bot_statuses")
         
         if not rows:
-            return await ctx.send(embed=embed_service.warning("Status", lang_service.get_text("status_empty", lang)), ephemeral=True)
+            return await ctx.send(embed=embed_service.warning(lang_service.get_text("title_status", lang), lang_service.get_text("status_empty", lang)), ephemeral=True)
         
         desc = lang_service.get_text("status_list_desc", lang) + "\n\n"
         for i, row in enumerate(rows, 1):
@@ -64,7 +66,7 @@ class Developer(commands.Cog):
         lang = await lang_service.get_guild_lang(ctx.guild.id)
         msg = lang_service.get_text("status_add", lang, text=texto, type=tipo)
 
-        await ctx.send(embed=embed_service.success("Status Guardado", msg), ephemeral=True)
+        await ctx.send(embed=embed_service.success(lang_service.get_text("dev_status_saved", lang), msg), ephemeral=True)
 
     @status_group.command(name="eliminar", description="Elimina un estado seleccionándolo de la lista.")
     async def eliminar(self, ctx: commands.Context):
@@ -73,7 +75,7 @@ class Developer(commands.Cog):
         rows = await db_service.fetch_all("SELECT id, type, text FROM bot_statuses ORDER BY id DESC LIMIT 25")
         
         if not rows:
-            return await ctx.send(embed=embed_service.warning("Status", lang_service.get_text("status_empty", lang)), ephemeral=True)
+            return await ctx.send(embed=embed_service.warning(lang_service.get_text("title_status", lang), lang_service.get_text("status_empty", lang)), ephemeral=True)
 
         options = []
         for row in rows:
@@ -81,8 +83,8 @@ class Developer(commands.Cog):
             if len(label) > 100: label = label[:97] + "..."
             options.append(discord.SelectOption(label=label, value=str(row['id']), emoji="🔸"))
 
-        view = StatusDeleteView(options)
         ph = lang_service.get_text("status_placeholder", lang)
+        view = StatusDeleteView(options, ph)
         
         await ctx.send(f"👇 **{ph}**", view=view, ephemeral=True)
 
@@ -92,9 +94,11 @@ class Developer(commands.Cog):
         await ctx.defer(ephemeral=True)
         
         guilds = sorted(self.bot.guilds, key=lambda g: g.member_count, reverse=True)
+        # Como es comando de owner, podemos forzar español o usar el del server actual, usaremos el del server actual por consistencia
+        lang = await lang_service.get_guild_lang(ctx.guild.id)
         
         if not guilds:
-            return await ctx.send(embed=embed_service.warning("Info", "No estoy en ningún servidor."), ephemeral=True)
+            return await ctx.send(embed=embed_service.warning(lang_service.get_text("title_info", lang), lang_service.get_text("dev_servers_none", lang)), ephemeral=True)
 
         pages = []
         chunk_size = 10
@@ -105,8 +109,8 @@ class Developer(commands.Cog):
             for guild in chunk:
                 desc += f"**{guild.name}**\n🆔 `{guild.id}` | 👥 **{guild.member_count}** | 👑 <@{guild.owner_id}>\n\n"
             
-            embed = discord.Embed(title=f"📊 Servidores ({len(self.bot.guilds)})", description=desc, color=discord.Color.gold())
-            embed.set_footer(text=f"Página {i+1}/{len(chunks)}")
+            embed = discord.Embed(title=lang_service.get_text("dev_servers_title", lang, count=len(self.bot.guilds)), description=desc, color=discord.Color.gold())
+            embed.set_footer(text=lang_service.get_text("dev_servers_page", lang, current=i+1, total=len(chunks)))
             pages.append(embed)
 
         if len(pages) == 1:
@@ -118,13 +122,13 @@ class Developer(commands.Cog):
     @commands.command(name="sync", hidden=True)
     @commands.is_owner()
     async def sync(self, ctx: commands.Context):
-        # Sync sigue siendo público o privado según prefieras, pero como es owner-only da igual.
-        msg = await ctx.send("🔄 Sincronizando...")
+        lang = await lang_service.get_guild_lang(ctx.guild.id)
+        msg = await ctx.send(lang_service.get_text("dev_sync_start", lang))
         try:
             synced = await self.bot.tree.sync()
-            await msg.edit(content=f"✅ **{len(synced)}** comandos sincronizados.")
+            await msg.edit(content=lang_service.get_text("dev_sync_success", lang, count=len(synced)))
         except Exception as e:
-            await msg.edit(content=f"❌ Error: {e}")
+            await msg.edit(content=lang_service.get_text("dev_sync_error", lang, error=e))
 
 async def setup(bot):
     await bot.add_cog(Developer(bot))

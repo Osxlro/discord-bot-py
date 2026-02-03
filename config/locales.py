@@ -124,6 +124,17 @@ LOCALES = {
         "status_list_title": "📜 Estados Activos",
         "status_list_desc": "El bot rotará entre estos estados:",
         
+        # --- DEVELOPER (EXTRAS) ---
+        "dev_status_placeholder": "Selecciona un estado para eliminar...",
+        "dev_status_deleted": "🗑️ Estado eliminado de la lista.",
+        "dev_status_saved": "Status Guardado",
+        "dev_servers_none": "No estoy en ningún servidor.",
+        "dev_servers_title": "📊 Servidores ({count})",
+        "dev_servers_page": "Página {current}/{total}",
+        "dev_sync_start": "🔄 Sincronizando...",
+        "dev_sync_success": "✅ **{count}** comandos sincronizados.",
+        "dev_sync_error": "❌ Error: {error}",
+
         # --- AYUDA (DESCRIPCIONES DE CATEGORÍAS) ---
         "help_title": "Panel de Ayuda",
         "help_desc_general": "Comandos básicos y de utilidad.",
@@ -187,7 +198,30 @@ LOCALES = {
         "music_autoplay_on": "♾️ Autoplay: **Activado**",
         "music_autoplay_off": "♾️ Autoplay: **Desactivado**",
         "music_now_playing_title": "🎶 Reproduciendo Ahora",
-        "music_now_listening": "🎧 Escuchando Ahora"
+        "music_now_listening": "🎧 Escuchando Ahora",
+        
+        # --- MUSIC EXTRAS ---
+        "music_control_owner_error": "❌ No puedes controlar esta sesión.",
+        "music_control_voice_error": "❌ Debes estar en el canal de voz para usar los botones.",
+        "music_live": "🔴 LIVE",
+        "music_playlist_added": "✅ **Playlist añadida:** {name} ({count} canciones)",
+        "music_queue_title": "Cola de Reproducción",
+        "music_queue_current": "**💿 Actualmente:** {title}",
+        "music_queue_next": "**📜 Próximas:**",
+        "music_queue_footer": "Página {current}/{total} • Total: {tracks} pistas",
+        "music_field_author": "👤 Autor",
+        "music_field_duration": "⏳ Duración",
+        
+        # --- TITLES (GENERIC) ---
+        "title_error": "Error",
+        "title_info": "Info",
+        "title_status": "Status",
+        "title_queue": "Cola",
+        "title_music": "Música",
+        "title_shuffle": "Shuffle",
+        "title_autoplay": "Autoplay",
+        "title_loop": "Loop",
+        "title_volume": "Volumen"
     },
     
     "en": {
@@ -313,6 +347,17 @@ LOCALES = {
         "status_list_title": "📜 Active Statuses",
         "status_list_desc": "The bot will rotate through these:",
         
+        # --- DEVELOPER (EXTRAS) ---
+        "dev_status_placeholder": "Select a status to delete...",
+        "dev_status_deleted": "🗑️ Status deleted from list.",
+        "dev_status_saved": "Status Saved",
+        "dev_servers_none": "I am not in any server.",
+        "dev_servers_title": "📊 Servers ({count})",
+        "dev_servers_page": "Page {current}/{total}",
+        "dev_sync_start": "🔄 Syncing...",
+        "dev_sync_success": "✅ **{count}** commands synced.",
+        "dev_sync_error": "❌ Error: {error}",
+
         # --- HELP (CATEGORY DESCRIPTIONS) ---
         "help_desc_general": "Basic utility commands.",
         "help_desc_moderacion": "Moderation and cleanup tools.",
@@ -375,6 +420,29 @@ LOCALES = {
         "music_autoplay_on": "♾️ Autoplay: **On**",
         "music_autoplay_off": "♾️ Autoplay: **Off**",
         "music_now_playing_title": "🎶 Now Playing",
-        "music_now_listening": "🎧 Now Listening"
+        "music_now_listening": "🎧 Now Listening",
+
+        # --- MUSIC EXTRAS ---
+        "music_control_owner_error": "❌ You cannot control this session.",
+        "music_control_voice_error": "❌ You must be in the voice channel to use buttons.",
+        "music_live": "🔴 LIVE",
+        "music_playlist_added": "✅ **Playlist added:** {name} ({count} songs)",
+        "music_queue_title": "Playback Queue",
+        "music_queue_current": "**💿 Currently:** {title}",
+        "music_queue_next": "**📜 Up Next:**",
+        "music_queue_footer": "Page {current}/{total} • Total: {tracks} tracks",
+        "music_field_author": "👤 Author",
+        "music_field_duration": "⏳ Duration",
+
+        # --- TITLES (GENERIC) ---
+        "title_error": "Error",
+        "title_info": "Info",
+        "title_status": "Status",
+        "title_queue": "Queue",
+        "title_music": "Music",
+        "title_shuffle": "Shuffle",
+        "title_autoplay": "Autoplay",
+        "title_loop": "Loop",
+        "title_volume": "Volume"
     }
 }
