@@ -3,7 +3,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 from typing import Literal
-from services import db_service, embed_service, lang_service
+from services import db_service, embed_service, lang_service, pagination_service
 
 logger = logging.getLogger(__name__)
 
@@ -85,6 +85,35 @@ class Developer(commands.Cog):
         ph = lang_service.get_text("status_placeholder", lang)
         
         await ctx.send(f"👇 **{ph}**", view=view, ephemeral=True)
+
+    @commands.hybrid_command(name="listservers", description="Lista los servidores conectados (Solo Owner).", hidden=True)
+    @commands.is_owner()
+    async def listservers(self, ctx: commands.Context):
+        await ctx.defer(ephemeral=True)
+        
+        guilds = sorted(self.bot.guilds, key=lambda g: g.member_count, reverse=True)
+        
+        if not guilds:
+            return await ctx.send(embed=embed_service.warning("Info", "No estoy en ningún servidor."), ephemeral=True)
+
+        pages = []
+        chunk_size = 10
+        chunks = [guilds[i:i + chunk_size] for i in range(0, len(guilds), chunk_size)]
+
+        for i, chunk in enumerate(chunks):
+            desc = ""
+            for guild in chunk:
+                desc += f"**{guild.name}**\n🆔 `{guild.id}` | 👥 **{guild.member_count}** | 👑 <@{guild.owner_id}>\n\n"
+            
+            embed = discord.Embed(title=f"📊 Servidores ({len(self.bot.guilds)})", description=desc, color=discord.Color.gold())
+            embed.set_footer(text=f"Página {i+1}/{len(chunks)}")
+            pages.append(embed)
+
+        if len(pages) == 1:
+            await ctx.send(embed=pages[0], ephemeral=True)
+        else:
+            view = pagination_service.Paginator(pages, ctx.author.id)
+            await ctx.send(embed=pages[0], view=view, ephemeral=True)
 
     @commands.command(name="sync", hidden=True)
     @commands.is_owner()
