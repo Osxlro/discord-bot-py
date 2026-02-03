@@ -2,7 +2,7 @@ import discord
 import logging
 from discord import app_commands
 from discord.ext import commands
-from services import embed_service, translator_service, lang_service
+from services import embed_service, translator_service, lang_service, db_service
 
 logger = logging.getLogger(__name__)
 
@@ -183,6 +183,56 @@ class General(commands.Cog):
             logger.warning(f"Error Calc ({ctx.author}): {e}")
             txt = lang_service.get_text("calc_error", lang, error=str(e))
             await ctx.reply(embed=embed_service.error("Error", txt, lite=True))
+
+    @commands.hybrid_command(name="serverinfo", description="Muestra información y configuración del servidor.")
+    async def serverinfo(self, ctx: commands.Context):
+        lang = await lang_service.get_guild_lang(ctx.guild.id)
+        config = await db_service.get_guild_config(ctx.guild.id)
+        guild = ctx.guild
+        
+        # Helper para formatear canales/roles (Muestra ❌ si no está configurado)
+        def fmt(val, type_):
+            if not val: return "❌"
+            return f"<#{val}>" if type_ == "ch" else f"<@&{val}>"
+
+        # Cálculo de estadísticas
+        # Nota: guild.members requiere intents de miembros activados para ser exacto
+        humans = len([m for m in guild.members if not m.bot])
+        bots = guild.member_count - humans
+        
+        title = lang_service.get_text("serverinfo_title", lang, name=guild.name)
+        
+        embed = discord.Embed(title=title, color=guild.me.color)
+        if guild.icon: embed.set_thumbnail(url=guild.icon.url)
+        if guild.banner: embed.set_image(url=guild.banner.url)
+
+        # Campo 1: Información General
+        embed.add_field(name=lang_service.get_text("serverinfo_owner", lang), value=f"<@{guild.owner_id}>", inline=True)
+        embed.add_field(name=lang_service.get_text("serverinfo_id", lang), value=f"`{guild.id}`", inline=True)
+        embed.add_field(name=lang_service.get_text("serverinfo_created", lang), value=f"<t:{int(guild.created_at.timestamp())}:D>", inline=True)
+
+        # Campo 2: Estadísticas
+        stats_txt = lang_service.get_text("serverinfo_stats_desc", lang,
+            total=guild.member_count, humans=humans, bots=bots,
+            roles=len(guild.roles), boosts=guild.premium_subscription_count,
+            channels=len(guild.channels), cats=len(guild.categories),
+            text=len(guild.text_channels), voice=len(guild.voice_channels)
+        )
+        embed.add_field(name=lang_service.get_text("serverinfo_stats", lang), value=stats_txt, inline=False)
+
+        # Campo 3: Configuración del Bot
+        lang_name = "Español 🇪🇸" if config.get("language") == "es" else "English 🇺🇸"
+        conf_txt = lang_service.get_text("serverinfo_conf_desc", lang,
+            lang=lang_name,
+            welcome=fmt(config.get("welcome_channel_id"), "ch"),
+            confess=fmt(config.get("confessions_channel_id"), "ch"),
+            logs=fmt(config.get("logs_channel_id"), "ch"),
+            bday=fmt(config.get("birthday_channel_id"), "ch"),
+            autorole=fmt(config.get("autorole_id"), "role")
+        )
+        embed.add_field(name=lang_service.get_text("serverinfo_config", lang), value=conf_txt, inline=False)
+
+        await ctx.send(embed=embed)
 
     async def traducir_mensaje(self, interaction: discord.Interaction, message: discord.Message):
         lang = await lang_service.get_guild_lang(interaction.guild_id)
