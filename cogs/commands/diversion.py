@@ -48,13 +48,14 @@ class Diversion(commands.Cog):
         url = emojimixer_service.generar_url_emojimix(emoji1, emoji2)
         await ctx.reply(embed=embed_service.info("Emoji Mix", f"{emoji1} + {emoji2}", image=url, lite=True))
 
-    @app_commands.command(name="confess", description="Confesión anónima.")
-    async def confesar(self, interaction: discord.Interaction, secreto: str):
-        lang = await lang_service.get_guild_lang(interaction.guild_id)
-        row = await db_service.fetch_one("SELECT confessions_channel_id FROM guild_config WHERE guild_id = ?", (interaction.guild_id,))
+    @commands.hybrid_command(name="confess", description="Confesión anónima.")
+    @app_commands.describe(secreto="Tu secreto.")
+    async def confesar(self, ctx: commands.Context, *, secreto: str):
+        lang = await lang_service.get_guild_lang(ctx.guild.id)
+        row = await db_service.fetch_one("SELECT confessions_channel_id FROM guild_config WHERE guild_id = ?", (ctx.guild.id,))
 
         if not row or not row['confessions_channel_id']:
-            await interaction.response.send_message(
+            await ctx.reply(
                 embed=embed_service.error("Configuración", "❌ Canal de confesiones no establecido.", lite=True), 
                 ephemeral=True
             )
@@ -69,7 +70,7 @@ class Diversion(commands.Cog):
         await canal.send(embed=embed)
 
         msg = lang_service.get_text("confess_sent", lang, channel=canal.mention)
-        await interaction.response.send_message(embed=embed_service.success("Enviado", msg, lite=True), ephemeral=True)
+        await ctx.reply(embed=embed_service.success("Enviado", msg, lite=True), ephemeral=True)
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(Diversion(bot))
