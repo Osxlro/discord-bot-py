@@ -37,7 +37,7 @@ class Voice(commands.Cog):
                     await channel.connect(cls=wavelink.Player, self_deaf=True, self_mute=True)
                 
                 # Si el cliente está en un estado inconsistente, forzamos desconexión primero
-                elif not ctx.voice_client.is_connected():
+                elif not ctx.voice_client.connected:
                     await ctx.voice_client.disconnect(force=True)
                     await channel.connect(cls=wavelink.Player, self_deaf=True, self_mute=True)
                 else:
@@ -98,7 +98,7 @@ class Voice(commands.Cog):
         for i, wait in enumerate(backoff):
             await asyncio.sleep(wait)
             try:
-                if guild.voice_client and guild.voice_client.is_connected():
+                if guild.voice_client and guild.voice_client.connected:
                     return # Ya se reconectó
                 
                 logger.info(f"🔄 [Voice] Intento de reconexión {i+1}/{len(backoff)} en {guild.name}...")
