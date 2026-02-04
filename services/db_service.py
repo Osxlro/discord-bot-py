@@ -103,6 +103,7 @@ async def init_db():
         server_birthday_msg TEXT DEFAULT NULL,
         server_kick_msg TEXT DEFAULT NULL,
         server_ban_msg TEXT DEFAULT NULL,
+        server_goodbye_msg TEXT DEFAULT NULL,
         language TEXT DEFAULT 'es'
     )
     """)
@@ -124,7 +125,8 @@ async def init_db():
     # Migraciones manuales: Se ejecutan al arrancar para asegurar que la estructura sea la correcta.
     migraciones = [
         "ALTER TABLE guild_stats ADD COLUMN rebirths INTEGER DEFAULT 0",
-        "ALTER TABLE guild_config ADD COLUMN language TEXT DEFAULT 'es'"
+        "ALTER TABLE guild_config ADD COLUMN language TEXT DEFAULT 'es'",
+        "ALTER TABLE guild_config ADD COLUMN server_goodbye_msg TEXT DEFAULT NULL"
     ]
     for q in migraciones:
         try: await db.execute(q)

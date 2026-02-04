@@ -1,4 +1,5 @@
 import discord
+import random
 from discord.ext import commands
 from discord import app_commands
 from services import embed_service, emojimixer_service, random_service, db_service, lang_service
@@ -71,6 +72,17 @@ class Diversion(commands.Cog):
 
         msg = lang_service.get_text("confess_sent", lang, channel=canal.mention)
         await ctx.reply(embed=embed_service.success("Enviado", msg, lite=True), ephemeral=True)
+
+    @commands.hybrid_command(name="8ball", description="Pregúntale a la bola mágica.")
+    @app_commands.describe(pregunta="Tu pregunta")
+    async def eightball(self, ctx: commands.Context, pregunta: str):
+        respuestas = [
+            "Sí, definitivamente.", "Es cierto.", "Sin duda.", "Sí.", "Probablemente.",
+            "Pregunta de nuevo más tarde.", "Mejor no decirte ahora.", "No cuentes con ello.",
+            "Mi respuesta es no.", "Mis fuentes dicen que no.", "Muy dudoso."
+        ]
+        respuesta = random.choice(respuestas)
+        await ctx.reply(embed=embed_service.info("🎱 8-Ball", f"**P:** {pregunta}\n**R:** {respuesta}", lite=True))
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(Diversion(bot))

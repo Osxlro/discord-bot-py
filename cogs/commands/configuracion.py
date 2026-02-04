@@ -35,6 +35,17 @@ class Configuracion(commands.Cog):
     async def confesiones(self, ctx: commands.Context, canal: discord.TextChannel):
         await self._update_channel_config(ctx, "confessions_channel_id", canal, "Confesiones")
 
+    @setup.command(name="despedida", description="Personaliza el mensaje de despedida.")
+    @app_commands.describe(mensaje="Usa {user} para el nombre y {server} para el servidor. Escribe 'reset' para borrar.")
+    async def despedida(self, ctx: commands.Context, mensaje: str):
+        await ctx.defer(ephemeral=True)
+        val = None if mensaje.lower() == "reset" else mensaje
+        await db_service.update_guild_config(ctx.guild.id, {"server_goodbye_msg": val})
+        
+        lang = await lang_service.get_guild_lang(ctx.guild.id)
+        msg = lang_service.get_text("setup_msg_updated", lang)
+        await ctx.send(embed=embed_service.success(lang_service.get_text("setup_success", lang), msg), ephemeral=True)
+
     @setup.command(name="logs", description="Establece el canal de registros (logs).")
     @app_commands.describe(canal="Canal para logs de moderación")
     async def logs(self, ctx: commands.Context, canal: discord.TextChannel):
