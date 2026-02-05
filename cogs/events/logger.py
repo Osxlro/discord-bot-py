@@ -8,12 +8,13 @@ class Logger(commands.Cog):
 
     async def _send_log(self, guild_id: int, embed: discord.Embed):
         """Busca el canal de logs en la DB y envía el embed."""
-        row = await db_service.fetch_one("SELECT logs_channel_id FROM guild_config WHERE guild_id = ?", (guild_id,))
+        config = await db_service.get_guild_config(guild_id)
+        channel_id = config.get('logs_channel_id')
         
-        if not row or not row['logs_channel_id']:
+        if not channel_id:
             return
             
-        channel = self.bot.get_channel(row['logs_channel_id'])
+        channel = self.bot.get_channel(channel_id)
         if channel:
             await channel.send(embed=embed)
 

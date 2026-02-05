@@ -53,16 +53,17 @@ class Diversion(commands.Cog):
     @app_commands.describe(secreto="Tu secreto.")
     async def confesar(self, ctx: commands.Context, *, secreto: str):
         lang = await lang_service.get_guild_lang(ctx.guild.id)
-        row = await db_service.fetch_one("SELECT confessions_channel_id FROM guild_config WHERE guild_id = ?", (ctx.guild.id,))
+        config = await db_service.get_guild_config(ctx.guild.id)
+        channel_id = config.get('confessions_channel_id')
 
-        if not row or not row['confessions_channel_id']:
+        if not channel_id:
             await ctx.reply(
                 embed=embed_service.error("Configuración", "❌ Canal de confesiones no establecido.", lite=True), 
                 ephemeral=True
             )
             return
 
-        canal = self.bot.get_channel(row['confessions_channel_id'])
+        canal = self.bot.get_channel(channel_id)
         if not canal: return
 
         title = lang_service.get_text("confess_title", lang)

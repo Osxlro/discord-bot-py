@@ -3,7 +3,7 @@ import logging
 from discord.ext import commands
 from aiohttp import web
 from config import settings
-from services import lang_service
+from services import lang_service, db_service
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +30,8 @@ class Minecraft(commands.Cog):
         app.router.add_post('/minecraft/chat_in', self.handle_chat_in) # Nuevo endpoint
         app.router.add_get('/minecraft/read', self.handle_read)
         
-        self.runner = web.AppRunner(app)
+        # access_log=None evita saturar la consola con logs de cada petición POST/GET
+        self.runner = web.AppRunner(app, access_log=None)
         await self.runner.setup()
         
         # Puerto desde settings
@@ -47,6 +48,11 @@ class Minecraft(commands.Cog):
                 logger.warning(f"⚠️ Puerto {port} ocupado, intentando siguiente...")
         else:
             logger.error("❌ No se pudo iniciar el Bridge Minecraft: Todos los puertos ocupados.")
+
+        # Restaurar canal configurado desde DB (Persistencia)
+        row = await db_service.fetch_one("SELECT minecraft_channel_id FROM guild_config WHERE minecraft_channel_id != 0 LIMIT 1")
+        if row:
+            self.chat_channel_id = row['minecraft_channel_id']
 
     async def cog_unload(self):
         if self.site: await self.site.stop()
@@ -127,6 +133,7 @@ class Minecraft(commands.Cog):
     async def set_bridge(self, ctx: commands.Context):
         lang = await lang_service.get_guild_lang(ctx.guild.id)
         self.chat_channel_id = ctx.channel.id
+        await db_service.update_guild_config(ctx.guild.id, {"minecraft_channel_id": ctx.channel.id})
         logger.info(f"Minecraft Bridge vinculado al canal {ctx.channel.id} por {ctx.author}")
         msg = lang_service.get_text("mc_bridge_set", lang, channel=ctx.channel.mention)
         await ctx.send(msg, ephemeral=True)

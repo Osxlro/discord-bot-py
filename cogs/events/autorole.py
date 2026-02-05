@@ -11,13 +11,13 @@ class AutoRole(commands.Cog):
         if member.bot: return # Ignoramos bots
 
         # 1. Buscar configuración
-        row = await db_service.fetch_one("SELECT autorole_id FROM guild_config WHERE guild_id = ?", (member.guild.id,))
+        config = await db_service.get_guild_config(member.guild.id)
+        role_id = config.get('autorole_id')
         
-        if not row or not row['autorole_id']:
+        if not role_id:
             return
 
         # 2. Obtener el rol
-        role_id = row['autorole_id']
         role = member.guild.get_role(role_id)
 
         if role:

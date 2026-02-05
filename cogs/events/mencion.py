@@ -11,10 +11,10 @@ class Mencion(commands.Cog):
         if message.author.bot or not message.guild: return
         if self.bot.user in message.mentions and len(message.content.split()) == 1 and not message.mention_everyone:
             
-            row = await db_service.fetch_one("SELECT mention_response FROM guild_config WHERE guild_id = ?", (message.guild.id,))
+            config = await db_service.get_guild_config(message.guild.id)
             lang = await lang_service.get_guild_lang(message.guild.id)
             
-            respuesta = row['mention_response'] if row and row['mention_response'] else lang_service.get_text("mention_response_default", lang, bot=self.bot.user.name)
+            respuesta = config.get('mention_response') or lang_service.get_text("mention_response_default", lang, bot=self.bot.user.name)
             await message.channel.send(embed=embed_service.info("👋 Hello", respuesta))
 
 async def setup(bot: commands.Bot):
