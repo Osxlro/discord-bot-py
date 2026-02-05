@@ -195,37 +195,46 @@ class Music(commands.Cog):
         # Guardamos el canal de texto para enviar mensajes de "Now Playing"
         player.home = ctx.channel
 
-        # Auto-selección de proveedor (YouTube por defecto si no es URL)
+        # 3. Lógica de Búsqueda (Con Fallback)
         url_rx = re.compile(r'https?://(?:www\.)?.+')
-        search_query = busqueda
-        if not url_rx.match(busqueda):
-            provider = settings.LAVALINK_CONFIG.get("SEARCH_PROVIDER", "yt")
-            if provider == "yt": search_query = f"ytsearch:{busqueda}"
-            elif provider == "sc": search_query = f"scsearch:{busqueda}"
-            elif provider == "sp": search_query = f"spsearch:{busqueda}"
+        is_url = url_rx.match(busqueda)
+        tracks = None
 
         try:
-            tracks = await wavelink.Playable.search(search_query)
+            if is_url:
+                tracks = await wavelink.Playable.search(busqueda)
+            else:
+                # Intento 1: Proveedor configurado
+                provider = settings.LAVALINK_CONFIG.get("SEARCH_PROVIDER", "yt")
+                # Construimos la query manualmente para soportar ytsearch, scsearch, etc.
+                # Nota: wavelink 3.x soporta source=... pero el prefijo es más universal
+                query = f"{provider}search:{busqueda}"
+                
+                try:
+                    tracks = await wavelink.Playable.search(query)
+                except Exception as e:
+                    # Fallback: Si falla YouTube, intentamos SoundCloud
+                    if provider == "yt":
+                        logger.warning(f"⚠️ Fallo búsqueda YT ('{busqueda}'): {e}. Intentando SoundCloud...")
+                        tracks = await wavelink.Playable.search(f"scsearch:{busqueda}")
+                    else:
+                        raise e
+
             if not tracks:
                 return await ctx.send(embed=embed_service.warning(lang_service.get_text("title_music", lang), lang_service.get_text("music_search_empty", lang, query=busqueda)))
 
             # 4. Reproducir o Encolar (Soporte Playlist)
             if isinstance(tracks, wavelink.Playlist):
-                # Es una Playlist
                 for track in tracks:
                     await player.queue.put_wait(track)
                 
                 msg = lang_service.get_text("music_playlist_added", lang, name=tracks.name, count=len(tracks))
                 await ctx.send(embed=embed_service.success(lang_service.get_text("title_queue", lang), msg, lite=True))
                 
-                # Si no suena nada, reproducir la primera
                 if not player.playing:
                     await player.play(player.queue.get())
-                    
             else:
-                # Es una búsqueda (Search), tomamos el primero
                 track = tracks[0]
-                
                 if not player.playing:
                     await player.play(track)
                 else:
@@ -235,10 +244,16 @@ class Music(commands.Cog):
         
         except Exception as e:
             logger.error(f"Error en comando play: {e}")
-            # Si es un error de conexión a Lavalink, damos un mensaje más amigable
-            if "NoNodesAvailable" in str(e) or "NoNodesAvailableError" in str(type(e)):
-                return await ctx.send(embed=embed_service.error(lang_service.get_text("title_error", lang), "❌ Lavalink no está disponible. Intenta más tarde."))
-            await ctx.send(embed=embed_service.error(lang_service.get_text("title_error", lang), f"Error: {e}"))
+            
+            err_str = str(e)
+            if "NoNodesAvailable" in err_str:
+                msg = "❌ Lavalink no está disponible (Nodos caídos)."
+            elif "Failed to Load Tracks" in err_str:
+                msg = "❌ No se pudo cargar la canción. (Posible bloqueo de YouTube o restricción)."
+            else:
+                msg = f"Error: {err_str}"
+                
+            await ctx.send(embed=embed_service.error(lang_service.get_text("title_error", lang), msg))
 
     @commands.hybrid_command(name="stop", description="Detiene la música y desconecta al bot.")
     async def stop(self, ctx: commands.Context):
