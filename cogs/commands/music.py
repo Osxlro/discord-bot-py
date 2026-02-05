@@ -204,21 +204,28 @@ class Music(commands.Cog):
             if is_url:
                 tracks = await wavelink.Playable.search(busqueda)
             else:
-                # Intento 1: Proveedor configurado
-                provider = settings.LAVALINK_CONFIG.get("SEARCH_PROVIDER", "yt")
-                # Construimos la query manualmente para soportar ytsearch, scsearch, etc.
-                # Nota: wavelink 3.x soporta source=... pero el prefijo es más universal
-                query = f"{provider}search:{busqueda}"
+                # Estrategia de Fallback: YT -> SC
+                default = settings.LAVALINK_CONFIG.get("SEARCH_PROVIDER", "yt")
+                sources = [default]
+                if default == "yt": sources.append("sc")
+                elif default == "sc": sources.append("yt")
                 
-                try:
-                    tracks = await wavelink.Playable.search(query)
-                except Exception as e:
-                    # Fallback: Si falla YouTube, intentamos SoundCloud
-                    if provider == "yt":
-                        logger.warning(f"⚠️ Fallo búsqueda YT ('{busqueda}'): {e}. Intentando SoundCloud...")
-                        tracks = await wavelink.Playable.search(f"scsearch:{busqueda}")
-                    else:
-                        raise e
+                last_err = None
+                
+                for source in sources:
+                    try:
+                        query = f"{source}search:{busqueda}"
+                        tracks = await wavelink.Playable.search(query)
+                        if tracks: 
+                            break
+                    except Exception as e:
+                        last_err = e
+                        logger.warning(f"⚠️ Fallo búsqueda en {source} ('{busqueda}'): {e}")
+                        continue
+                
+                # Si fallaron todos los intentos y hubo error, lo lanzamos
+                if not tracks and last_err:
+                    raise last_err
 
             if not tracks:
                 return await ctx.send(embed=embed_service.warning(lang_service.get_text("title_music", lang), lang_service.get_text("music_search_empty", lang, query=busqueda)))
@@ -248,7 +255,7 @@ class Music(commands.Cog):
             err_str = str(e)
             if "NoNodesAvailable" in err_str:
                 msg = "❌ Lavalink no está disponible (Nodos caídos)."
-            elif "Failed to Load Tracks" in err_str:
+            elif "FriendlyException" in err_str or "Failed to Load Tracks" in err_str:
                 msg = "❌ No se pudo cargar la canción. (Posible bloqueo de YouTube o restricción)."
             else:
                 msg = f"Error: {err_str}"
