@@ -204,33 +204,41 @@ class Music(commands.Cog):
             elif provider == "sc": search_query = f"scsearch:{busqueda}"
             elif provider == "sp": search_query = f"spsearch:{busqueda}"
 
-        tracks = await wavelink.Playable.search(search_query)
-        if not tracks:
-            return await ctx.send(embed=embed_service.warning(lang_service.get_text("title_music", lang), lang_service.get_text("music_search_empty", lang, query=busqueda)))
+        try:
+            tracks = await wavelink.Playable.search(search_query)
+            if not tracks:
+                return await ctx.send(embed=embed_service.warning(lang_service.get_text("title_music", lang), lang_service.get_text("music_search_empty", lang, query=busqueda)))
 
-        # 4. Reproducir o Encolar (Soporte Playlist)
-        if isinstance(tracks, wavelink.Playlist):
-            # Es una Playlist
-            for track in tracks:
-                await player.queue.put_wait(track)
-            
-            msg = lang_service.get_text("music_playlist_added", lang, name=tracks.name, count=len(tracks))
-            await ctx.send(embed=embed_service.success(lang_service.get_text("title_queue", lang), msg, lite=True))
-            
-            # Si no suena nada, reproducir la primera
-            if not player.playing:
-                await player.play(player.queue.get())
+            # 4. Reproducir o Encolar (Soporte Playlist)
+            if isinstance(tracks, wavelink.Playlist):
+                # Es una Playlist
+                for track in tracks:
+                    await player.queue.put_wait(track)
                 
-        else:
-            # Es una búsqueda (Search), tomamos el primero
-            track = tracks[0]
-            
-            if not player.playing:
-                await player.play(track)
-            else:
-                await player.queue.put_wait(track)
-                msg = lang_service.get_text("music_track_enqueued", lang, title=track.title)
+                msg = lang_service.get_text("music_playlist_added", lang, name=tracks.name, count=len(tracks))
                 await ctx.send(embed=embed_service.success(lang_service.get_text("title_queue", lang), msg, lite=True))
+                
+                # Si no suena nada, reproducir la primera
+                if not player.playing:
+                    await player.play(player.queue.get())
+                    
+            else:
+                # Es una búsqueda (Search), tomamos el primero
+                track = tracks[0]
+                
+                if not player.playing:
+                    await player.play(track)
+                else:
+                    await player.queue.put_wait(track)
+                    msg = lang_service.get_text("music_track_enqueued", lang, title=track.title)
+                    await ctx.send(embed=embed_service.success(lang_service.get_text("title_queue", lang), msg, lite=True))
+        
+        except Exception as e:
+            logger.error(f"Error en comando play: {e}")
+            # Si es un error de conexión a Lavalink, damos un mensaje más amigable
+            if "NoNodesAvailable" in str(e) or "NoNodesAvailableError" in str(type(e)):
+                return await ctx.send(embed=embed_service.error(lang_service.get_text("title_error", lang), "❌ Lavalink no está disponible. Intenta más tarde."))
+            await ctx.send(embed=embed_service.error(lang_service.get_text("title_error", lang), f"Error: {e}"))
 
     @commands.hybrid_command(name="stop", description="Detiene la música y desconecta al bot.")
     async def stop(self, ctx: commands.Context):

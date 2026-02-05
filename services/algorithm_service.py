@@ -39,16 +39,18 @@ class RecommendationEngine:
         
         # 3. Generar Estrategias de Búsqueda (Queries)
         # Buscamos variedad: Mix del artista, canciones similares, etc.
+        author = seed_track.author or "Unknown"
+        title = seed_track.title or "Unknown"
         queries = [
-            f"ytsearch:{seed_track.author} official audio", # Misma vibra, mismo artista
-            f"ytsearch:{seed_track.title} similar song",    # Algoritmo de YT
+            f"ytsearch:{author} official audio", # Misma vibra, mismo artista
+            f"ytsearch:{title} similar song",    # Algoritmo de YT
         ]
         
         # Si hay suficiente historial, intentamos mezclar con el penúltimo artista para variar
         if len(history) > 1:
             prev_track = history[-2]
-            if prev_track.author != seed_track.author:
-                queries.append(f"ytsearch:{prev_track.author} {seed_track.author} mix")
+            if prev_track.author != author:
+                queries.append(f"ytsearch:{prev_track.author} {author} mix")
 
         # 4. Ejecución Paralela (Optimización de velocidad)
         # Lanzamos todas las búsquedas a la vez en lugar de una por una
