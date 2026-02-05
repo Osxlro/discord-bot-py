@@ -8,28 +8,36 @@ class Bienvenidas(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
-        row = await db_service.fetch_one("SELECT welcome_channel_id FROM guild_config WHERE guild_id = ?", (member.guild.id,))
-        if not row or not row['welcome_channel_id']: return
+        # Optimizamos usando el caché de configuración en lugar de consulta directa
+        config = await db_service.get_guild_config(member.guild.id)
+        channel_id = config.get('welcome_channel_id')
+        if not channel_id: return
         
-        channel = self.bot.get_channel(row['welcome_channel_id'])
+        channel = self.bot.get_channel(channel_id)
         if channel:
             lang = await lang_service.get_guild_lang(member.guild.id)
             title = lang_service.get_text("welcome_title", lang, user=member.name)
             desc = lang_service.get_text("welcome_desc", lang, mention=member.mention, server=member.guild.name)
-            await channel.send(embed=embed_service.success(title, desc, thumbnail=member.display_avatar.url))
+            
+            # Corregimos el error: success() no acepta 'thumbnail'. Lo añadimos manualmente al objeto embed.
+            embed = embed_service.success(title, desc)
+            embed.set_thumbnail(url=member.display_avatar.url)
+            await channel.send(embed=embed)
 
     @commands.Cog.listener()
     async def on_member_remove(self, member: discord.Member):
-        row = await db_service.fetch_one("SELECT welcome_channel_id, server_goodbye_msg FROM guild_config WHERE guild_id = ?", (member.guild.id,))
-        if not row or not row['welcome_channel_id']: return
+        config = await db_service.get_guild_config(member.guild.id)
+        channel_id = config.get('welcome_channel_id')
+        if not channel_id: return
 
-        channel = self.bot.get_channel(row['welcome_channel_id'])
+        channel = self.bot.get_channel(channel_id)
         if channel:
             lang = await lang_service.get_guild_lang(member.guild.id)
             title = lang_service.get_text("goodbye_title", lang)
             
-            if row['server_goodbye_msg']:
-                desc = row['server_goodbye_msg'].replace("{user}", member.name).replace("{server}", member.guild.name)
+            goodbye_msg = config.get('server_goodbye_msg')
+            if goodbye_msg:
+                desc = goodbye_msg.replace("{user}", member.name).replace("{server}", member.guild.name)
             else:
                 desc = lang_service.get_text("goodbye_desc", lang, user=member.name)
                 
