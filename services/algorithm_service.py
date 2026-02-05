@@ -3,6 +3,7 @@ import asyncio
 import wavelink
 import logging
 from difflib import SequenceMatcher
+from config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -41,16 +42,22 @@ class RecommendationEngine:
         # Buscamos variedad: Mix del artista, canciones similares, etc.
         author = seed_track.author or "Unknown"
         title = seed_track.title or "Unknown"
+        
+        # Usamos el proveedor configurado en settings (yt, sc, sp)
+        provider = settings.LAVALINK_CONFIG.get("SEARCH_PROVIDER", "yt")
         queries = [
-            f"ytsearch:{author} official audio", # Misma vibra, mismo artista
-            f"ytsearch:{title} similar song",    # Algoritmo de YT
+            f"{provider}search:{title} {author}", # Búsqueda principal
         ]
+        
+        # Si usamos YT, añadimos SC como respaldo por si YT falla (tu error actual)
+        if provider == "yt":
+            queries.append(f"scsearch:{title} {author}")
         
         # Si hay suficiente historial, intentamos mezclar con el penúltimo artista para variar
         if len(history) > 1:
             prev_track = history[-2]
             if prev_track.author != author:
-                queries.append(f"ytsearch:{prev_track.author} {author} mix")
+                queries.append(f"{provider}search:{prev_track.author} {author} mix")
 
         # 4. Ejecución Paralela (Optimización de velocidad)
         # Lanzamos todas las búsquedas a la vez en lugar de una por una

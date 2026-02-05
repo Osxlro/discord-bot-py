@@ -255,8 +255,10 @@ class Music(commands.Cog):
             err_str = str(e)
             if "NoNodesAvailable" in err_str:
                 msg = "❌ Lavalink no está disponible (Nodos caídos)."
-            elif "FriendlyException" in err_str or "Failed to Load Tracks" in err_str:
-                msg = "❌ No se pudo cargar la canción. (Posible bloqueo de YouTube o restricción)."
+            elif "FriendlyException" in err_str and "Something went wrong" in err_str:
+                msg = "❌ **Bloqueo de YouTube:** El nodo de música está siendo limitado por YouTube.\n💡 **Intenta:** Usar SoundCloud (`/play scsearch:cancion`) o cambiar de nodo."
+            elif "FriendlyException" in err_str:
+                msg = f"❌ No se pudo cargar la canción: {err_str}"
             else:
                 msg = f"Error: {err_str}"
                 
