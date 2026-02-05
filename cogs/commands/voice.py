@@ -18,7 +18,7 @@ class Voice(commands.Cog):
         # 1. Verificar si el usuario tiene canal
         if not ctx.author.voice:
             msg = lang_service.get_text("voice_error_user", lang)
-            return await ctx.send(embed=embed_service.error("Error", msg))
+            return await ctx.send(embed=embed_service.error(lang_service.get_text("title_error", lang), msg))
 
         channel = ctx.author.voice.channel
 
@@ -26,7 +26,7 @@ class Voice(commands.Cog):
         permissions = channel.permissions_for(ctx.guild.me)
         if not permissions.connect:
             msg = lang_service.get_text("voice_error_perms", lang)
-            return await ctx.send(embed=embed_service.error("Error", msg))
+            return await ctx.send(embed=embed_service.error(lang_service.get_text("title_error", lang), msg))
 
         # 3. Conectar (u mover si ya está en otro)
         try:
@@ -49,12 +49,12 @@ class Voice(commands.Cog):
             
             self.voice_targets[ctx.guild.id] = channel.id
             msg = lang_service.get_text("voice_join", lang, channel=channel.name)
-            await ctx.send(embed=embed_service.success("Voice", msg, lite=True))
+            await ctx.send(embed=embed_service.success(lang_service.get_text("voice_title", lang), msg, lite=True))
             logger.info(f"Voice Join: {ctx.guild.name} -> {channel.name}")
             
         except Exception as e:
             logger.error(f"Error Voice Join en {ctx.guild.name}: {e}")
-            await ctx.send(embed=embed_service.error("Error", f"{e}"))
+            await ctx.send(embed=embed_service.error(lang_service.get_text("title_error", lang), f"{e}"))
 
     @commands.hybrid_command(name="leave", description="Desconecta al bot del canal de voz.")
     async def leave(self, ctx: commands.Context):
@@ -67,7 +67,7 @@ class Voice(commands.Cog):
                 
             await ctx.voice_client.disconnect()
             msg = lang_service.get_text("voice_leave", lang)
-            await ctx.send(embed=embed_service.success("Voice", msg, lite=True))
+            await ctx.send(embed=embed_service.success(lang_service.get_text("voice_title", lang), msg, lite=True))
             logger.info(f"Voice Leave: {ctx.guild.name}")
         else:
             # Si no está conectado, reacciona con un emoji simple

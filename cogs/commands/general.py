@@ -148,7 +148,7 @@ class General(commands.Cog):
         ms = round(self.bot.latency * 1000)
         
         txt = lang_service.get_text("ping_msg", lang, ms=ms)
-        await ctx.reply(embed=embed_service.info("Ping", txt, lite=True))
+        await ctx.reply(embed=embed_service.info(lang_service.get_text("title_ping", lang), txt, lite=True))
 
     @commands.hybrid_command(name="calc", description="Calculadora flexible. Ej: /calc + 5 10")
     @app_commands.describe(operacion="Usa símbolos (+, -, *, /)", num1="Primer número", num2="Segundo número")
@@ -164,7 +164,7 @@ class General(commands.Cog):
         op_symbol = op_map.get(operacion.lower())
         
         if not op_symbol:
-            await ctx.reply(embed=embed_service.error("Error", "Operación no válida.\nUsa: `+`, `-`, `*`, `/`", lite=True), ephemeral=True)
+            await ctx.reply(embed=embed_service.error(lang_service.get_text("title_error", lang), "Operación no válida.\nUsa: `+`, `-`, `*`, `/`", lite=True), ephemeral=True)
             return
         
         try:
@@ -177,12 +177,12 @@ class General(commands.Cog):
                 res = round(num1 / num2, 2)
 
             txt = lang_service.get_text("calc_result", lang, a=num1, op=op_symbol, b=num2, res=res)
-            await ctx.reply(embed=embed_service.success("Math", txt))
+            await ctx.reply(embed=embed_service.success(lang_service.get_text("title_math", lang), txt))
             
         except ValueError as e:
             logger.warning(f"Error Calc ({ctx.author}): {e}")
             txt = lang_service.get_text("calc_error", lang, error=str(e))
-            await ctx.reply(embed=embed_service.error("Error", txt, lite=True))
+            await ctx.reply(embed=embed_service.error(lang_service.get_text("title_error", lang), txt, lite=True))
 
     @commands.hybrid_command(name="serverinfo", description="Muestra información y configuración del servidor.")
     @commands.guild_only()
@@ -244,10 +244,10 @@ class General(commands.Cog):
         try:
             res = await translator_service.traducir(message.content, "es")
             txt = lang_service.get_text("trans_result", lang, orig=message.content[:50]+"...", trans=res['traducido'])
-            await interaction.followup.send(embed=embed_service.success("Traducir", txt), ephemeral=True)
+            await interaction.followup.send(embed=embed_service.success(lang_service.get_text("title_translate", lang), txt), ephemeral=True)
         except Exception as e:
             logger.error(f"Error Traductor: {e}")
-            await interaction.followup.send(embed=embed_service.error("Error", str(e), lite=True), ephemeral=True)
+            await interaction.followup.send(embed=embed_service.error(lang_service.get_text("title_error", lang), str(e), lite=True), ephemeral=True)
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(General(bot))

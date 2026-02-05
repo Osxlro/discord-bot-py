@@ -74,7 +74,7 @@ class Niveles(commands.Cog):
         
         if not rows:
             msg = lang_service.get_text("leaderboard_empty", lang)
-            await ctx.reply(embed=embed_service.info("Vacío", msg))
+            await ctx.reply(embed=embed_service.info(lang_service.get_text("title_empty", lang), msg))
             return
 
         chunk_size = 10
@@ -108,7 +108,7 @@ class Niveles(commands.Cog):
             
             desc = "\n\n".join(lines)
             embed = embed_service.info(title, desc, thumbnail=ctx.guild.icon.url if ctx.guild.icon else None)
-            embed.set_footer(text=f"Página {i+1}/{len(chunks)}")
+            embed.set_footer(text=lang_service.get_text("leaderboard_footer", lang, current=i+1, total=len(chunks)))
             pages.append(embed)
 
         if len(pages) == 1:
@@ -125,7 +125,7 @@ class Niveles(commands.Cog):
         
         if success:
             msg = lang_service.get_text("rebirth_success", lang, rebirths=result)
-            await ctx.send(embed=embed_service.success("🌀 Rebirth Exitoso", msg))
+            await ctx.send(embed=embed_service.success(lang_service.get_text("rebirth_title_success", lang), msg))
         else:
             if result == "no_data":
                 msg = lang_service.get_text("rank_no_data", lang)
@@ -134,7 +134,7 @@ class Niveles(commands.Cog):
             else:
                 msg = lang_service.get_text("rebirth_fail_generic", lang)
             
-            await ctx.send(embed=embed_service.error("Rebirth Fallido", msg))
+            await ctx.send(embed=embed_service.error(lang_service.get_text("rebirth_title_fail", lang), msg))
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(Niveles(bot))

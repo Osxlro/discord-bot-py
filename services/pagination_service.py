@@ -1,5 +1,6 @@
 import discord
 import logging
+from services import lang_service
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +30,8 @@ class Paginator(discord.ui.View):
         # Solo quien ejecutó el comando puede cambiar de página
         if interaction.user.id != self.author_id:
             logger.debug(f"Intento de paginación no autorizado: {interaction.user} en menú de {self.author_id}")
-            await interaction.response.send_message("❌ No puedes controlar este menú.", ephemeral=True)
+            lang = await lang_service.get_guild_lang(interaction.guild_id)
+            await interaction.response.send_message(lang_service.get_text("dev_interaction_error", lang), ephemeral=True)
             return False
         return True
 

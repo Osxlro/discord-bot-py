@@ -45,7 +45,8 @@ class BotInfoView(discord.ui.View):
 
     async def interaction_check(self, interaction: discord.Interaction):
         if interaction.user.id != self.ctx.author.id:
-            await interaction.response.send_message("❌ Solo quien ejecutó el comando puede usar esto.", ephemeral=True)
+            lang = await lang_service.get_guild_lang(interaction.guild_id)
+            await interaction.response.send_message(lang_service.get_text("dev_interaction_error", lang), ephemeral=True)
             return False
         return True
 
@@ -80,14 +81,15 @@ class BotInfoView(discord.ui.View):
             d, h = divmod(h, 24)
             uptime_str = f"{d}d {h}h {m}m {s}s"
 
-        embed = discord.Embed(title="🤖 Información del Bot", color=discord.Color.blurple())
+        lang = await lang_service.get_guild_lang(self.ctx.guild.id)
+        embed = discord.Embed(title=f"🤖 {lang_service.get_text('help_title', lang)}", color=discord.Color.blurple())
         embed.set_thumbnail(url=self.bot.user.display_avatar.url)
-        embed.add_field(name="🆔 Nombre", value=f"{self.bot.user}", inline=True)
-        embed.add_field(name="⏱️ Uptime", value=f"`{uptime_str}`", inline=True)
-        embed.add_field(name="🐍 Python", value=f"`{sys.version.split()[0]}`", inline=True)
-        embed.add_field(name="📚 Discord.py", value=f"`{discord.__version__}`", inline=True)
-        embed.add_field(name="🛡️ Guilds", value=f"{len(self.bot.guilds)}", inline=True)
-        embed.add_field(name="👥 Usuarios", value=f"{len(self.bot.users)}", inline=True)
+        embed.add_field(name=lang_service.get_text("botinfo_name", lang), value=f"{self.bot.user}", inline=True)
+        embed.add_field(name=lang_service.get_text("botinfo_uptime", lang), value=f"`{uptime_str}`", inline=True)
+        embed.add_field(name=lang_service.get_text("botinfo_python", lang), value=f"`{sys.version.split()[0]}`", inline=True)
+        embed.add_field(name=lang_service.get_text("botinfo_lib", lang), value=f"`{discord.__version__}`", inline=True)
+        embed.add_field(name=lang_service.get_text("botinfo_guilds", lang), value=f"{len(self.bot.guilds)}", inline=True)
+        embed.add_field(name=lang_service.get_text("botinfo_users", lang), value=f"{len(self.bot.users)}", inline=True)
         return embed
 
     async def get_system_embed(self):
@@ -97,19 +99,21 @@ class BotInfoView(discord.ui.View):
             embed.description = "⚠️ `psutil` no está instalado."
             return embed
 
-        embed.add_field(name="🧠 CPU (Bot/Sys)", value=f"`{info['cpu_proc']:.1f}%` / `{info['cpu_sys']:.1f}%`", inline=True)
+        lang = await lang_service.get_guild_lang(self.ctx.guild.id)
+        embed.add_field(name=lang_service.get_text("botinfo_cpu", lang), value=f"`{info['cpu_proc']:.1f}%` / `{info['cpu_sys']:.1f}%`", inline=True)
         ram_bar = self._make_bar(info['ram_sys'].percent)
-        embed.add_field(name=f"💾 RAM ({info['ram_sys'].percent}%)", value=f"{ram_bar}\nTotal: `{info['ram_sys'].total / 1024**3:.1f} GB`\nBot: `{info['mem_proc']:.1f} MB`", inline=False)
+        embed.add_field(name=f"{lang_service.get_text('botinfo_ram', lang)} ({info['ram_sys'].percent}%)", value=f"{ram_bar}\nTotal: `{info['ram_sys'].total / 1024**3:.1f} GB`\nBot: `{info['mem_proc']:.1f} MB`", inline=False)
         if info['disk']:
             disk_bar = self._make_bar(info['disk'].percent)
-            embed.add_field(name=f"💿 Disco ({info['disk'].percent}%)", value=f"{disk_bar}\nLibre: `{info['disk'].free / 1024**3:.1f} GB`", inline=False)
-        embed.add_field(name="🖥️ OS", value=f"{platform.system()} {platform.release()}", inline=True)
+            embed.add_field(name=f"{lang_service.get_text('botinfo_disk', lang)} ({info['disk'].percent}%)", value=f"{disk_bar}\nLibre: `{info['disk'].free / 1024**3:.1f} GB`", inline=False)
+        embed.add_field(name=lang_service.get_text("botinfo_os", lang), value=f"{platform.system()} {platform.release()}", inline=True)
         return embed
 
     async def get_memory_embed(self):
         embed = discord.Embed(title="🧠 Monitor de Memoria", color=discord.Color.gold())
+        lang = await lang_service.get_guild_lang(self.ctx.guild.id)
         if not tracemalloc.is_tracing():
-            embed.description = "⚠️ **Tracemalloc inactivo.**\nUsa `/memoria iniciar` para ver detalles profundos."
+            embed.description = lang_service.get_text("dev_mem_nodetail", lang)
             info = await self._get_psutil_info()
             if info["available"]: embed.add_field(name="Uso RSS", value=f"`{info['mem_proc']:.2f} MB`")
         else:
@@ -126,11 +130,11 @@ class BotInfoView(discord.ui.View):
                 elif "services" in path:
                     grouped["🛠️ Services"] += size
                     details.append((f"🛠️ {path.split('services')[-1].replace(os.sep, '/').lstrip('/')}", size))
-                elif "site-packages" in path or "lib" in path: grouped["📚 Libs"] += size
-                else: grouped["📄 Otros"] += size
+                elif "site-packages" in path or "lib" in path: grouped[lang_service.get_text("dev_mem_libs", lang)] += size
+                else: grouped[lang_service.get_text("dev_mem_others", lang)] += size
             
             desc = "**Resumen:**\n" + "\n".join([f"**{k}:** `{v/1024/1024:.2f} MB`" for k, v in grouped.items()])
-            desc += "\n\n**Top Archivos (Bot):**\n"
+            desc += "\n\n" + lang_service.get_text("dev_mem_top", lang)
             for name, size in sorted([d for d in details if "🧩" in d[0] or "🛠️" in d[0]], key=lambda x: x[1], reverse=True)[:10]:
                 desc += f"`{name}`: **{size/1024:.1f} KB**\n"
             embed.description = desc
@@ -139,10 +143,11 @@ class BotInfoView(discord.ui.View):
     async def get_config_embed(self):
         embed = discord.Embed(title="⚙️ Configuración y Estado", color=discord.Color.teal())
         embed.add_field(name="🌐 Idiomas", value="Español (`es`), English (`en`)", inline=False)
+        lang = await lang_service.get_guild_lang(self.ctx.guild.id)
         log_size = f"{os.path.getsize('data/discord.log')/1024:.1f} KB" if os.path.exists("data/discord.log") else "0 KB"
         embed.add_field(name="📝 Log File", value=f"`{log_size}`", inline=True)
         rows = await db_service.fetch_all("SELECT type, text FROM bot_statuses")
-        status_txt = "\n".join([f"• [{r['type']}] {r['text']}" for r in rows[:5]]) + (f"\n... y {len(rows)-5} más." if len(rows) > 5 else "") if rows else "*Ninguno.*"
+        status_txt = "\n".join([f"• [{r['type']}] {r['text']}" for r in rows[:5]]) + (f"\n... y {len(rows)-5} más." if len(rows) > 5 else "") if rows else lang_service.get_text("log_none", lang)
         embed.add_field(name="🎭 Estados", value=status_txt, inline=False)
         return embed
 
@@ -263,6 +268,7 @@ class Developer(commands.Cog):
     @commands.hybrid_command(name="memoria", description="Analiza el consumo de RAM del bot.")
     @commands.is_owner()
     async def memoria(self, ctx: commands.Context, accion: Literal["ver", "iniciar", "detener"] = "ver"):
+        lang = await lang_service.get_guild_lang(ctx.guild.id)
         try:
             import psutil
             has_psutil = True
@@ -272,17 +278,17 @@ class Developer(commands.Cog):
         if accion == "iniciar":
             if not tracemalloc.is_tracing():
                 tracemalloc.start()
-                await ctx.send(embed=embed_service.success("Memoria", "✅ **Tracemalloc iniciado.**\nEl bot ahora registrará las asignaciones de memoria.\nUsa `/memoria ver` en unos minutos."))
+                await ctx.send(embed=embed_service.success("Memoria", lang_service.get_text("dev_mem_start", lang)))
             else:
-                await ctx.send(embed=embed_service.warning("Memoria", "⚠️ Tracemalloc ya está activo."))
+                await ctx.send(embed=embed_service.warning("Memoria", lang_service.get_text("dev_mem_active", lang)))
             return
 
         if accion == "detener":
             if tracemalloc.is_tracing():
                 tracemalloc.stop()
-                await ctx.send(embed=embed_service.success("Memoria", "🛑 **Tracemalloc detenido.**"))
+                await ctx.send(embed=embed_service.success("Memoria", lang_service.get_text("dev_mem_stop", lang)))
             else:
-                await ctx.send(embed=embed_service.warning("Memoria", "⚠️ Tracemalloc no estaba activo."))
+                await ctx.send(embed=embed_service.warning("Memoria", lang_service.get_text("dev_mem_inactive", lang)))
             return
 
         # Accion: VER
@@ -292,10 +298,10 @@ class Developer(commands.Cog):
         if has_psutil:
             process = psutil.Process(os.getpid())
             mem = process.memory_info().rss / 1024 / 1024
-            desc += f"💾 **Uso Total (RSS):** `{mem:.2f} MB`\n\n"
+            desc += lang_service.get_text("dev_mem_total", lang, mem=mem)
         
         if not tracemalloc.is_tracing():
-            desc += "⚠️ **Detalle por módulo no disponible.**\nInicia el rastreo con `/memoria iniciar`."
+            desc += lang_service.get_text("dev_mem_nodetail", lang)
         else:
             snapshot = tracemalloc.take_snapshot()
             stats = snapshot.statistics('filename')

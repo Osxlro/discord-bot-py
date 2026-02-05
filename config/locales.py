@@ -11,6 +11,7 @@ LOCALES = {
         "error_self_action": "❌ No puedes usar este comando sobre ti mismo.",
         "error_missing_args": "❌ Faltan argumentos.",
         "error_cooldown": "⏳ Estás yendo muy rápido. Espera {seconds}s.",
+        "error_old_messages": "⚠️ No puedo borrar mensajes de hace más de 14 días (Limitación de Discord).",
         
         # --- GENERAL ---
         "ping_msg": "🏓 Pong! Latencia: **{ms}ms**",
@@ -21,10 +22,17 @@ LOCALES = {
         # --- MODERACIÓN ---
         "clear_success": "Limpieza Completada",
         "clear_desc": "Se han eliminado **{count}** mensajes.",
+        "clear_limit": "Máximo {max} mensajes.",
         "kick_title": "Usuario Expulsado",
         "kick_desc": "**{user}** ha sido expulsado.\n📝 Razón: {reason}",
         "ban_title": "Usuario Baneado",
         "ban_desc": "**{user}** ha sido baneado.\n📝 Razón: {reason}",
+        "timeout_hierarchy": "❌ No puedes aislar a alguien con igual o mayor rango.",
+        "timeout_invalid": "❌ Tiempo inválido. Usa: `10m`, `1h`, `1d`.",
+        "timeout_success": "🔇 **{user}** aislado por **{time}**.\n📝 Razón: {reason}",
+        "untimeout_success": "🔊 **{user}** ya puede hablar.",
+        "mod_title_kick": "Expulsión",
+        "mod_title_ban": "Ban",
         
         # --- DIVERSIÓN ---
         "coinflip_title": "¡Moneda Lanzada!",
@@ -36,6 +44,9 @@ LOCALES = {
         "choice_desc": "Entre **{a}** y **{b}**, elijo:\n\n👉 **{result}**",
         "confess_title": "🤫 Nueva Confesión",
         "confess_sent": "Tu secreto ha sido publicado en {channel}.",
+        "confess_anon": "Anónimo",
+        "emojimix_title": "Emoji Mix",
+        "8ball_responses": "Sí, definitivamente.|Es cierto.|Sin duda.|Sí.|Probablemente.|Pregunta de nuevo más tarde.|Mejor no decirte ahora.|No cuentes con ello.|Mi respuesta es no.|Mis fuentes dicen que no.|Muy dudoso.",
 
         # --- NIVELES & PERFIL ---
         "rank_title": "Rango de {user}",
@@ -43,11 +54,18 @@ LOCALES = {
         "level_up_default": "🎉 ¡Felicidades {user}! Has subido al **Nivel {level}** en {server} 🆙",
         "leaderboard_title": "🏆 Top XP: {server}",
         "leaderboard_empty": "Nadie tiene experiencia en este servidor aún.",
+        "leaderboard_footer": "Página {current}/{total}",
         "profile_title": "Tarjeta de {user}",
         "profile_desc": "Sin descripción.",
         "profile_no_bday": "No establecido",
         "profile_server_stats": "**--- Estadísticas del Servidor ---**",
         "profile_custom_msgs": "--- Mensajes Personalizados ---",
+        "profile_field_desc": "📝 Desc",
+        "profile_field_bday": "🎂 Cumpleaños",
+        "profile_field_prefix": "⌨️ Prefijo",
+        "profile_field_lvl": "🏆 Nvl",
+        "profile_field_rebirths": "🌀 Rebirths",
+        "profile_field_xp": "✨ XP",
         "profile_update_success": "Perfil Actualizado",
         "profile_desc_saved": "Tu descripción ha sido guardada.",
         "profile_msg_saved": "Tu mensaje ha sido configurado.",
@@ -56,6 +74,8 @@ LOCALES = {
         "rebirth_success": "✨ **¡RENACIMIENTO COMPLETADO!** ✨\nHas sacrificado tu nivel 100+ para renacer. Ahora tienes **{rebirths}** Rebirth(s).\nTu nivel ha vuelto a 1.",
         "rebirth_fail_level": "❌ Aún no estás listo para renacer. Necesitas ser **Nivel 100** mínimo (Eres nivel {level}).",
         "rebirth_fail_generic": "❌ No se pudo completar el renacimiento.",
+        "rebirth_title_success": "🌀 Rebirth Exitoso",
+        "rebirth_title_fail": "Rebirth Fallido",
         "rebirth_status": "🌀 Rebirths: {count}",
 
         # --- SIMULACIÓN / PREVIEW (NUEVO) ---
@@ -68,6 +88,7 @@ LOCALES = {
         
         # --- BACKUP (NUEVO) ---
         "backup_disabled": "⚠️ El envío de backups al dueño está desactivado en settings.",
+        "backup_msg": "📦 **Backup** {date}",
         
         # --- CUMPLEAÑOS ---
         "bday_title": "🎉 ¡Feliz Cumpleaños! 🎂",
@@ -88,21 +109,37 @@ LOCALES = {
         "role_not_found": "❌ El rol asociado a este botón ya no existe.",
         "role_removed": "❌ Te he quitado el rol **{role}**.",
         "role_added": "✅ Te he dado el rol **{role}**.",
+        "role_title_success": "Listo",
+        "role_title_error": "Error",
+        "role_title_perms": "Permisos",
         
         # --- UTILS (Chaos, Mención, Bienvenida, Backup) ---
         "chaos_bang": "¡Pum! **{user}** ha tenido mala suerte ({prob}%).\nEstarás aislado por 1 minuto.",
         "mention_response_default": "¡Hola! Soy **{bot}**.\nUsa `/help` para ver mis comandos.",
+        "mention_title": "👋 Hola",
         "welcome_title": "¡Bienvenido/a {user}!",
         "welcome_desc": "Hola {mention}, gracias por unirte a **{server}**.",
         "goodbye_title": "Un usuario ha partido",
         "goodbye_desc": "{user} ha abandonado el servidor.",
         
+        # --- LOGS TITLES ---
+        "log_msg_deleted": "🗑️ Mensaje Eliminado",
+        "log_msg_edited": "✏️ Mensaje Editado",
+        "log_user_banned": "🔨 Usuario Baneado",
+        "log_user_unbanned": "🔓 Usuario Desbaneado",
+        "log_nick_change": "🏷️ Cambio de Apodo",
+        "log_roles_added": "➕ Roles Añadidos",
+        "log_roles_removed": "➖ Roles Removidos",
+        "log_none": "*Ninguno*",
+        "log_no_content": "*(Sin texto)*",
+
         # --- VOICE (NUEVO) ---
         "voice_join": "✅ Conectado a **{channel}**. (Modo AFK)",
         "voice_leave": "👋 Desconectado del canal de voz.",
         "voice_error_user": "❌ Debes estar en un canal de voz primero.",
         "voice_error_bot": "❌ Ya estoy conectado en otro canal.",
         "voice_error_perms": "❌ No tengo permisos para entrar a ese canal.",
+        "voice_title": "Voz",
         
         # --- AYUDA ---
         "help_title": "Panel de Ayuda",
@@ -134,6 +171,28 @@ LOCALES = {
         "dev_sync_start": "🔄 Sincronizando...",
         "dev_sync_success": "✅ **{count}** comandos sincronizados.",
         "dev_sync_error": "❌ Error: {error}",
+        "dev_mem_start": "✅ **Tracemalloc iniciado.**\nEl bot ahora registrará las asignaciones de memoria.\nUsa `/memoria ver` en unos minutos.",
+        "dev_mem_active": "⚠️ Tracemalloc ya está activo.",
+        "dev_mem_stop": "🛑 **Tracemalloc detenido.**",
+        "dev_mem_inactive": "⚠️ Tracemalloc no estaba activo.",
+        "dev_mem_total": "💾 **Uso Total (RSS):** `{mem:.2f} MB`\n\n",
+        "dev_mem_nodetail": "⚠️ **Detalle por módulo no disponible.**\nInicia el rastreo con `/memoria iniciar`.",
+        "dev_mem_top": "**📊 Top Consumo (Diferencial):**\n",
+        "dev_mem_libs": "📚 Librerías",
+        "dev_mem_others": "📄 Otros",
+        "dev_interaction_error": "❌ Solo quien ejecutó el comando puede usar esto.",
+        
+        # --- BOTINFO LABELS ---
+        "botinfo_name": "🆔 Nombre",
+        "botinfo_uptime": "⏱️ Uptime",
+        "botinfo_python": "🐍 Python",
+        "botinfo_lib": "📚 Librería",
+        "botinfo_guilds": "🛡️ Servidores",
+        "botinfo_users": "👥 Usuarios",
+        "botinfo_cpu": "🧠 CPU (Bot/Sys)",
+        "botinfo_ram": "💾 RAM",
+        "botinfo_disk": "💿 Disco",
+        "botinfo_os": "🖥️ OS",
 
         # --- AYUDA (DESCRIPCIONES DE CATEGORÍAS) ---
         "help_title": "Panel de Ayuda",
@@ -160,6 +219,7 @@ LOCALES = {
         "setup_autorol_off": "⚪ Auto-Rol desactivado.",
         "setup_chaos_desc": "{status}\n🔫 Probabilidad: **{prob}%**",
         "chaos_title": "🔫 ¡Bang!",
+        "mod_reason_default": "Sin motivo especificado",
         "lang_success": "Idioma cambiado a **Español** 🇪🇸",
 
         # --- MINECRAFT ---
@@ -213,6 +273,7 @@ LOCALES = {
         "music_field_duration": "⏳ Duración",
         
         # --- TITLES (GENERIC) ---
+        "title_success": "Éxito",
         "title_error": "Error",
         "title_info": "Info",
         "title_status": "Status",
@@ -222,6 +283,10 @@ LOCALES = {
         "title_autoplay": "Autoplay",
         "title_loop": "Loop",
         "title_volume": "Volumen",
+        "title_ping": "Ping",
+        "title_math": "Math",
+        "title_translate": "Traducir",
+        "title_empty": "Vacío",
         
         # --- SERVERINFO ---
         "serverinfo_title": "ℹ️ Información de {name}",
@@ -244,6 +309,7 @@ LOCALES = {
         "error_self_action": "You cannot perform this action on yourself.",
         "error_missing_args": "Missing arguments.",
         "error_cooldown": "You are going too fast. Wait {seconds}s.",
+        "error_old_messages": "⚠️ I cannot delete messages older than 14 days (Discord Limitation).",
         
         # --- GENERAL ---
         "ping_msg": "🏓 Pong! Latency: **{ms}ms**",
@@ -254,10 +320,17 @@ LOCALES = {
         # --- MODERATION ---
         "clear_success": "Clear Completed",
         "clear_desc": "**{count}** messages have been deleted.",
+        "clear_limit": "Max {max} messages.",
         "kick_title": "User Kicked",
         "kick_desc": "**{user}** has been kicked.\n📝 Reason: {reason}",
         "ban_title": "User Banned",
         "ban_desc": "**{user}** has been banned.\n📝 Reason: {reason}",
+        "timeout_hierarchy": "❌ You cannot timeout someone with equal or higher rank.",
+        "timeout_invalid": "❌ Invalid time. Use: `10m`, `1h`, `1d`.",
+        "timeout_success": "🔇 **{user}** timed out for **{time}**.\n📝 Reason: {reason}",
+        "untimeout_success": "🔊 **{user}** can speak now.",
+        "mod_title_kick": "Kick",
+        "mod_title_ban": "Ban",
         
         # --- FUN ---
         "coinflip_title": "Coin Flipped!",
@@ -269,6 +342,9 @@ LOCALES = {
         "choice_desc": "Between **{a}** and **{b}**, I choose:\n\n👉 **{result}**",
         "confess_title": "🤫 New Confession",
         "confess_sent": "Your secret has been published in {channel}.",
+        "confess_anon": "Anonymous",
+        "emojimix_title": "Emoji Mix",
+        "8ball_responses": "Yes, definitely.|It is certain.|Without a doubt.|Yes.|Probably.|Ask again later.|Better not tell you now.|Don't count on it.|My reply is no.|My sources say no.|Very doubtful.",
 
         # --- LEVELS & PROFILE ---
         "rank_title": "{user}'s Rank",
@@ -276,11 +352,18 @@ LOCALES = {
         "level_up_default": "🎉 Congrats {user}! You reached **Level {level}** in {server} 🆙",
         "leaderboard_title": "🏆 Top XP: {server}",
         "leaderboard_empty": "No one has experience in this server yet.",
+        "leaderboard_footer": "Page {current}/{total}",
         "profile_title": "{user}'s Card",
         "profile_desc": "No description.",
         "profile_no_bday": "Not set",
         "profile_server_stats": "**--- Server Stats ---**",
         "profile_custom_msgs": "--- Custom Messages ---",
+        "profile_field_desc": "📝 Desc",
+        "profile_field_bday": "🎂 Birthday",
+        "profile_field_prefix": "⌨️ Prefix",
+        "profile_field_lvl": "🏆 Lvl",
+        "profile_field_rebirths": "🌀 Rebirths",
+        "profile_field_xp": "✨ XP",
         "profile_update_success": "Profile Updated",
         "profile_desc_saved": "Your description has been saved.",
         "profile_msg_saved": "Your message has been set.",
@@ -289,6 +372,8 @@ LOCALES = {
         "rebirth_success": "✨ **REBIRTH COMPLETED!** ✨\nYou sacrificed level 100+ to be reborn. You now have **{rebirths}** Rebirth(s).\nYour level is back to 1.",
         "rebirth_fail_level": "❌ You are not ready yet. You need **Level 100** minimum (You are level {level}).",
         "rebirth_fail_generic": "❌ Rebirth could not be completed.",
+        "rebirth_title_success": "🌀 Rebirth Successful",
+        "rebirth_title_fail": "Rebirth Failed",
         "rebirth_status": "🌀 Rebirths: {count}",
 
         # --- SIMULATION ---
@@ -301,6 +386,7 @@ LOCALES = {
         
         # --- BACKUP ---
         "backup_disabled": "⚠️ Backup sending to owner is disabled in settings.",
+        "backup_msg": "📦 **Backup** {date}",
         
         # --- BIRTHDAY ---
         "bday_title": "🎉 Happy Birthday! 🎂",
@@ -321,21 +407,37 @@ LOCALES = {
         "role_not_found": "❌ The role associated with this button no longer exists.",
         "role_removed": "❌ Removed role **{role}**.",
         "role_added": "✅ Added role **{role}**.",
+        "role_title_success": "Done",
+        "role_title_error": "Error",
+        "role_title_perms": "Permissions",
         
         # --- UTILS ---
         "chaos_bang": "Bang! **{user}** ran out of luck ({prob}%).\nPunishment: 1 minute timeout.",
         "mention_response_default": "Hi! I am **{bot}**.\nUse `/help` to see my commands.",
+        "mention_title": "👋 Hello",
         "welcome_title": "Welcome {user}!",
         "welcome_desc": "Hi {mention}, thanks for joining **{server}**.",
         "goodbye_title": "A user has left",
         "goodbye_desc": "{user} has left the server.",
         
+        # --- LOGS TITLES ---
+        "log_msg_deleted": "🗑️ Message Deleted",
+        "log_msg_edited": "✏️ Message Edited",
+        "log_user_banned": "🔨 User Banned",
+        "log_user_unbanned": "🔓 User Unbanned",
+        "log_nick_change": "🏷️ Nickname Changed",
+        "log_roles_added": "➕ Roles Added",
+        "log_roles_removed": "➖ Roles Removed",
+        "log_none": "*None*",
+        "log_no_content": "*(No content)*",
+
         # --- VOICE (NEW) ---
         "voice_join": "✅ Connected to **{channel}**. (AFK Mode)",
         "voice_leave": "👋 Disconnected from voice channel.",
         "voice_error_user": "❌ You need to be in a voice channel first.",
         "voice_error_bot": "❌ I am already connected somewhere else.",
         "voice_error_perms": "❌ I don't have permissions to join that channel.",
+        "voice_title": "Voice",
         
         # --- HELP ---
         "help_title": "Help Panel",
@@ -367,6 +469,28 @@ LOCALES = {
         "dev_sync_start": "🔄 Syncing...",
         "dev_sync_success": "✅ **{count}** commands synced.",
         "dev_sync_error": "❌ Error: {error}",
+        "dev_mem_start": "✅ **Tracemalloc started.**\nThe bot will now track memory allocations.\nUse `/memoria ver` in a few minutes.",
+        "dev_mem_active": "⚠️ Tracemalloc is already active.",
+        "dev_mem_stop": "🛑 **Tracemalloc stopped.**",
+        "dev_mem_inactive": "⚠️ Tracemalloc was not active.",
+        "dev_mem_total": "💾 **Total Usage (RSS):** `{mem:.2f} MB`\n\n",
+        "dev_mem_nodetail": "⚠️ **Module detail not available.**\nStart tracking with `/memoria iniciar`.",
+        "dev_mem_top": "**📊 Top Consumption (Differential):**\n",
+        "dev_mem_libs": "📚 Libraries",
+        "dev_mem_others": "📄 Others",
+        "dev_interaction_error": "❌ Only the command executor can use this.",
+
+        # --- BOTINFO LABELS ---
+        "botinfo_name": "🆔 Name",
+        "botinfo_uptime": "⏱️ Uptime",
+        "botinfo_python": "🐍 Python",
+        "botinfo_lib": "📚 Library",
+        "botinfo_guilds": "🛡️ Servers",
+        "botinfo_users": "👥 Users",
+        "botinfo_cpu": "🧠 CPU (Bot/Sys)",
+        "botinfo_ram": "💾 RAM",
+        "botinfo_disk": "💿 Disk",
+        "botinfo_os": "🖥️ OS",
 
         # --- HELP (CATEGORY DESCRIPTIONS) ---
         "help_desc_general": "Basic utility commands.",
@@ -392,6 +516,7 @@ LOCALES = {
         "setup_autorol_off": "⚪ Auto-Role disabled.",
         "setup_chaos_desc": "{status}\n🔫 Probability: **{prob}%**",
         "chaos_title": "🔫 Bang!",
+        "mod_reason_default": "No reason provided",
         "lang_success": "Language changed to **English** 🇺🇸",
 
         # --- MINECRAFT ---
@@ -445,6 +570,7 @@ LOCALES = {
         "music_field_duration": "⏳ Duration",
 
         # --- TITLES (GENERIC) ---
+        "title_success": "Success",
         "title_error": "Error",
         "title_info": "Info",
         "title_status": "Status",
@@ -454,6 +580,10 @@ LOCALES = {
         "title_autoplay": "Autoplay",
         "title_loop": "Loop",
         "title_volume": "Volume",
+        "title_ping": "Ping",
+        "title_math": "Math",
+        "title_translate": "Translate",
+        "title_empty": "Empty",
 
         # --- SERVERINFO ---
         "serverinfo_title": "ℹ️ {name} Info",

@@ -39,16 +39,16 @@ class Perfil(commands.Cog):
         embed = discord.Embed(title=title, color=target.color)
         embed.set_thumbnail(url=target.display_avatar.url)
         
-        embed.add_field(name="📝 Desc", value=f"*{desc}*", inline=False)
-        embed.add_field(name="🎂 Birth Date", value=f"📅 {cumple}", inline=True)
-        embed.add_field(name="⌨️ Prefix", value=f"`{prefix}`", inline=True)
+        embed.add_field(name=lang_service.get_text("profile_field_desc", lang), value=f"*{desc}*", inline=False)
+        embed.add_field(name=lang_service.get_text("profile_field_bday", lang), value=f"📅 {cumple}", inline=True)
+        embed.add_field(name=lang_service.get_text("profile_field_prefix", lang), value=f"`{prefix}`", inline=True)
         
         stats_title = lang_service.get_text("profile_server_stats", lang)
         embed.add_field(name="⠀", value=stats_title, inline=False)
         
-        embed.add_field(name="🏆 Lvl", value=f"**{nivel}**", inline=True)
-        embed.add_field(name="🌀 Rebirths", value=f"**{rebirths}**", inline=True)
-        embed.add_field(name="✨ XP", value=f"{xp}", inline=True)
+        embed.add_field(name=lang_service.get_text("profile_field_lvl", lang), value=f"**{nivel}**", inline=True)
+        embed.add_field(name=lang_service.get_text("profile_field_rebirths", lang), value=f"**{rebirths}**", inline=True)
+        embed.add_field(name=lang_service.get_text("profile_field_xp", lang), value=f"{xp}", inline=True)
         
         embed.add_field(name=f"Progress ({int(progreso*100)}%)", value=f"`{barra}` {xp}/{xp_next}", inline=False)
 
@@ -70,9 +70,11 @@ class Perfil(commands.Cog):
             await ctx.reply("Max 200 chars.", ephemeral=True)
             return
         
-        check = await db_service.fetch_one("SELECT user_id FROM users WHERE user_id = ?", (ctx.author.id,))
-        if not check: await db_service.execute("INSERT INTO users (user_id, description) VALUES (?, ?)", (ctx.author.id, texto))
-        else: await db_service.execute("UPDATE users SET description = ? WHERE user_id = ?", (texto, ctx.author.id))
+        # Optimización: INSERT OR REPLACE para evitar doble consulta
+        await db_service.execute("""
+            INSERT INTO users (user_id, description) VALUES (?, ?)
+            ON CONFLICT(user_id) DO UPDATE SET description = excluded.description
+        """, (ctx.author.id, texto))
         
         await ctx.reply(embed=embed_service.success(lang_service.get_text("profile_update_success", lang), lang_service.get_text("profile_desc_saved", lang), lite=True))
 
@@ -86,13 +88,13 @@ class Perfil(commands.Cog):
         val = None if texto.lower() == "reset" else texto
         columna = "personal_level_msg" if tipo == "Nivel" else "personal_birthday_msg"
         
-        check = await db_service.fetch_one("SELECT user_id FROM users WHERE user_id = ?", (ctx.author.id,))
-        if not check: 
-            await db_service.execute(f"INSERT INTO users (user_id, {columna}) VALUES (?, ?)", (ctx.author.id, val))
-        else: 
-            await db_service.execute(f"UPDATE users SET {columna} = ? WHERE user_id = ?", (val, ctx.author.id))
+        # Optimización: INSERT OR REPLACE
+        await db_service.execute(f"""
+            INSERT INTO users (user_id, {columna}) VALUES (?, ?)
+            ON CONFLICT(user_id) DO UPDATE SET {columna} = excluded.{columna}
+        """, (ctx.author.id, val))
         
-        await ctx.reply(embed=embed_service.success("Perfil Actualizado", f"✅ Mensaje de **{tipo}** guardado.", lite=True))
+        await ctx.reply(embed=embed_service.success(lang_service.get_text("profile_update_success", lang), lang_service.get_text("profile_msg_saved", lang), lite=True))
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(Perfil(bot))

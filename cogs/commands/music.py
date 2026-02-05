@@ -6,7 +6,7 @@ import re
 from discord import app_commands
 from discord.ext import commands
 from config import settings
-from services import embed_service, lang_service, pagination_service
+from services import embed_service, lang_service, pagination_service, algorithm_service
 
 logger = logging.getLogger(__name__)
 
@@ -115,6 +115,7 @@ class MusicControls(discord.ui.View):
 class Music(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.recommender = algorithm_service.RecommendationEngine()
 
     async def cog_load(self):
         """Conecta a Lavalink al cargar el Cog."""
@@ -163,40 +164,6 @@ class Music(commands.Cog):
             return choices
         except Exception:
             return []
-
-    async def _get_smart_recommendation(self, player: wavelink.Player) -> wavelink.Playable:
-        """Genera una recomendación basada en el historial y contexto."""
-        if not player.queue.history:
-            return None
-            
-        # 1. Analizar historial (Últimas 10 canciones) para evitar repeticiones
-        history = list(player.queue.history)[-10:]
-        played_ids = {t.identifier for t in player.queue.history}
-        
-        # 2. Seleccionar Semilla (Seed)
-        # 70% probabilidad de usar la última, 30% de usar una reciente para variar el flujo
-        seed_track = history[-1]
-        if len(history) > 1 and random.random() > 0.7:
-            seed_track = random.choice(history[:-1])
-            
-        # 3. Estrategia de Búsqueda (Mix de estrategias)
-        queries = [
-            f"ytsearch:{seed_track.author} official audio", # Prioridad: Mismo artista
-            f"ytsearch:{seed_track.title} similar",         # Similaridad
-        ]
-        
-        for query in queries:
-            try:
-                tracks = await wavelink.Playable.search(query)
-                if not tracks: continue
-                
-                for track in tracks:
-                    # Filtramos si ya sonó o si es la misma que la semilla
-                    if track.identifier not in played_ids and track.title != seed_track.title:
-                        return track
-            except:
-                continue
-        return None
 
     @commands.hybrid_command(name="play", description="Reproduce música desde YouTube, SoundCloud, etc.")
     @app_commands.describe(busqueda="Nombre de la canción o URL")
@@ -509,7 +476,7 @@ class Music(commands.Cog):
 
         # 4. Smart Autoplay (Si la cola está vacía)
         if getattr(player, "smart_autoplay", False):
-            recommendation = await self._get_smart_recommendation(player)
+            recommendation = await self.recommender.get_recommendation(player)
             if recommendation:
                 await player.play(recommendation)
 

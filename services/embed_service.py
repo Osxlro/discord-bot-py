@@ -11,7 +11,7 @@ def _base_embed(title: str, description: str, color: int) -> discord.Embed:
         timestamp=datetime.datetime.now()
     )
     # Pie de página por defecto con el nombre del bot (opcional)
-    # embed.set_footer(text="Bot System") 
+    # embed.set_footer(text="Oscurin Inc") 
     return embed
 
 def success(title: str, description: str, lite: bool = False) -> discord.Embed:

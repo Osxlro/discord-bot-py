@@ -15,7 +15,7 @@ class Mencion(commands.Cog):
             lang = await lang_service.get_guild_lang(message.guild.id)
             
             respuesta = config.get('mention_response') or lang_service.get_text("mention_response_default", lang, bot=self.bot.user.name)
-            await message.channel.send(embed=embed_service.info("👋 Hello", respuesta))
+            await message.channel.send(embed=embed_service.info(lang_service.get_text("mention_title", lang), respuesta))
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(Mencion(bot))

@@ -31,7 +31,7 @@ class Moderacion(commands.Cog):
         max_msg = settings.CONFIG.get("moderation_config", {}).get("max_clear_msg", 100)
 
         if cantidad > max_msg:
-            await ctx.reply(embed=embed_service.error("Límite", f"Máximo {max_msg} mensajes.", lite=True), ephemeral=True)
+            await ctx.reply(embed=embed_service.error(lang_service.get_text("title_error", lang), lang_service.get_text("clear_limit", lang, max=max_msg), lite=True), ephemeral=True)
             return
 
         await ctx.defer(ephemeral=True)
@@ -47,42 +47,48 @@ class Moderacion(commands.Cog):
             
         except discord.HTTPException:
             # Si falla (generalmente por mensajes viejos), avisamos
-            await ctx.send(embed=embed_service.warning("Aviso", "No puedo borrar mensajes de hace más de 14 días (Limitación de Discord).", lite=True), ephemeral=True)
+            await ctx.send(embed=embed_service.warning(lang_service.get_text("title_info", lang), lang_service.get_text("error_old_messages", lang), lite=True), ephemeral=True)
 
     @commands.hybrid_command(name="aislar", description="Aísla (Timeout) a un usuario.")
     @app_commands.describe(usuario="Miembro", tiempo="Ej: 10m, 1h", razon="Motivo")
     @app_commands.checks.has_permissions(moderate_members=True)
-    async def timeout(self, ctx: commands.Context, usuario: discord.Member, tiempo: str, razon: str = "Sin motivo"):
+    async def timeout(self, ctx: commands.Context, usuario: discord.Member, tiempo: str, razon: str = None):
+        lang = await lang_service.get_guild_lang(ctx.guild.id)
+        razon = razon or lang_service.get_text("mod_reason_default", lang)
+        
         if usuario.top_role >= ctx.author.top_role:
-            await ctx.reply(embed=embed_service.error("Jerarquía", "❌ No puedes aislar a alguien con igual o mayor rango.", lite=True), ephemeral=True)
+            await ctx.reply(embed=embed_service.error(lang_service.get_text("title_error", lang), lang_service.get_text("timeout_hierarchy", lang), lite=True), ephemeral=True)
             return
 
         seconds = self._parse_time(tiempo)
         if seconds == 0:
-            await ctx.reply(embed=embed_service.error("Formato", "❌ Tiempo inválido. Usa: `10m`, `1h`, `1d`.", lite=True), ephemeral=True)
+            await ctx.reply(embed=embed_service.error(lang_service.get_text("title_error", lang), lang_service.get_text("timeout_invalid", lang), lite=True), ephemeral=True)
             return
             
         try:
             duration = datetime.timedelta(seconds=seconds)
             await usuario.timeout(duration, reason=razon)
-            await ctx.reply(embed=embed_service.success("Usuario Aislado", f"🔇 **{usuario.name}** aislado por **{tiempo}**.\n📝 Razón: {razon}"))
+            msg = lang_service.get_text("timeout_success", lang, user=usuario.name, time=tiempo, reason=razon)
+            await ctx.reply(embed=embed_service.success(lang_service.get_text("title_success", lang), msg))
         except Exception as e:
-            await ctx.reply(embed=embed_service.error("Error", str(e), lite=True), ephemeral=True)
+            await ctx.reply(embed=embed_service.error(lang_service.get_text("title_error", lang), str(e), lite=True), ephemeral=True)
     
     @commands.hybrid_command(name="quitaraislamiento", description="Retira el aislamiento.")
     @app_commands.checks.has_permissions(moderate_members=True)
     async def untimeout(self, ctx: commands.Context, usuario: discord.Member):
+        lang = await lang_service.get_guild_lang(ctx.guild.id)
         try:
             await usuario.timeout(None, reason="Manual")
-            await ctx.reply(embed=embed_service.success("Libre", f"🔊 **{usuario.name}** ya puede hablar.", lite=True))
+            await ctx.reply(embed=embed_service.success(lang_service.get_text("title_success", lang), lang_service.get_text("untimeout_success", lang, user=usuario.name), lite=True))
         except Exception as e:
-            await ctx.reply(embed=embed_service.error("Error", str(e), lite=True), ephemeral=True)
+            await ctx.reply(embed=embed_service.error(lang_service.get_text("title_error", lang), str(e), lite=True), ephemeral=True)
 
     @commands.hybrid_command(name="kick", description="Expulsa a un miembro.")
     @app_commands.describe(usuario="Miembro", razon="Motivo")
     @app_commands.checks.has_permissions(kick_members=True)
-    async def kick(self, ctx: commands.Context, usuario: discord.Member, razon: str = "N/A"):
+    async def kick(self, ctx: commands.Context, usuario: discord.Member, razon: str = None):
         lang = await lang_service.get_guild_lang(ctx.guild.id)
+        razon = razon or lang_service.get_text("mod_reason_default", lang)
         
         if usuario.id == ctx.author.id:
             await ctx.reply(embed=embed_service.warning("!", lang_service.get_text("error_self_action", lang), lite=True), ephemeral=True)
@@ -98,19 +104,20 @@ class Moderacion(commands.Cog):
             
             if msg_custom:
                 desc = msg_custom.replace("{user}", usuario.name).replace("{reason}", razon)
-                title = "Expulsión"
+                title = lang_service.get_text("mod_title_kick", lang)
             else:
                 title = lang_service.get_text("kick_title", lang)
                 desc = lang_service.get_text("kick_desc", lang, user=usuario.name, reason=razon)
             
             await ctx.reply(embed=embed_service.success(title, desc))
         except discord.Forbidden:
-            await ctx.reply(embed=embed_service.error("Permisos", lang_service.get_text("error_hierarchy", lang), lite=True), ephemeral=True)
+            await ctx.reply(embed=embed_service.error(lang_service.get_text("title_error", lang), lang_service.get_text("error_hierarchy", lang), lite=True), ephemeral=True)
             
     @commands.hybrid_command(name="ban", description="Banea a un miembro.")
     @app_commands.checks.has_permissions(ban_members=True)
-    async def ban(self, ctx: commands.Context, usuario: discord.Member, razon: str = "N/A"):
+    async def ban(self, ctx: commands.Context, usuario: discord.Member, razon: str = None):
         lang = await lang_service.get_guild_lang(ctx.guild.id)
+        razon = razon or lang_service.get_text("mod_reason_default", lang)
 
         if usuario.id == ctx.author.id:
             await ctx.reply(embed=embed_service.warning("!", lang_service.get_text("error_self_action", lang), lite=True), ephemeral=True)
@@ -125,14 +132,14 @@ class Moderacion(commands.Cog):
             
             if msg_custom:
                 desc = msg_custom.replace("{user}", usuario.name).replace("{reason}", razon)
-                title = "Ban"
+                title = lang_service.get_text("mod_title_ban", lang)
             else:
                 title = lang_service.get_text("ban_title", lang)
                 desc = lang_service.get_text("ban_desc", lang, user=usuario.name, reason=razon)
 
             await ctx.reply(embed=embed_service.success(title, desc))
         except discord.Forbidden:
-            await ctx.reply(embed=embed_service.error("Permisos", lang_service.get_text("error_hierarchy", lang), lite=True), ephemeral=True)
+            await ctx.reply(embed=embed_service.error(lang_service.get_text("title_error", lang), lang_service.get_text("error_hierarchy", lang), lite=True), ephemeral=True)
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(Moderacion(bot))

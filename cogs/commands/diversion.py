@@ -16,13 +16,13 @@ class Diversion(commands.Cog):
             partial_emoji = discord.PartialEmoji.from_str(emoji)
             if partial_emoji.is_custom_emoji():
                 title = lang_service.get_text("jumbo_title", lang, name=partial_emoji.name)
-                await ctx.reply(embed=embed_service.info(title, "", image=partial_emoji.url, lite=True))
+                await ctx.reply(embed=embed_service.info(title, "", image=partial_emoji.url))
             else:
                 msg = lang_service.get_text("jumbo_error", lang)
-                await ctx.reply(embed=embed_service.error("Error", msg, lite=True), ephemeral=True)
+                await ctx.reply(embed=embed_service.error(lang_service.get_text("title_error", lang), msg, lite=True), ephemeral=True)
         except Exception:
             msg = lang_service.get_text("jumbo_invalid", lang)
-            await ctx.reply(embed=embed_service.error("Error", msg, lite=True), ephemeral=True)
+            await ctx.reply(embed=embed_service.error(lang_service.get_text("title_error", lang), msg, lite=True), ephemeral=True)
 
     @commands.hybrid_command(name="coinflip", description="Lanza una moneda.")
     async def coinflip(self, ctx: commands.Context):
@@ -46,8 +46,9 @@ class Diversion(commands.Cog):
 
     @commands.hybrid_command(name="emojimix", description="Mezcla dos emojis.")
     async def emojimix(self, ctx: commands.Context, emoji1: str, emoji2: str):
+        lang = await lang_service.get_guild_lang(ctx.guild.id)
         url = emojimixer_service.generar_url_emojimix(emoji1, emoji2)
-        await ctx.reply(embed=embed_service.info("Emoji Mix", f"{emoji1} + {emoji2}", image=url, lite=True))
+        await ctx.reply(embed=embed_service.info(lang_service.get_text("emojimix_title", lang), f"{emoji1} + {emoji2}", image=url))
 
     @commands.hybrid_command(name="confess", description="Confesión anónima.")
     @app_commands.describe(secreto="Tu secreto.")
@@ -58,7 +59,7 @@ class Diversion(commands.Cog):
 
         if not channel_id:
             await ctx.reply(
-                embed=embed_service.error("Configuración", "❌ Canal de confesiones no establecido.", lite=True), 
+                embed=embed_service.error(lang_service.get_text("title_error", lang), "❌ Canal de confesiones no establecido.", lite=True), 
                 ephemeral=True
             )
             return
@@ -68,20 +69,17 @@ class Diversion(commands.Cog):
 
         title = lang_service.get_text("confess_title", lang)
         embed = discord.Embed(title=title, description=f"\"{secreto}\"", color=discord.Color.random())
-        embed.set_footer(text="Anonimo")
+        embed.set_footer(text=lang_service.get_text("confess_anon", lang))
         await canal.send(embed=embed)
 
         msg = lang_service.get_text("confess_sent", lang, channel=canal.mention)
-        await ctx.reply(embed=embed_service.success("Enviado", msg, lite=True), ephemeral=True)
+        await ctx.reply(embed=embed_service.success(lang_service.get_text("title_success", lang), msg, lite=True), ephemeral=True)
 
     @commands.hybrid_command(name="8ball", description="Pregúntale a la bola mágica.")
     @app_commands.describe(pregunta="Tu pregunta")
     async def eightball(self, ctx: commands.Context, pregunta: str):
-        respuestas = [
-            "Sí, definitivamente.", "Es cierto.", "Sin duda.", "Sí.", "Probablemente.",
-            "Pregunta de nuevo más tarde.", "Mejor no decirte ahora.", "No cuentes con ello.",
-            "Mi respuesta es no.", "Mis fuentes dicen que no.", "Muy dudoso."
-        ]
+        lang = await lang_service.get_guild_lang(ctx.guild.id)
+        respuestas = lang_service.get_text("8ball_responses", lang).split("|")
         respuesta = random.choice(respuestas)
         await ctx.reply(embed=embed_service.info("🎱 8-Ball", f"**P:** {pregunta}\n**R:** {respuesta}", lite=True))
 

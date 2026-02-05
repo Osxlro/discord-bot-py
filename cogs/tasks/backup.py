@@ -6,7 +6,7 @@ import shutil
 import discord
 from discord.ext import commands, tasks
 from config import settings
-from services import db_service
+from services import db_service, lang_service
 
 logger = logging.getLogger(__name__)
 
@@ -78,7 +78,7 @@ class Backup(commands.Cog):
             # 3. ENVIAR BACKUP
             fecha = datetime.date.today().strftime("%Y-%m-%d")
             archivo = discord.File(temp_backup_path, filename=f"backup_{fecha}.sqlite3")
-            msg = await owner.send(content=f"📦 **Backup** {fecha}", file=archivo)
+            msg = await owner.send(content=lang_service.get_text("backup_msg", "es", date=fecha), file=archivo)
             
             await self._cleanup_dm(msg.channel)
             logger.info(f"✅ Backup de base de datos enviado a {owner.name}")
