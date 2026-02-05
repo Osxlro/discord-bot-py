@@ -169,6 +169,9 @@ class Music(commands.Cog):
     @app_commands.describe(busqueda="Nombre de la canción o URL")
     @app_commands.autocomplete(busqueda=play_autocomplete)
     async def play(self, ctx: commands.Context, busqueda: str):
+        # Deferimos la interacción al inicio para evitar timeouts si la conexión tarda
+        await ctx.defer()
+
         lang = await lang_service.get_guild_lang(ctx.guild.id)
         
         # 1. Verificar canal de voz
@@ -192,9 +195,6 @@ class Music(commands.Cog):
         # Guardamos el canal de texto para enviar mensajes de "Now Playing"
         player.home = ctx.channel
 
-        # 3. Buscar canción
-        await ctx.defer()
-        
         # Auto-selección de proveedor (YouTube por defecto si no es URL)
         url_rx = re.compile(r'https?://(?:www\.)?.+')
         search_query = busqueda
