@@ -1,4 +1,6 @@
 import logging
+import os
+import tracemalloc
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -129,6 +131,58 @@ class Developer(commands.Cog):
             await msg.edit(content=lang_service.get_text("dev_sync_success", lang, count=len(synced)))
         except Exception as e:
             await msg.edit(content=lang_service.get_text("dev_sync_error", lang, error=e))
+
+    @commands.hybrid_command(name="memoria", description="Analiza el consumo de RAM del bot.")
+    @commands.is_owner()
+    async def memoria(self, ctx: commands.Context, accion: Literal["ver", "iniciar", "detener"] = "ver"):
+        try:
+            import psutil
+            has_psutil = True
+        except ImportError:
+            has_psutil = False
+
+        if accion == "iniciar":
+            if not tracemalloc.is_tracing():
+                tracemalloc.start()
+                await ctx.send(embed=embed_service.success("Memoria", "✅ **Tracemalloc iniciado.**\nEl bot ahora registrará las asignaciones de memoria.\nUsa `/memoria ver` en unos minutos."))
+            else:
+                await ctx.send(embed=embed_service.warning("Memoria", "⚠️ Tracemalloc ya está activo."))
+            return
+
+        if accion == "detener":
+            if tracemalloc.is_tracing():
+                tracemalloc.stop()
+                await ctx.send(embed=embed_service.success("Memoria", "🛑 **Tracemalloc detenido.**"))
+            else:
+                await ctx.send(embed=embed_service.warning("Memoria", "⚠️ Tracemalloc no estaba activo."))
+            return
+
+        # Accion: VER
+        await ctx.defer()
+        desc = ""
+        
+        if has_psutil:
+            process = psutil.Process(os.getpid())
+            mem = process.memory_info().rss / 1024 / 1024
+            desc += f"💾 **Uso Total (RSS):** `{mem:.2f} MB`\n\n"
+        
+        if not tracemalloc.is_tracing():
+            desc += "⚠️ **Detalle por módulo no disponible.**\nInicia el rastreo con `/memoria iniciar`."
+        else:
+            snapshot = tracemalloc.take_snapshot()
+            stats = snapshot.statistics('filename')
+            grouped = {}
+            
+            for stat in stats:
+                path = stat.traceback[0].filename
+                name = "🧩 " + path.split("cogs")[-1].replace("\\", "/").lstrip("/") if "cogs" in path else ("🛠️ " + path.split("services")[-1].replace("\\", "/").lstrip("/") if "services" in path else ("📚 Librerías" if "site-packages" in path else "📄 Otros"))
+                grouped[name] = grouped.get(name, 0) + stat.size
+            
+            desc += "**📊 Top Consumo (Diferencial):**\n"
+            for name, size in sorted(grouped.items(), key=lambda x: x[1], reverse=True)[:15]:
+                desc += f"**{name}**: `{size/1024:.2f} KB`\n"
+
+        await ctx.send(embed=embed_service.info("Monitor de Memoria", desc))
 
 async def setup(bot):
     await bot.add_cog(Developer(bot))

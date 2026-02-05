@@ -4,3 +4,4 @@ aiosqlite
 deep-translator
 PyNacl
 wavelink
+psutil
