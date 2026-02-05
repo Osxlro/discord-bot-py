@@ -1,6 +1,9 @@
 import logging
 import os
 import tracemalloc
+import platform
+import sys
+import time
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -33,6 +36,131 @@ class StatusDeleteView(discord.ui.View):
     def __init__(self, options, placeholder_text):
         super().__init__(timeout=60)
         self.add_item(StatusSelect(options, placeholder_text))
+
+class BotInfoView(discord.ui.View):
+    def __init__(self, ctx, bot):
+        super().__init__(timeout=120)
+        self.ctx = ctx
+        self.bot = bot
+
+    async def interaction_check(self, interaction: discord.Interaction):
+        if interaction.user.id != self.ctx.author.id:
+            await interaction.response.send_message("❌ Solo quien ejecutó el comando puede usar esto.", ephemeral=True)
+            return False
+        return True
+
+    async def _get_psutil_info(self):
+        try:
+            import psutil
+            proc = psutil.Process()
+            with proc.oneshot():
+                cpu_proc = proc.cpu_percent()
+                mem_proc = proc.memory_info().rss / 1024 / 1024
+                create_time = proc.create_time()
+            
+            return {
+                "cpu_proc": cpu_proc, "mem_proc": mem_proc, "uptime": create_time,
+                "cpu_sys": psutil.cpu_percent(), "ram_sys": psutil.virtual_memory(), 
+                "disk": psutil.disk_usage(".") if os.path.exists(".") else None, "available": True
+            }
+        except ImportError:
+            return {"available": False}
+
+    def _make_bar(self, percent, length=10):
+        filled = int(length * percent / 100)
+        return "█" * filled + "░" * (length - filled)
+
+    async def get_general_embed(self):
+        info = await self._get_psutil_info()
+        uptime_str = "N/A"
+        if info["available"]:
+            uptime_seconds = int(time.time() - info["uptime"])
+            m, s = divmod(uptime_seconds, 60)
+            h, m = divmod(m, 60)
+            d, h = divmod(h, 24)
+            uptime_str = f"{d}d {h}h {m}m {s}s"
+
+        embed = discord.Embed(title="🤖 Información del Bot", color=discord.Color.blurple())
+        embed.set_thumbnail(url=self.bot.user.display_avatar.url)
+        embed.add_field(name="🆔 Nombre", value=f"{self.bot.user}", inline=True)
+        embed.add_field(name="⏱️ Uptime", value=f"`{uptime_str}`", inline=True)
+        embed.add_field(name="🐍 Python", value=f"`{sys.version.split()[0]}`", inline=True)
+        embed.add_field(name="📚 Discord.py", value=f"`{discord.__version__}`", inline=True)
+        embed.add_field(name="🛡️ Guilds", value=f"{len(self.bot.guilds)}", inline=True)
+        embed.add_field(name="👥 Usuarios", value=f"{len(self.bot.users)}", inline=True)
+        return embed
+
+    async def get_system_embed(self):
+        info = await self._get_psutil_info()
+        embed = discord.Embed(title="💻 Estado del Sistema", color=discord.Color.blue())
+        if not info["available"]:
+            embed.description = "⚠️ `psutil` no está instalado."
+            return embed
+
+        embed.add_field(name="🧠 CPU (Bot/Sys)", value=f"`{info['cpu_proc']:.1f}%` / `{info['cpu_sys']:.1f}%`", inline=True)
+        ram_bar = self._make_bar(info['ram_sys'].percent)
+        embed.add_field(name=f"💾 RAM ({info['ram_sys'].percent}%)", value=f"{ram_bar}\nTotal: `{info['ram_sys'].total / 1024**3:.1f} GB`\nBot: `{info['mem_proc']:.1f} MB`", inline=False)
+        if info['disk']:
+            disk_bar = self._make_bar(info['disk'].percent)
+            embed.add_field(name=f"💿 Disco ({info['disk'].percent}%)", value=f"{disk_bar}\nLibre: `{info['disk'].free / 1024**3:.1f} GB`", inline=False)
+        embed.add_field(name="🖥️ OS", value=f"{platform.system()} {platform.release()}", inline=True)
+        return embed
+
+    async def get_memory_embed(self):
+        embed = discord.Embed(title="🧠 Monitor de Memoria", color=discord.Color.gold())
+        if not tracemalloc.is_tracing():
+            embed.description = "⚠️ **Tracemalloc inactivo.**\nUsa `/memoria iniciar` para ver detalles profundos."
+            info = await self._get_psutil_info()
+            if info["available"]: embed.add_field(name="Uso RSS", value=f"`{info['mem_proc']:.2f} MB`")
+        else:
+            snapshot = tracemalloc.take_snapshot()
+            stats = snapshot.statistics('filename')
+            grouped = {"🧩 Cogs": 0, "🛠️ Services": 0, "📚 Libs": 0, "📄 Otros": 0}
+            details = []
+            for stat in stats:
+                path = stat.traceback[0].filename
+                size = stat.size
+                if "cogs" in path:
+                    grouped["🧩 Cogs"] += size
+                    details.append((f"🧩 {path.split('cogs')[-1].replace(os.sep, '/').lstrip('/')}", size))
+                elif "services" in path:
+                    grouped["🛠️ Services"] += size
+                    details.append((f"🛠️ {path.split('services')[-1].replace(os.sep, '/').lstrip('/')}", size))
+                elif "site-packages" in path or "lib" in path: grouped["📚 Libs"] += size
+                else: grouped["📄 Otros"] += size
+            
+            desc = "**Resumen:**\n" + "\n".join([f"**{k}:** `{v/1024/1024:.2f} MB`" for k, v in grouped.items()])
+            desc += "\n\n**Top Archivos (Bot):**\n"
+            for name, size in sorted([d for d in details if "🧩" in d[0] or "🛠️" in d[0]], key=lambda x: x[1], reverse=True)[:10]:
+                desc += f"`{name}`: **{size/1024:.1f} KB**\n"
+            embed.description = desc
+        return embed
+
+    async def get_config_embed(self):
+        embed = discord.Embed(title="⚙️ Configuración y Estado", color=discord.Color.teal())
+        embed.add_field(name="🌐 Idiomas", value="Español (`es`), English (`en`)", inline=False)
+        log_size = f"{os.path.getsize('data/discord.log')/1024:.1f} KB" if os.path.exists("data/discord.log") else "0 KB"
+        embed.add_field(name="📝 Log File", value=f"`{log_size}`", inline=True)
+        rows = await db_service.fetch_all("SELECT type, text FROM bot_statuses")
+        status_txt = "\n".join([f"• [{r['type']}] {r['text']}" for r in rows[:5]]) + (f"\n... y {len(rows)-5} más." if len(rows) > 5 else "") if rows else "*Ninguno.*"
+        embed.add_field(name="🎭 Estados", value=status_txt, inline=False)
+        return embed
+
+    async def _update(self, interaction, embed, style_idx):
+        for i, child in enumerate(self.children): child.style = discord.ButtonStyle.primary if i == style_idx else discord.ButtonStyle.secondary
+        await interaction.response.edit_message(embed=embed, view=self)
+
+    @discord.ui.button(label="General", emoji="📊", style=discord.ButtonStyle.primary)
+    async def btn_general(self, interaction: discord.Interaction, button: discord.ui.Button): await self._update(interaction, await self.get_general_embed(), 0)
+
+    @discord.ui.button(label="Sistema", emoji="💻", style=discord.ButtonStyle.secondary)
+    async def btn_system(self, interaction: discord.Interaction, button: discord.ui.Button): await self._update(interaction, await self.get_system_embed(), 1)
+
+    @discord.ui.button(label="Memoria", emoji="🧠", style=discord.ButtonStyle.secondary)
+    async def btn_memory(self, interaction: discord.Interaction, button: discord.ui.Button): await self._update(interaction, await self.get_memory_embed(), 2)
+
+    @discord.ui.button(label="Config", emoji="⚙️", style=discord.ButtonStyle.secondary)
+    async def btn_config(self, interaction: discord.Interaction, button: discord.ui.Button): await self._update(interaction, await self.get_config_embed(), 3)
 
 class Developer(commands.Cog):
     def __init__(self, bot):
@@ -183,6 +311,12 @@ class Developer(commands.Cog):
                 desc += f"**{name}**: `{size/1024:.2f} KB`\n"
 
         await ctx.send(embed=embed_service.info("Monitor de Memoria", desc))
+
+    @commands.hybrid_command(name="botinfo", description="Panel de control e información del sistema.")
+    async def botinfo(self, ctx: commands.Context):
+        view = BotInfoView(ctx, self.bot)
+        embed = await view.get_general_embed()
+        await ctx.send(embed=embed, view=view)
 
 async def setup(bot):
     await bot.add_cog(Developer(bot))
