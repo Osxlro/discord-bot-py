@@ -3,6 +3,7 @@ from discord.ext import commands
 from discord import app_commands
 from typing import Literal
 from services import embed_service, lang_service
+from config import settings
 
 class Roles(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -52,12 +53,16 @@ class Roles(commands.Cog):
     @commands.hybrid_command(name="botonrol", description="Crea un botón de auto-rol")
     @app_commands.describe(rol="Rol a entregar", titulo="Título Embed", descripcion="Desc Embed")
     @commands.has_permissions(administrator=True)
-    async def create_role_button(self, ctx: commands.Context, rol: discord.Role, titulo: str = "Rol", descripcion: str = "Click para obtener rol", emoji: str = "✨", color_boton: Literal["blue", "green", "red", "grey"] = "green"):
+    async def create_role_button(self, ctx: commands.Context, rol: discord.Role, titulo: str = None, descripcion: str = None, emoji: str = None, color_boton: Literal["blue", "green", "red", "grey"] = "green"):
         lang = await lang_service.get_guild_lang(ctx.guild.id)
         
         if rol.position >= ctx.guild.me.top_role.position:
             await ctx.reply(embed=embed_service.error(lang_service.get_text("title_error", lang), lang_service.get_text("error_hierarchy", lang), lite=True), ephemeral=True)
             return
+
+        titulo = titulo or lang_service.get_text("role_default_title", lang)
+        descripcion = descripcion or lang_service.get_text("role_default_desc", lang)
+        emoji = emoji or settings.ROLES_CONFIG["DEFAULT_EMOJI"]
 
         embed = embed_service.info(titulo, descripcion, footer=f"ID: {rol.id}")
         styles = {"blue": discord.ButtonStyle.primary, "green": discord.ButtonStyle.success, "red": discord.ButtonStyle.danger, "grey": discord.ButtonStyle.secondary}

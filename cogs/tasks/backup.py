@@ -37,12 +37,12 @@ class Backup(commands.Cog):
                 except discord.HTTPException:
                     pass
 
-    @tasks.loop(minutes=5)
+    @tasks.loop(minutes=settings.BACKUP_CONFIG["XP_FLUSH_MINUTES"])
     async def flush_xp(self):
         """Guarda el caché de XP en la base de datos periódicamente."""
         await db_service.flush_xp_cache()
 
-    @tasks.loop(hours=12)
+    @tasks.loop(hours=settings.BACKUP_CONFIG["INTERVAL_HOURS"])
     async def backup_db(self):
         await self.bot.wait_until_ready()
         
@@ -85,7 +85,7 @@ class Backup(commands.Cog):
             # 3. ENVIAR BACKUP
             fecha = datetime.date.today().strftime("%Y-%m-%d")
             archivo = discord.File(temp_backup_path, filename=f"backup_{fecha}.sqlite3")
-            msg = await owner.send(content=lang_service.get_text("backup_msg", "es", date=fecha), file=archivo)
+            msg = await owner.send(content=lang_service.get_text("backup_msg", settings.GENERAL_CONFIG["DEFAULT_LANG"], date=fecha), file=archivo)
             
             await self._cleanup_dm(msg.channel)
             logger.info(f"✅ Backup de base de datos enviado a {owner.name}")

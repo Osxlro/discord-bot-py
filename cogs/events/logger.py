@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands
 from services import embed_service, db_service, lang_service
+from config import settings
 
 class Logger(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -23,9 +24,12 @@ class Logger(commands.Cog):
         if message.author.bot or not message.guild: return
         lang = await lang_service.get_guild_lang(message.guild.id)
         
-        embed = embed_service.info(lang_service.get_text("log_msg_deleted", lang), f"**Autor:** {message.author.mention}\n**Canal:** {message.channel.mention}")
-        embed.add_field(name="Contenido", value=message.content or lang_service.get_text("log_no_content", lang), inline=False)
-        embed.color = discord.Color.orange()
+        author_lbl = lang_service.get_text("log_field_author", lang)
+        channel_lbl = lang_service.get_text("log_field_channel", lang)
+        
+        embed = embed_service.info(lang_service.get_text("log_msg_deleted", lang), f"{author_lbl} {message.author.mention}\n{channel_lbl} {message.channel.mention}")
+        embed.add_field(name=lang_service.get_text("log_field_content", lang), value=message.content or lang_service.get_text("log_no_content", lang), inline=False)
+        embed.color = settings.COLORS["ORANGE"]
         
         await self._send_log(message.guild.id, embed)
 
@@ -35,23 +39,28 @@ class Logger(commands.Cog):
         if before.content == after.content: return
         lang = await lang_service.get_guild_lang(before.guild.id)
 
-        embed = embed_service.info(lang_service.get_text("log_msg_edited", lang), f"**Autor:** {before.author.mention}\n**Canal:** {before.channel.mention}")
-        embed.add_field(name="Antes", value=before.content, inline=False)
-        embed.add_field(name="Después", value=after.content, inline=False)
+        author_lbl = lang_service.get_text("log_field_author", lang)
+        channel_lbl = lang_service.get_text("log_field_channel", lang)
+
+        embed = embed_service.info(lang_service.get_text("log_msg_edited", lang), f"{author_lbl} {before.author.mention}\n{channel_lbl} {before.channel.mention}")
+        embed.add_field(name=lang_service.get_text("log_field_before", lang), value=before.content, inline=False)
+        embed.add_field(name=lang_service.get_text("log_field_after", lang), value=after.content, inline=False)
         
         await self._send_log(before.guild.id, embed)
 
     @commands.Cog.listener()
     async def on_member_ban(self, guild: discord.Guild, user: discord.User):
         lang = await lang_service.get_guild_lang(guild.id)
-        embed = embed_service.error(lang_service.get_text("log_user_banned", lang), f"**Usuario:** {user.mention} (`{user.id}`)")
+        user_lbl = lang_service.get_text("log_field_user", lang)
+        embed = embed_service.error(lang_service.get_text("log_user_banned", lang), f"{user_lbl} {user.mention} (`{user.id}`)")
         embed.set_thumbnail(url=user.display_avatar.url)
         await self._send_log(guild.id, embed)
 
     @commands.Cog.listener()
     async def on_member_unban(self, guild: discord.Guild, user: discord.User):
         lang = await lang_service.get_guild_lang(guild.id)
-        embed = embed_service.success(lang_service.get_text("log_user_unbanned", lang), f"**Usuario:** {user.mention} (`{user.id}`)")
+        user_lbl = lang_service.get_text("log_field_user", lang)
+        embed = embed_service.success(lang_service.get_text("log_user_unbanned", lang), f"{user_lbl} {user.mention} (`{user.id}`)")
         embed.set_thumbnail(url=user.display_avatar.url)
         await self._send_log(guild.id, embed)
 
@@ -59,12 +68,13 @@ class Logger(commands.Cog):
     async def on_member_update(self, before: discord.Member, after: discord.Member):
         if before.bot: return
         lang = await lang_service.get_guild_lang(after.guild.id)
+        user_lbl = lang_service.get_text("log_field_user", lang)
         
         # Cambio de Nick
         if before.nick != after.nick:
-            embed = embed_service.info(lang_service.get_text("log_nick_change", lang), f"**Usuario:** {after.mention}")
-            embed.add_field(name="Antes", value=before.nick or lang_service.get_text("log_none", lang), inline=True)
-            embed.add_field(name="Después", value=after.nick or lang_service.get_text("log_none", lang), inline=True)
+            embed = embed_service.info(lang_service.get_text("log_nick_change", lang), f"{user_lbl} {after.mention}")
+            embed.add_field(name=lang_service.get_text("log_field_before", lang), value=before.nick or lang_service.get_text("log_none", lang), inline=True)
+            embed.add_field(name=lang_service.get_text("log_field_after", lang), value=after.nick or lang_service.get_text("log_none", lang), inline=True)
             embed.set_thumbnail(url=after.display_avatar.url)
             await self._send_log(after.guild.id, embed)
 
@@ -73,14 +83,16 @@ class Logger(commands.Cog):
             added = [r for r in after.roles if r not in before.roles]
             removed = [r for r in before.roles if r not in after.roles]
             
+            roles_lbl = lang_service.get_text("log_field_roles", lang)
+
             if added:
                 roles_str = ", ".join([r.mention for r in added])
-                embed = embed_service.success(lang_service.get_text("log_roles_added", lang), f"**Usuario:** {after.mention}\n**Roles:** {roles_str}")
+                embed = embed_service.success(lang_service.get_text("log_roles_added", lang), f"{user_lbl} {after.mention}\n**{roles_lbl}:** {roles_str}")
                 await self._send_log(after.guild.id, embed)
             
             if removed:
                 roles_str = ", ".join([r.mention for r in removed])
-                embed = embed_service.error(lang_service.get_text("log_roles_removed", lang), f"**Usuario:** {after.mention}\n**Roles:** {roles_str}")
+                embed = embed_service.error(lang_service.get_text("log_roles_removed", lang), f"{user_lbl} {after.mention}\n**{roles_lbl}:** {roles_str}")
                 await self._send_log(after.guild.id, embed)
 
 async def setup(bot: commands.Bot):

@@ -36,14 +36,26 @@ class StatusSelect(discord.ui.Select):
 
 class StatusDeleteView(discord.ui.View):
     def __init__(self, options, placeholder_text):
-        super().__init__(timeout=60)
+        super().__init__(timeout=settings.TIMEOUT_CONFIG["STATUS_DELETE"])
         self.add_item(StatusSelect(options, placeholder_text))
 
 class BotInfoView(discord.ui.View):
-    def __init__(self, ctx, bot):
-        super().__init__(timeout=120)
+    def __init__(self, ctx, bot, lang):
+        super().__init__(timeout=settings.TIMEOUT_CONFIG["BOT_INFO"])
         self.ctx = ctx
         self.bot = bot
+        self.lang = lang
+
+        # Localización de etiquetas y emojis de botones
+        self.btn_general.label = lang_service.get_text("botinfo_btn_general", lang)
+        self.btn_system.label = lang_service.get_text("botinfo_btn_system", lang)
+        self.btn_memory.label = lang_service.get_text("botinfo_btn_memory", lang)
+        self.btn_config.label = lang_service.get_text("botinfo_btn_config", lang)
+        
+        self.btn_general.emoji = settings.BOTINFO_CONFIG["EMOJIS"]["GENERAL"]
+        self.btn_system.emoji = settings.BOTINFO_CONFIG["EMOJIS"]["SYSTEM"]
+        self.btn_memory.emoji = settings.BOTINFO_CONFIG["EMOJIS"]["MEMORY"]
+        self.btn_config.emoji = settings.BOTINFO_CONFIG["EMOJIS"]["CONFIG"]
 
     async def interaction_check(self, interaction: discord.Interaction):
         if interaction.user.id != self.ctx.author.id:
@@ -72,13 +84,14 @@ class BotInfoView(discord.ui.View):
         except ImportError:
             return {"available": False}
 
-    def _make_bar(self, percent, length=10):
+    def _make_bar(self, percent, length=settings.UI_CONFIG["BAR_LENGTH"]):
         filled = int(length * percent / 100)
         return "█" * filled + "░" * (length - filled)
 
     async def get_general_embed(self):
         info = await self._get_psutil_info()
-        uptime_str = "N/A"
+        lang = await lang_service.get_guild_lang(self.ctx.guild.id if self.ctx.guild else None)
+        uptime_str = lang_service.get_text("serverinfo_na", lang)
         if info["available"]:
             uptime_seconds = int(time.time() - info["uptime"])
             m, s = divmod(uptime_seconds, 60)
@@ -86,8 +99,7 @@ class BotInfoView(discord.ui.View):
             d, h = divmod(h, 24)
             uptime_str = f"{d}d {h}h {m}m {s}s"
 
-        lang = await lang_service.get_guild_lang(self.ctx.guild.id if self.ctx.guild else None)
-        embed = discord.Embed(title=f"🤖 {lang_service.get_text('help_title', lang)}", color=discord.Color.blurple())
+        embed = discord.Embed(title=f"{settings.BOTINFO_CONFIG['TITLE_EMOJI']} {lang_service.get_text('help_title', lang)}", color=settings.COLORS["INFO"])
         embed.set_thumbnail(url=self.bot.user.display_avatar.url)
         embed.add_field(name=lang_service.get_text("botinfo_name", lang), value=f"{self.bot.user}", inline=True)
         embed.add_field(name=lang_service.get_text("botinfo_uptime", lang), value=f"`{uptime_str}`", inline=True)
@@ -99,7 +111,8 @@ class BotInfoView(discord.ui.View):
 
     async def get_system_embed(self):
         info = await self._get_psutil_info()
-        embed = discord.Embed(title="💻 Estado del Sistema", color=discord.Color.blue())
+        lang = await lang_service.get_guild_lang(self.ctx.guild.id if self.ctx.guild else None)
+        embed = discord.Embed(title=lang_service.get_text("botinfo_system_title", lang), color=settings.COLORS["BLUE"])
         if not info["available"]:
             embed.description = lang_service.get_text("dev_psutil_error", await lang_service.get_guild_lang(self.ctx.guild.id if self.ctx.guild else None))
             return embed
@@ -115,8 +128,8 @@ class BotInfoView(discord.ui.View):
         return embed
 
     async def get_memory_embed(self):
-        embed = discord.Embed(title="🧠 Monitor de Memoria", color=discord.Color.gold())
         lang = await lang_service.get_guild_lang(self.ctx.guild.id if self.ctx.guild else None)
+        embed = discord.Embed(title=lang_service.get_text("botinfo_memory_title", lang), color=settings.COLORS["GOLD"])
         if not tracemalloc.is_tracing():
             embed.description = lang_service.get_text("dev_mem_nodetail", lang)
             info = await self._get_psutil_info()
@@ -126,24 +139,26 @@ class BotInfoView(discord.ui.View):
             stats = snapshot.statistics('filename')
             
             # Inicializamos con las claves localizadas correctas para evitar KeyError
+            key_cogs = lang_service.get_text("dev_mem_cogs", lang)
+            key_services = lang_service.get_text("dev_mem_services", lang)
             key_libs = lang_service.get_text("dev_mem_libs", lang)
             key_others = lang_service.get_text("dev_mem_others", lang)
-            grouped = {"🧩 Cogs": 0, "🛠️ Services": 0, key_libs: 0, key_others: 0}
+            grouped = {key_cogs: 0, key_services: 0, key_libs: 0, key_others: 0}
             
             details = []
             for stat in stats:
                 path = stat.traceback[0].filename
                 size = stat.size
                 if "cogs" in path:
-                    grouped["🧩 Cogs"] += size
+                    grouped[key_cogs] += size
                     details.append((f"🧩 {path.split('cogs')[-1].replace(os.sep, '/').lstrip('/')}", size))
                 elif "services" in path:
-                    grouped["🛠️ Services"] += size
+                    grouped[key_services] += size
                     details.append((f"🛠️ {path.split('services')[-1].replace(os.sep, '/').lstrip('/')}", size))
                 elif "site-packages" in path or "lib" in path: grouped[key_libs] += size
                 else: grouped[key_others] += size
             
-            desc = "**Resumen:**\n" + "\n".join([f"**{k}:** `{v/1024/1024:.2f} MB`" for k, v in grouped.items()])
+            desc = lang_service.get_text("dev_mem_summary", lang) + "\n".join([f"**{k}:** `{v/1024/1024:.2f} MB`" for k, v in grouped.items()])
             desc += "\n\n" + lang_service.get_text("dev_mem_top", lang)
             for name, size in sorted([d for d in details if "🧩" in d[0] or "🛠️" in d[0]], key=lambda x: x[1], reverse=True)[:10]:
                 desc += f"`{name}`: **{size/1024:.1f} KB**\n"
@@ -151,30 +166,30 @@ class BotInfoView(discord.ui.View):
         return embed
 
     async def get_config_embed(self):
-        embed = discord.Embed(title="⚙️ Configuración y Estado", color=discord.Color.teal())
         lang = await lang_service.get_guild_lang(self.ctx.guild.id if self.ctx.guild else None)
-        embed.add_field(name="🌐 Idiomas", value=lang_service.get_text("lang_list", lang), inline=False)
+        embed = discord.Embed(title=lang_service.get_text("botinfo_config_title", lang), color=settings.COLORS["TEAL"])
+        embed.add_field(name=lang_service.get_text("botinfo_langs", lang), value=lang_service.get_text("lang_list", lang), inline=False)
         log_size = f"{os.path.getsize(settings.LOG_FILE)/1024:.1f} KB" if os.path.exists(settings.LOG_FILE) else "0 KB"
-        embed.add_field(name="📝 Log File", value=f"`{log_size}`", inline=True)
+        embed.add_field(name=lang_service.get_text("botinfo_logfile", lang), value=f"`{log_size}`", inline=True)
         rows = await db_service.fetch_all("SELECT type, text FROM bot_statuses")
         status_txt = "\n".join([f"• [{r['type']}] {r['text']}" for r in rows[:5]]) + (f"\n... y {len(rows)-5} más." if len(rows) > 5 else "") if rows else lang_service.get_text("log_none", lang)
-        embed.add_field(name="🎭 Estados", value=status_txt, inline=False)
+        embed.add_field(name=lang_service.get_text("botinfo_statuses", lang), value=status_txt, inline=False)
         return embed
 
     async def _update(self, interaction, embed, style_idx):
         for i, child in enumerate(self.children): child.style = discord.ButtonStyle.primary if i == style_idx else discord.ButtonStyle.secondary
         await interaction.response.edit_message(embed=embed, view=self)
 
-    @discord.ui.button(label="General", emoji="📊", style=discord.ButtonStyle.primary)
+    @discord.ui.button(style=discord.ButtonStyle.primary)
     async def btn_general(self, interaction: discord.Interaction, button: discord.ui.Button): await self._update(interaction, await self.get_general_embed(), 0)
 
-    @discord.ui.button(label="Sistema", emoji="💻", style=discord.ButtonStyle.secondary)
+    @discord.ui.button(style=discord.ButtonStyle.secondary)
     async def btn_system(self, interaction: discord.Interaction, button: discord.ui.Button): await self._update(interaction, await self.get_system_embed(), 1)
 
-    @discord.ui.button(label="Memoria", emoji="🧠", style=discord.ButtonStyle.secondary)
+    @discord.ui.button(style=discord.ButtonStyle.secondary)
     async def btn_memory(self, interaction: discord.Interaction, button: discord.ui.Button): await self._update(interaction, await self.get_memory_embed(), 2)
 
-    @discord.ui.button(label="Config", emoji="⚙️", style=discord.ButtonStyle.secondary)
+    @discord.ui.button(style=discord.ButtonStyle.secondary)
     async def btn_config(self, interaction: discord.Interaction, button: discord.ui.Button): await self._update(interaction, await self.get_config_embed(), 3)
 
 class Developer(commands.Cog):
@@ -225,13 +240,14 @@ class Developer(commands.Cog):
         options = []
         for row in rows:
             label = f"[{row['type'].title()}] {row['text']}"
-            if len(label) > 100: label = label[:97] + "..."
-            options.append(discord.SelectOption(label=label, value=str(row['id']), emoji="🔸"))
+            limit = settings.UI_CONFIG["STATUS_TRUNCATE"]
+            if len(label) > 100: label = label[:limit] + "..."
+            options.append(discord.SelectOption(label=label, value=str(row['id']), emoji=lang_service.get_text("dev_status_item_emoji", lang)))
 
         ph = lang_service.get_text("status_placeholder", lang)
         view = StatusDeleteView(options, ph)
         
-        await ctx.send(f"👇 **{ph}**", view=view, ephemeral=True)
+        await ctx.send(f"{settings.BOTINFO_CONFIG['SELECT_EMOJI']} **{ph}**", view=view, ephemeral=True)
 
     @commands.hybrid_command(name="listservers", description="Lista los servidores conectados (Solo Owner).", hidden=True)
     @commands.is_owner()
@@ -252,9 +268,14 @@ class Developer(commands.Cog):
         for i, chunk in enumerate(chunks):
             desc = ""
             for guild in chunk:
-                desc += f"**{guild.name}**\n🆔 `{guild.id}` | 👥 **{guild.member_count}** | 👑 <@{guild.owner_id}>\n\n"
+                desc += lang_service.get_text("dev_servers_format", lang, 
+                    name=guild.name, 
+                    id=guild.id, 
+                    members=guild.member_count, 
+                    owner=guild.owner_id
+                )
             
-            embed = discord.Embed(title=lang_service.get_text("dev_servers_title", lang, count=len(self.bot.guilds)), description=desc, color=discord.Color.gold())
+            embed = discord.Embed(title=lang_service.get_text("dev_servers_title", lang, count=len(self.bot.guilds)), description=desc, color=settings.COLORS["GOLD"])
             embed.set_footer(text=lang_service.get_text("dev_servers_page", lang, current=i+1, total=len(chunks)))
             pages.append(embed)
 
@@ -288,17 +309,17 @@ class Developer(commands.Cog):
         if accion == "iniciar":
             if not tracemalloc.is_tracing():
                 tracemalloc.start()
-                await ctx.send(embed=embed_service.success("Memoria", lang_service.get_text("dev_mem_start", lang)))
+                await ctx.send(embed=embed_service.success(lang_service.get_text("dev_mem_title", lang), lang_service.get_text("dev_mem_start", lang)))
             else:
-                await ctx.send(embed=embed_service.warning("Memoria", lang_service.get_text("dev_mem_active", lang)))
+                await ctx.send(embed=embed_service.warning(lang_service.get_text("dev_mem_title", lang), lang_service.get_text("dev_mem_active", lang)))
             return
 
         if accion == "detener":
             if tracemalloc.is_tracing():
                 tracemalloc.stop()
-                await ctx.send(embed=embed_service.success("Memoria", lang_service.get_text("dev_mem_stop", lang)))
+                await ctx.send(embed=embed_service.success(lang_service.get_text("dev_mem_title", lang), lang_service.get_text("dev_mem_stop", lang)))
             else:
-                await ctx.send(embed=embed_service.warning("Memoria", lang_service.get_text("dev_mem_inactive", lang)))
+                await ctx.send(embed=embed_service.warning(lang_service.get_text("dev_mem_title", lang), lang_service.get_text("dev_mem_inactive", lang)))
             return
 
         # Accion: VER
@@ -326,11 +347,12 @@ class Developer(commands.Cog):
             for name, size in sorted(grouped.items(), key=lambda x: x[1], reverse=True)[:15]:
                 desc += f"**{name}**: `{size/1024:.2f} KB`\n"
 
-        await ctx.send(embed=embed_service.info("Monitor de Memoria", desc))
+        await ctx.send(embed=embed_service.info(lang_service.get_text("botinfo_memory_title", lang), desc))
 
     @commands.hybrid_command(name="botinfo", description="Panel de control e información del sistema.")
     async def botinfo(self, ctx: commands.Context):
-        view = BotInfoView(ctx, self.bot)
+        lang = await lang_service.get_guild_lang(ctx.guild.id if ctx.guild else None)
+        view = BotInfoView(ctx, self.bot, lang)
         embed = await view.get_general_embed()
         await ctx.send(embed=embed, view=view)
 
@@ -338,9 +360,10 @@ class Developer(commands.Cog):
     @commands.is_owner()
     async def db_maintenance(self, ctx: commands.Context):
         await ctx.defer()
+        lang = await lang_service.get_guild_lang(ctx.guild.id if ctx.guild else None)
         # Ejecutamos VACUUM manualmente para compactar la DB
         await db_service.execute("VACUUM;")
-        await ctx.send(embed=embed_service.success("Mantenimiento", "✅ Base de datos optimizada (VACUUM completado)."))
+        await ctx.send(embed=embed_service.success(lang_service.get_text("dev_db_maint_title", lang), lang_service.get_text("dev_db_maint_success", lang)))
 
 async def setup(bot):
     await bot.add_cog(Developer(bot))

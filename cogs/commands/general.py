@@ -2,6 +2,7 @@ import discord
 import logging
 from discord import app_commands
 from discord.ext import commands
+from config.locales import LOCALES
 from services import embed_service, translator_service, lang_service, db_service
 from config import settings
 
@@ -29,11 +30,11 @@ class HelpSelect(discord.ui.Select):
 
             desc_key = f"help_desc_{name.lower()}"
             description = lang_service.get_text(desc_key, lang)
-            if description == desc_key: description = f"Comandos de {name}."
+            if description == desc_key: description = lang_service.get_text("help_default_module_desc", lang, name=name)
 
             options.append(discord.SelectOption(
                 label=name,
-                description=description[:100],
+                description=description[:settings.UI_CONFIG["SELECT_DESC_TRUNCATE"]],
                 value=name,
                 emoji=settings.HELP_CONFIG["EMOJI_MAP"].get(name, "📂")
             ))
@@ -82,19 +83,21 @@ class HelpSelect(discord.ui.Select):
                     cmds_list.append(f"**/{cmd.name}**\n> └ {desc_cmd}")
 
             embed.description += "\n".join(cmds_list) if cmds_list else lang_service.get_text("help_no_cmds", self.lang)
-            embed.set_footer(text=f"Total: {len(cmds_list)} comandos", icon_url=self.bot.user.display_avatar.url)
+            footer_txt = lang_service.get_text("help_total_cmds", self.lang, count=len(cmds_list))
+            embed.set_footer(text=footer_txt, icon_url=self.bot.user.display_avatar.url)
 
             await interaction.response.edit_message(embed=embed)
 
 class HelpView(discord.ui.View):
     def __init__(self, bot, ctx, lang):
-        super().__init__(timeout=120)
+        super().__init__(timeout=settings.TIMEOUT_CONFIG["HELP"])
         self.add_item(HelpSelect(bot, ctx, lang))
 
 class General(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.ctx_menu = app_commands.ContextMenu(name="Traducir", callback=self.traducir_mensaje)
+        # Nota: El nombre del menú contextual se define en español por defecto o desde locales
+        self.ctx_menu = app_commands.ContextMenu(name=LOCALES["es"]["ctx_menu_translate"], callback=self.traducir_mensaje)
         self.bot.tree.add_command(self.ctx_menu)
 
     async def cog_unload(self):
@@ -110,12 +113,13 @@ class General(commands.Cog):
         title = lang_service.get_text("help_title", lang)
         desc = lang_service.get_text("help_desc", lang, user=ctx.author.display_name)
         stats = lang_service.get_text("help_stats", lang, cats=cogs_count, cmds=total_cmds)
+        stats_title = lang_service.get_text("help_stats_title", lang)
         # Limpiamos el texto de stats para que se vea mejor
         stats = stats.replace("•", ">").replace("\n", "\n")
         
         embed = discord.Embed(
             title=f"✨ {title}",
-            description=f"{desc}\n\n📊 **Estadísticas**\n{stats}",
+            description=f"{desc}\n\n{stats_title}\n{stats}",
             color=ctx.guild.me.color if ctx.guild else discord.Color.blurple()
         )
         
@@ -124,7 +128,7 @@ class General(commands.Cog):
         
         embed.add_field(name=f"{lang_service.get_text('help_categories', lang)}", value=f"```\n{cats_formatted}\n```", inline=False)
         embed.set_thumbnail(url=ctx.bot.user.display_avatar.url)
-        embed.set_footer(text="Selecciona una categoría abajo 👇", icon_url=ctx.bot.user.display_avatar.url)
+        embed.set_footer(text=lang_service.get_text("help_home_footer", lang), icon_url=ctx.bot.user.display_avatar.url)
         
         return embed
 
@@ -147,14 +151,8 @@ class General(commands.Cog):
     @app_commands.describe(operacion="Usa símbolos (+, -, *, /)", num1="Primer número", num2="Segundo número")
     async def calc(self, ctx: commands.Context, operacion: str, num1: float, num2: float):
         lang = await lang_service.get_guild_lang(ctx.guild.id if ctx.guild else None)
-        op_map = {
-            "sumar": "+", "suma": "+", "add": "+", "+": "+", "mas": "+",
-            "restar": "-", "resta": "-", "minus": "-", "-": "-", "menos": "-",
-            "multiplicacion": "*", "multiplicar": "*", "por": "*", "*": "*", "x": "*",
-            "division": "/", "dividir": "/", "div": "/", "/": "/"
-        }
         
-        op_symbol = op_map.get(operacion.lower())
+        op_symbol = settings.MATH_CONFIG["OP_MAP"].get(operacion.lower())
         
         if not op_symbol:
             await ctx.reply(embed=embed_service.error(lang_service.get_text("title_error", lang), "Operación no válida.\nUsa: `+`, `-`, `*`, `/`", lite=True), ephemeral=True)
@@ -166,7 +164,7 @@ class General(commands.Cog):
             elif op_symbol == "-": res = num1 - num2
             elif op_symbol == "*": res = num1 * num2
             elif op_symbol == "/":
-                if num2 == 0: raise ValueError("No puedes dividir por cero.")
+                if num2 == 0: raise ValueError(lang_service.get_text("math_div_zero", lang))
                 res = round(num1 / num2, 2)
 
             txt = lang_service.get_text("calc_result", lang, a=num1, op=op_symbol, b=num2, res=res)
@@ -188,14 +186,15 @@ class General(commands.Cog):
         
         # Helper para formatear canales/roles (Muestra ❌ si no está configurado)
         def fmt(val, type_):
-            if not val: return "❌"
+            if not val: return lang_service.get_text("serverinfo_not_set", lang)
             return f"<#{val}>" if type_ == "ch" else f"<@&{val}>"
 
         # Cálculo de estadísticas
         # Nota: guild.members requiere intents de miembros activados para ser exacto
         # Optimización: Si hay muchos miembros, evitamos la iteración pesada
         if guild.member_count > settings.GENERAL_CONFIG["LARGE_SERVER_THRESHOLD"]:
-            humans, bots = "N/A", "N/A" # Ahorramos CPU en servidores grandes
+            na = lang_service.get_text("serverinfo_na", lang)
+            humans, bots = na, na # Ahorramos CPU en servidores grandes
         else:
             humans = len([m for m in guild.members if not m.bot])
             bots = guild.member_count - humans
@@ -239,8 +238,9 @@ class General(commands.Cog):
         await interaction.response.defer(ephemeral=True)
         
         try:
-            res = await translator_service.traducir(message.content, "es")
-            txt = lang_service.get_text("trans_result", lang, orig=message.content[:50]+"...", trans=res['traducido'])
+            limit = settings.UI_CONFIG["MSG_PREVIEW_TRUNCATE"]
+            res = await translator_service.traducir(message.content, settings.GENERAL_CONFIG["DEFAULT_LANG"])
+            txt = lang_service.get_text("trans_result", lang, orig=message.content[:limit]+"...", trans=res['traducido'])
             await interaction.followup.send(embed=embed_service.success(lang_service.get_text("title_translate", lang), txt), ephemeral=True)
         except Exception as e:
             logger.error(f"Error Traductor: {e}")

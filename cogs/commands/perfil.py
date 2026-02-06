@@ -22,7 +22,7 @@ class Perfil(commands.Cog):
         # Datos de usuario
         desc = user_data['description'] if user_data else lang_service.get_text("profile_desc", lang)
         cumple = user_data['birthday'] if user_data and user_data['birthday'] else lang_service.get_text("profile_no_bday", lang)
-        prefix = user_data['custom_prefix'] if user_data and user_data['custom_prefix'] else "!"
+        prefix = user_data['custom_prefix'] if user_data and user_data['custom_prefix'] else settings.CONFIG["bot_config"]["prefix"]
         
         # Datos del servidor
         xp = guild_data['xp'] if guild_data else 0
@@ -56,8 +56,9 @@ class Perfil(commands.Cog):
 
         msgs = ""
         if user_data:
-            if user_data['personal_level_msg']: msgs += f"**• Lvl Msg:** \"{user_data['personal_level_msg'][:30]}...\"\n"
-            if user_data['personal_birthday_msg']: msgs += f"**• Bday Msg:** \"{user_data['personal_birthday_msg'][:30]}...\"\n"
+            limit = settings.UI_CONFIG["MSG_PREVIEW_TRUNCATE"]
+            if user_data['personal_level_msg']: msgs += lang_service.get_text("profile_preview_lvl", lang, msg=user_data['personal_level_msg'][:limit]) + "\n"
+            if user_data['personal_birthday_msg']: msgs += lang_service.get_text("profile_preview_bday", lang, msg=user_data['personal_birthday_msg'][:limit]) + "\n"
         
         if msgs:
             embed.add_field(name=lang_service.get_text("profile_custom_msgs", lang), value=msgs, inline=False)

@@ -38,9 +38,9 @@ class Minecraft(commands.Cog):
         base_port = settings.MINECRAFT_CONFIG.get("PORT", 5058)
         
         # Intento de inicio robusto (Puerto principal o fallback)
-        for port in range(base_port, base_port + 3):
+        for port in range(base_port, base_port + settings.MINECRAFT_CONFIG.get("PORT_RANGE", 3)):
             try:
-                self.site = web.TCPSite(self.runner, '0.0.0.0', port)
+                self.site = web.TCPSite(self.runner, settings.MINECRAFT_CONFIG.get("HOST", "0.0.0.0"), port)
                 await self.site.start()
                 logger.info(f"🌍 Bridge Minecraft online en puerto {port}")
                 break
@@ -171,7 +171,7 @@ class Minecraft(commands.Cog):
         self.pending_messages.append({"autor": ctx.author.display_name, "mensaje": mensaje})
         
         # Optimización: Limitar la cola para evitar fugas de memoria si el servidor MC cae
-        if len(self.pending_messages) > 50:
+        if len(self.pending_messages) > settings.MINECRAFT_CONFIG.get("MAX_QUEUE_SIZE", 50):
             self.pending_messages.pop(0)
             
         logger.info(f"Mensaje enviado a MC por {ctx.author}: {mensaje}")

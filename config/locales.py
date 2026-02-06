@@ -22,6 +22,8 @@ LOCALES = {
         "calc_result": "Resultado: `{a}` {op} `{b}` = **{res}**",
         "calc_error": "Error matemático: {error}",
         "trans_result": "**Original:** {orig}\n**Traducido:** {trans}",
+        "math_div_zero": "No puedes dividir por cero.",
+        "ctx_menu_translate": "Traducir",
         
         # --- MODERACIÓN ---
         "clear_success": "Limpieza Completada",
@@ -74,6 +76,8 @@ LOCALES = {
         "profile_update_success": "Perfil Actualizado",
         "profile_desc_saved": "Tu descripción ha sido guardada.",
         "profile_msg_saved": "Tu mensaje ha sido configurado.",
+        "profile_preview_lvl": "**• Lvl Msg:** \"{msg}...\"",
+        "profile_preview_bday": "**• Bday Msg:** \"{msg}...\"",
         
         # --- REBIRTH SYSTEM (NUEVO) ---
         "rebirth_success": "✨ **¡RENACIMIENTO COMPLETADO!** ✨\nHas sacrificado tu nivel 100+ para renacer. Ahora tienes **{rebirths}** Rebirth(s).\nTu nivel ha vuelto a 1.",
@@ -117,6 +121,8 @@ LOCALES = {
         "role_title_success": "Listo",
         "role_title_error": "Error",
         "role_title_perms": "Permisos",
+        "role_default_title": "Rol",
+        "role_default_desc": "Click para obtener rol",
         
         # --- UTILS (Chaos, Mención, Bienvenida, Backup) ---
         "autorole_reason": "Auto Rol de Bienvenida",
@@ -138,6 +144,13 @@ LOCALES = {
         "log_roles_removed": "➖ Roles Removidos",
         "log_none": "*Ninguno*",
         "log_no_content": "*(Sin texto)*",
+        "log_field_author": "**Autor:**",
+        "log_field_channel": "**Canal:**",
+        "log_field_content": "Contenido",
+        "log_field_before": "Antes",
+        "log_field_after": "Después",
+        "log_field_user": "**Usuario:**",
+        "log_field_roles": "Roles",
 
         # --- VOICE (NUEVO) ---
         "voice_join": "✅ Conectado a **{channel}**. (Modo AFK)",
@@ -158,6 +171,10 @@ LOCALES = {
         "help_placeholder": "Selecciona una categoría...",
         "help_home": "Inicio",
         "help_home_desc": "Volver al panel principal",
+        "help_home_footer": "Selecciona una categoría abajo 👇",
+        "help_stats_title": "📊 **Estadísticas**",
+        "help_total_cmds": "Total: {count} comandos",
+        "help_default_module_desc": "Comandos de {name}.",
         
         # --- STATUS (NUEVO) ---
         "status_add": "✅ Estado añadido: **{text}** ({type})",
@@ -166,6 +183,7 @@ LOCALES = {
         "status_placeholder": "Selecciona un estado para eliminar...",
         "status_list_title": "📜 Estados Activos",
         "status_list_desc": "El bot rotará entre estos estados:",
+        "dev_status_item_emoji": "🔸",
         
         # --- DEVELOPER (EXTRAS) ---
         "dev_status_placeholder": "Selecciona un estado para eliminar...",
@@ -184,12 +202,25 @@ LOCALES = {
         "dev_mem_total": "💾 **Uso Total (RSS):** `{mem:.2f} MB`\n\n",
         "dev_mem_nodetail": "⚠️ **Detalle por módulo no disponible.**\nInicia el rastreo con `/memoria iniciar`.",
         "dev_mem_top": "**📊 Top Consumo (Diferencial):**\n",
+        "dev_mem_summary": "**Resumen:**\n",
         "dev_mem_libs": "📚 Librerías",
+        "dev_mem_cogs": "🧩 Cogs",
+        "dev_mem_services": "🛠️ Services",
         "dev_mem_others": "📄 Otros",
         "dev_interaction_error": "❌ Solo quien ejecutó el comando puede usar esto.",
         "dev_psutil_error": "⚠️ `psutil` no está instalado.",
+        "dev_mem_title": "Memoria",
+        "dev_db_maint_title": "Mantenimiento",
+        "dev_db_maint_success": "✅ Base de datos optimizada (VACUUM completado).",
+        "dev_servers_format": "**{name}**\n🆔 `{id}` | 👥 **{members}** | 👑 <@{owner}>\n\n",
         
         # --- BOTINFO LABELS ---
+        "botinfo_config_title": "⚙️ Configuración y Estado",
+        "botinfo_system_title": "💻 Estado del Sistema",
+        "botinfo_memory_title": "🧠 Monitor de Memoria",
+        "botinfo_langs": "🌐 Idiomas",
+        "botinfo_logfile": "📝 Log File",
+        "botinfo_statuses": "🎭 Estados",
         "botinfo_name": "🆔 Nombre",
         "botinfo_uptime": "⏱️ Uptime",
         "botinfo_python": "🐍 Python",
@@ -200,6 +231,10 @@ LOCALES = {
         "botinfo_ram": "💾 RAM",
         "botinfo_disk": "💿 Disco",
         "botinfo_os": "🖥️ OS",
+        "botinfo_btn_general": "General",
+        "botinfo_btn_system": "Sistema",
+        "botinfo_btn_memory": "Memoria",
+        "botinfo_btn_config": "Config",
 
         # --- AYUDA (DESCRIPCIONES DE CATEGORÍAS) ---
         "help_title": "Panel de Ayuda",
@@ -266,6 +301,7 @@ LOCALES = {
         "music_autoplay_off": "♾️ Autoplay: **Desactivado**",
         "music_now_playing_title": "🎶 Reproduciendo Ahora",
         "music_now_listening": "🎧 Escuchando Ahora",
+        "music_np_desc": "[{title}]({uri})\n\n`{pos}` [{bar}] `{len}`",
         
         # --- MUSIC EXTRAS ---
         "music_control_owner_error": "❌ No puedes controlar esta sesión.",
@@ -308,7 +344,9 @@ LOCALES = {
         "serverinfo_stats": "📊 Estadísticas",
         "serverinfo_stats_desc": "👥 **Usuarios:** {total} ({humans} 👤 / {bots} 🤖)\n🎭 **Roles:** {roles}\n🚀 **Boosts:** {boosts}\n📂 **Canales:** {channels} ({cats} Cats | {text} 💬 | {voice} 🔊)",
         "serverinfo_config": "⚙️ Configuración",
-        "serverinfo_conf_desc": "🌐 **Idioma:** {language}\n👋 **Bienvenida:** {welcome}\n🤫 **Confesiones:** {confess}\n📜 **Logs:** {logs}\n🎂 **Cumpleaños:** {bday}\n🎭 **Auto-Rol:** {autorole}"
+        "serverinfo_conf_desc": "🌐 **Idioma:** {language}\n👋 **Bienvenida:** {welcome}\n🤫 **Confesiones:** {confess}\n📜 **Logs:** {logs}\n🎂 **Cumpleaños:** {bday}\n🎭 **Auto-Rol:** {autorole}",
+        "serverinfo_not_set": "❌",
+        "serverinfo_na": "N/A",
     },
     
     "en": {
@@ -332,6 +370,8 @@ LOCALES = {
         "calc_result": "Result: `{a}` {op} `{b}` = **{res}**",
         "calc_error": "Math error: {error}",
         "trans_result": "**Original:** {orig}\n**Translated:** {trans}",
+        "math_div_zero": "You cannot divide by zero.",
+        "ctx_menu_translate": "Translate",
         
         # --- MODERATION ---
         "clear_success": "Clear Completed",
@@ -384,6 +424,8 @@ LOCALES = {
         "profile_update_success": "Profile Updated",
         "profile_desc_saved": "Your description has been saved.",
         "profile_msg_saved": "Your message has been set.",
+        "profile_preview_lvl": "**• Lvl Msg:** \"{msg}...\"",
+        "profile_preview_bday": "**• Bday Msg:** \"{msg}...\"",
         
         # --- REBIRTH SYSTEM ---
         "rebirth_success": "✨ **REBIRTH COMPLETED!** ✨\nYou sacrificed level 100+ to be reborn. You now have **{rebirths}** Rebirth(s).\nYour level is back to 1.",
@@ -427,6 +469,8 @@ LOCALES = {
         "role_title_success": "Done",
         "role_title_error": "Error",
         "role_title_perms": "Permissions",
+        "role_default_title": "Role",
+        "role_default_desc": "Click to get role",
         
         # --- UTILS ---
         "autorole_reason": "Welcome Auto Role",
@@ -448,6 +492,13 @@ LOCALES = {
         "log_roles_removed": "➖ Roles Removed",
         "log_none": "*None*",
         "log_no_content": "*(No content)*",
+        "log_field_author": "**Author:**",
+        "log_field_channel": "**Channel:**",
+        "log_field_content": "Content",
+        "log_field_before": "Before",
+        "log_field_after": "After",
+        "log_field_user": "**User:**",
+        "log_field_roles": "Roles",
 
         # --- VOICE (NEW) ---
         "voice_join": "✅ Connected to **{channel}**. (AFK Mode)",
@@ -468,6 +519,10 @@ LOCALES = {
         "help_placeholder": "Select a category...",
         "help_home": "Home",
         "help_home_desc": "Return to main panel",
+        "help_home_footer": "Select a category below 👇",
+        "help_stats_title": "📊 **Statistics**",
+        "help_total_cmds": "Total: {count} commands",
+        "help_default_module_desc": "Commands for {name}.",
         
         # --- STATUS (NUEVO) ---
         "status_add": "✅ Status added: **{text}** ({type})",
@@ -476,6 +531,7 @@ LOCALES = {
         "status_placeholder": "Select a status to delete...",
         "status_list_title": "📜 Active Statuses",
         "status_list_desc": "The bot will rotate through these:",
+        "dev_status_item_emoji": "🔸",
         
         # --- DEVELOPER (EXTRAS) ---
         "dev_status_placeholder": "Select a status to delete...",
@@ -494,12 +550,25 @@ LOCALES = {
         "dev_mem_total": "💾 **Total Usage (RSS):** `{mem:.2f} MB`\n\n",
         "dev_mem_nodetail": "⚠️ **Module detail not available.**\nStart tracking with `/memoria iniciar`.",
         "dev_mem_top": "**📊 Top Consumption (Differential):**\n",
+        "dev_mem_summary": "**Summary:**\n",
         "dev_mem_libs": "📚 Libraries",
+        "dev_mem_cogs": "🧩 Cogs",
+        "dev_mem_services": "🛠️ Services",
         "dev_mem_others": "📄 Others",
         "dev_interaction_error": "❌ Only the command executor can use this.",
         "dev_psutil_error": "⚠️ `psutil` is not installed.",
+        "dev_mem_title": "Memory",
+        "dev_db_maint_title": "Maintenance",
+        "dev_db_maint_success": "✅ Database optimized (VACUUM completed).",
+        "dev_servers_format": "**{name}**\n🆔 `{id}` | 👥 **{members}** | 👑 <@{owner}>\n\n",
 
         # --- BOTINFO LABELS ---
+        "botinfo_config_title": "⚙️ Configuration & Status",
+        "botinfo_system_title": "💻 System Status",
+        "botinfo_memory_title": "🧠 Memory Monitor",
+        "botinfo_langs": "🌐 Languages",
+        "botinfo_logfile": "📝 Log File",
+        "botinfo_statuses": "🎭 Statuses",
         "botinfo_name": "🆔 Name",
         "botinfo_uptime": "⏱️ Uptime",
         "botinfo_python": "🐍 Python",
@@ -575,6 +644,7 @@ LOCALES = {
         "music_autoplay_off": "♾️ Autoplay: **Off**",
         "music_now_playing_title": "🎶 Now Playing",
         "music_now_listening": "🎧 Now Listening",
+        "music_np_desc": "{title}\n\n`{pos}` [{bar}] `{len}`",
 
         # --- MUSIC EXTRAS ---
         "music_control_owner_error": "❌ You cannot control this session.",
@@ -617,6 +687,8 @@ LOCALES = {
         "serverinfo_stats": "📊 Statistics",
         "serverinfo_stats_desc": "👥 **Users:** {total} ({humans} 👤 / {bots} 🤖)\n🎭 **Roles:** {roles}\n🚀 **Boosts:** {boosts}\n📂 **Channels:** {channels} ({cats} Cats | {text} 💬 | {voice} 🔊)",
         "serverinfo_config": "⚙️ Configuration",
-        "serverinfo_conf_desc": "🌐 **Language:** {language}\n👋 **Welcome:** {welcome}\n🤫 **Confessions:** {confess}\n📜 **Logs:** {logs}\n🎂 **Birthday:** {bday}\n🎭 **Auto-Role:** {autorole}"
+        "serverinfo_conf_desc": "🌐 **Language:** {language}\n👋 **Welcome:** {welcome}\n🤫 **Confessions:** {confess}\n📜 **Logs:** {logs}\n🎂 **Birthday:** {bday}\n🎭 **Auto-Role:** {autorole}",
+        "serverinfo_not_set": "❌",
+        "serverinfo_na": "N/A",
     }
 }

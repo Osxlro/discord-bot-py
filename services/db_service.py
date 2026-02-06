@@ -193,8 +193,8 @@ async def _execute_with_retry(func, *args, **kwargs):
     """
     Wrapper para reintentar operaciones de DB si está bloqueada (SQLite Locked).
     """
-    retries = 3
-    base_delay = 0.1
+    retries = settings.DB_CONFIG["RETRIES"]
+    base_delay = settings.DB_CONFIG["RETRY_DELAY"]
     
     for i in range(retries):
         try:
@@ -265,12 +265,8 @@ async def get_guild_config(guild_id: int) -> dict:
         config = dict(row)
     else:
         # Valores por defecto si no existe configuración
-        config = {
-            "guild_id": guild_id,
-            "language": "es",
-            "chaos_enabled": 1,
-            "chaos_probability": 0.01
-        }
+        config = settings.DEFAULT_GUILD_CONFIG.copy()
+        config["guild_id"] = guild_id
     
     _config_cache[guild_id] = config
     return config.copy()

@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 class MusicControls(discord.ui.View):
     """Botones interactivos para controlar la música."""
     def __init__(self, player: wavelink.Player, author_id: int = None, lang: str = "es"):
-        super().__init__(timeout=None)
+        super().__init__(timeout=settings.MUSIC_CONFIG["CONTROLS_TIMEOUT"])
         self.player = player
         self.author_id = author_id
         self.lang = lang
@@ -32,7 +32,7 @@ class MusicControls(discord.ui.View):
 
         return True
 
-    @discord.ui.button(emoji="⏯️", style=discord.ButtonStyle.primary, row=0)
+    @discord.ui.button(emoji=settings.MUSIC_CONFIG["BUTTON_EMOJIS"]["PAUSE_RESUME"], style=discord.ButtonStyle.primary, row=0)
     async def pause_resume(self, interaction: discord.Interaction, button: discord.ui.Button):
         if self.player.paused:
             await self.player.pause(False)
@@ -42,13 +42,13 @@ class MusicControls(discord.ui.View):
             msg = lang_service.get_text("music_paused", self.lang)
         await interaction.response.send_message(msg, ephemeral=True)
 
-    @discord.ui.button(emoji="⏭️", style=discord.ButtonStyle.secondary, row=0)
+    @discord.ui.button(emoji=settings.MUSIC_CONFIG["BUTTON_EMOJIS"]["SKIP"], style=discord.ButtonStyle.secondary, row=0)
     async def skip(self, interaction: discord.Interaction, button: discord.ui.Button):
         await self.player.skip(force=True)
         msg = lang_service.get_text("music_skipped", self.lang)
         await interaction.response.send_message(msg, ephemeral=True)
 
-    @discord.ui.button(emoji="⏹️", style=discord.ButtonStyle.danger, row=0)
+    @discord.ui.button(emoji=settings.MUSIC_CONFIG["BUTTON_EMOJIS"]["STOP"], style=discord.ButtonStyle.danger, row=0)
     async def stop_music(self, interaction: discord.Interaction, button: discord.ui.Button):
         await self.player.disconnect()
         
@@ -61,35 +61,35 @@ class MusicControls(discord.ui.View):
         await interaction.response.send_message(msg, ephemeral=True)
         self.stop() # Detiene la vista (View.stop)
 
-    @discord.ui.button(emoji="🔀", style=discord.ButtonStyle.secondary, row=0)
+    @discord.ui.button(emoji=settings.MUSIC_CONFIG["BUTTON_EMOJIS"]["SHUFFLE"], style=discord.ButtonStyle.secondary, row=0)
     async def shuffle(self, interaction: discord.Interaction, button: discord.ui.Button):
         self.player.queue.shuffle()
         msg = lang_service.get_text("music_shuffled", self.lang)
         await interaction.response.send_message(msg, ephemeral=True)
 
-    @discord.ui.button(emoji="🔁", style=discord.ButtonStyle.secondary, row=1)
+    @discord.ui.button(emoji=settings.MUSIC_CONFIG["LOOP_EMOJIS"]["OFF"], style=discord.ButtonStyle.secondary, row=1)
     async def loop(self, interaction: discord.Interaction, button: discord.ui.Button):
         # Ciclo: Normal -> Track -> Queue -> Normal
         if self.player.queue.mode == wavelink.QueueMode.normal:
             self.player.queue.mode = wavelink.QueueMode.loop
             msg = lang_service.get_text("music_loop_track", self.lang)
-            button.emoji = "🔂"
+            button.emoji = settings.MUSIC_CONFIG["LOOP_EMOJIS"]["TRACK"]
             button.style = discord.ButtonStyle.success
         elif self.player.queue.mode == wavelink.QueueMode.loop:
             self.player.queue.mode = wavelink.QueueMode.loop_all
             msg = lang_service.get_text("music_loop_queue", self.lang)
-            button.emoji = "🔁"
+            button.emoji = settings.MUSIC_CONFIG["LOOP_EMOJIS"]["QUEUE"]
             button.style = discord.ButtonStyle.success
         else:
             self.player.queue.mode = wavelink.QueueMode.normal
             msg = lang_service.get_text("music_loop_off", self.lang)
-            button.emoji = "🔁"
+            button.emoji = settings.MUSIC_CONFIG["LOOP_EMOJIS"]["OFF"]
             button.style = discord.ButtonStyle.secondary
         
         await interaction.response.edit_message(view=self)
         await interaction.followup.send(msg, ephemeral=True)
 
-    @discord.ui.button(emoji="♾️", style=discord.ButtonStyle.secondary, row=1)
+    @discord.ui.button(emoji=settings.MUSIC_CONFIG["BUTTON_EMOJIS"]["AUTOPLAY"], style=discord.ButtonStyle.secondary, row=1)
     async def autoplay(self, interaction: discord.Interaction, button: discord.ui.Button):
         # Toggle Smart Autoplay
         current = getattr(self.player, "smart_autoplay", False)
@@ -106,15 +106,15 @@ class MusicControls(discord.ui.View):
         await interaction.response.edit_message(view=self)
         await interaction.followup.send(msg, ephemeral=True)
 
-    @discord.ui.button(emoji="🔉", style=discord.ButtonStyle.secondary, row=1)
+    @discord.ui.button(emoji=settings.MUSIC_CONFIG["BUTTON_EMOJIS"]["VOL_DOWN"], style=discord.ButtonStyle.secondary, row=1)
     async def vol_down(self, interaction: discord.Interaction, button: discord.ui.Button):
-        new_vol = max(self.player.volume - 10, 0)
+        new_vol = max(self.player.volume - settings.MUSIC_CONFIG["VOLUME_STEP"], 0)
         await self.player.set_volume(new_vol)
         await interaction.response.send_message(lang_service.get_text("music_vol_changed", self.lang, vol=new_vol), ephemeral=True)
 
-    @discord.ui.button(emoji="🔊", style=discord.ButtonStyle.secondary, row=1)
+    @discord.ui.button(emoji=settings.MUSIC_CONFIG["BUTTON_EMOJIS"]["VOL_UP"], style=discord.ButtonStyle.secondary, row=1)
     async def vol_up(self, interaction: discord.Interaction, button: discord.ui.Button):
-        new_vol = min(self.player.volume + 10, 100)
+        new_vol = min(self.player.volume + settings.MUSIC_CONFIG["VOLUME_STEP"], 100)
         await self.player.set_volume(new_vol)
         await interaction.response.send_message(lang_service.get_text("music_vol_changed", self.lang, vol=new_vol), ephemeral=True)
 
@@ -151,7 +151,7 @@ class Music(commands.Cog):
 
             # Si el volumen cambió externamente (ej: usuario usó /volume), cancelamos el fade
             # Usamos un margen de error de 1 por posibles redondeos
-            if last_set_vol > 0 and abs(player.volume - last_set_vol) > 1:
+            if last_set_vol > 0 and abs(player.volume - last_set_vol) > settings.MUSIC_CONFIG["VOLUME_TOLERANCE"]:
                 return
 
             await asyncio.sleep(step_delay)
@@ -181,7 +181,7 @@ class Music(commands.Cog):
                         password=node_config['PASSWORD']
                     )
                 ]
-                await wavelink.Pool.connect(nodes=nodes, client=self.bot, cache_capacity=100)
+                await wavelink.Pool.connect(nodes=nodes, client=self.bot, cache_capacity=settings.LAVALINK_CONFIG.get("CACHE_CAPACITY", 100))
                 logger.info("🔗 [Music] Conectando a nodos Lavalink...")
             except Exception as e:
                 logger.error(f"❌ [Music] No se pudo conectar a Lavalink: {e}")
@@ -209,7 +209,10 @@ class Music(commands.Cog):
                     duration = "LIVE" # Se usará texto localizado en display, aquí es solo para autocomplete
                 else:
                     duration = f"{seconds // 60}:{seconds % 60:02}"
-                name = f"[{duration}] {track.title[:65]} - {track.author[:15]}"
+                
+                title_limit = settings.MUSIC_CONFIG["AUTOCOMPLETE_TITLE_LIMIT"]
+                author_limit = settings.MUSIC_CONFIG["AUTOCOMPLETE_AUTHOR_LIMIT"]
+                name = f"[{duration}] {track.title[:title_limit]} - {track.author[:author_limit]}"
                 choices.append(app_commands.Choice(name=name, value=track.uri or track.title))
             return choices
         except Exception as e:
@@ -486,18 +489,20 @@ class Music(commands.Cog):
             pos_str = lang_service.get_text("music_live", lang)
             len_str = "∞"
             bar_len = settings.MUSIC_CONFIG["STREAM_BAR_LENGTH"]
-            bar = "▬" * bar_len + "🔘"
+            bar = settings.MUSIC_CONFIG["PROGRESS_BAR_CHAR"] * bar_len + settings.MUSIC_CONFIG["PROGRESS_BAR_POINTER"]
         else:
             total_blocks = settings.MUSIC_CONFIG["PROGRESS_BAR_LENGTH"]
             progress = int((position / length) * total_blocks) if length > 0 else 0
-            bar = "▬" * progress + "🔘" + "▬" * (total_blocks - progress)
+            bar = settings.MUSIC_CONFIG["PROGRESS_BAR_CHAR"] * progress + settings.MUSIC_CONFIG["PROGRESS_BAR_POINTER"] + settings.MUSIC_CONFIG["PROGRESS_BAR_CHAR"] * (total_blocks - progress)
             pos_str = f"{int(position // 1000 // 60)}:{int(position // 1000 % 60):02}"
             len_str = f"{int(length // 1000 // 60)}:{int(length // 1000 % 60):02}"
 
+        desc = lang_service.get_text("music_np_desc", lang, title=track.title, uri=track.uri, pos=pos_str, bar=bar, len=len_str)
+
         embed = discord.Embed(
             title=lang_service.get_text("music_now_listening", lang),
-            description=f"[{track.title}]({track.uri})\n\n`{pos_str}` [{bar}] `{len_str}`",
-            color=settings.COLORS["XP"]
+            description=desc,
+            color=settings.COLORS["INFO"]
         )
         if track.artwork: embed.set_thumbnail(url=track.artwork)
         embed.add_field(name=lang_service.get_text("music_field_author", lang), value=track.author, inline=True)
@@ -539,7 +544,7 @@ class Music(commands.Cog):
         embed = discord.Embed(
             title=lang_service.get_text("music_now_playing_title", lang),
             description=f"{track.title}",
-            color=settings.COLORS["XP"]
+            color=settings.COLORS["INFO"]
         )
         if track.artwork: embed.set_thumbnail(url=track.artwork)
         embed.add_field(name=lang_service.get_text("music_field_author", lang), value=track.author, inline=True)
