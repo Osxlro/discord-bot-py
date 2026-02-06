@@ -107,6 +107,17 @@ async def init_db():
     )
     """)
 
+    # 5. Feedback de Canciones (Inteligencia Local)
+    await db.execute("""
+    CREATE TABLE IF NOT EXISTS song_feedback (
+        guild_id INTEGER,
+        identifier TEXT,
+        plays INTEGER DEFAULT 0,
+        skips INTEGER DEFAULT 0,
+        PRIMARY KEY (guild_id, identifier)
+    )
+    """)
+
     # 4. Estados Rotativos del Bot
     await db.execute("""
     CREATE TABLE IF NOT EXISTS bot_statuses (
@@ -355,3 +366,24 @@ async def do_rebirth(guild_id: int, user_id: int) -> tuple[bool, any]:
         _xp_cache[key].update({'level': 1, 'xp': 0, 'rebirths': new_reb, 'dirty': False})
         
     return True, new_reb
+
+async def record_song_feedback(guild_id: int, identifier: str, is_skip: bool):
+    """Registra si una canción fue escuchada o saltada."""
+    col = "skips" if is_skip else "plays"
+    await execute(f"""
+        INSERT INTO song_feedback (guild_id, identifier, {col}) 
+        VALUES (?, ?, 1)
+        ON CONFLICT(guild_id, identifier) DO UPDATE SET {col} = {col} + 1
+    """, (guild_id, identifier))
+
+async def get_bulk_feedback(guild_id: int, identifiers: list[str]) -> dict:
+    """Obtiene el feedback de una lista de canciones de una sola vez."""
+    if not identifiers: return {}
+    placeholders = ", ".join(["?"] * len(identifiers))
+    rows = await fetch_all(f"""
+        SELECT identifier, plays, skips 
+        FROM song_feedback 
+        WHERE guild_id = ? AND identifier IN ({placeholders})
+    """, (guild_id, *identifiers))
+    
+    return {r['identifier']: {'plays': r['plays'], 'skips': r['skips']} for r in rows}

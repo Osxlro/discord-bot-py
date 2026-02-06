@@ -7,7 +7,7 @@ import re
 from discord import app_commands
 from discord.ext import commands
 from config import settings
-from services import embed_service, lang_service, pagination_service, algorithm_service
+from services import embed_service, lang_service, pagination_service, algorithm_service, db_service, lyrics_service
 
 logger = logging.getLogger(__name__)
 
@@ -118,11 +118,29 @@ class MusicControls(discord.ui.View):
         await self.player.set_volume(new_vol)
         await interaction.response.send_message(lang_service.get_text("music_vol_changed", self.lang, vol=new_vol), ephemeral=True)
 
+    @discord.ui.button(emoji=settings.MUSIC_CONFIG["BUTTON_EMOJIS"]["LYRICS"], style=discord.ButtonStyle.secondary, row=1)
+    async def lyrics(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.defer(ephemeral=True)
+        track = self.player.current
+        if not track:
+            return await interaction.followup.send(lang_service.get_text("music_error_nothing", self.lang), ephemeral=True)
+        
+        lyrics = await lyrics_service.get_lyrics(track.title, track.author)
+        if lyrics:
+            embed = discord.Embed(title=lang_service.get_text("music_lyrics_title", self.lang, title=track.title), description=lyrics[:4096], color=settings.COLORS["INFO"])
+            await interaction.followup.send(embed=embed, ephemeral=True)
+        else:
+            await interaction.followup.send(lang_service.get_text("music_lyrics_not_found", self.lang), ephemeral=True)
+
 
 class Music(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.recommender = algorithm_service.RecommendationEngine()
+        self.player_update_task.start()
+
+    def cog_unload(self):
+        self.player_update_task.cancel()
 
     async def _fade_in(self, player: wavelink.Player, duration_ms: int):
         """Simula un efecto de Fade-In ajustando el volumen gradualmente."""
@@ -162,6 +180,34 @@ class Music(commands.Cog):
         # Asegurar volumen final exacto
         await player.set_volume(target_vol)
 
+    def _create_np_embed(self, player: wavelink.Player, track: wavelink.Playable, lang: str) -> discord.Embed:
+        """Genera el embed de 'Reproduciendo Ahora' con barra de progreso."""
+        position = player.position
+        length = track.length
+        
+        if track.is_stream:
+            pos_str = lang_service.get_text("music_live", lang)
+            len_str = "∞"
+            bar_len = settings.MUSIC_CONFIG["STREAM_BAR_LENGTH"]
+            bar = settings.MUSIC_CONFIG["PROGRESS_BAR_CHAR"] * bar_len + settings.MUSIC_CONFIG["PROGRESS_BAR_POINTER"]
+        else:
+            total_blocks = settings.MUSIC_CONFIG["PROGRESS_BAR_LENGTH"]
+            progress = int((position / length) * total_blocks) if length > 0 else 0
+            bar = settings.MUSIC_CONFIG["PROGRESS_BAR_CHAR"] * progress + settings.MUSIC_CONFIG["PROGRESS_BAR_POINTER"] + settings.MUSIC_CONFIG["PROGRESS_BAR_CHAR"] * (total_blocks - progress)
+            pos_str = f"{int(position // 1000 // 60)}:{int(position // 1000 % 60):02}"
+            len_str = f"{int(length // 1000 // 60)}:{int(length // 1000 % 60):02}"
+
+        desc = lang_service.get_text("music_np_desc", lang, title=track.title, uri=track.uri, pos=pos_str, bar=bar, len=len_str)
+
+        embed = discord.Embed(
+            title=lang_service.get_text("music_now_playing_title", lang),
+            description=desc,
+            color=settings.COLORS["INFO"]
+        )
+        if track.artwork: embed.set_thumbnail(url=track.artwork)
+        embed.add_field(name=lang_service.get_text("music_field_author", lang), value=track.author, inline=True)
+        return embed
+
     async def cog_load(self):
         """Conecta a Lavalink al cargar el Cog."""
         # Usamos create_task para no bloquear el arranque del bot si Lavalink está caído
@@ -190,6 +236,21 @@ class Music(commands.Cog):
     @commands.Cog.listener()
     async def on_wavelink_node_ready(self, payload: wavelink.NodeReadyEventPayload):
         logger.info(f"✅ [Music] Nodo Lavalink conectado: {payload.node.identifier}")
+
+    @commands.tasks.loop(seconds=settings.MUSIC_CONFIG["PLAYER_UPDATE_INTERVAL"])
+    async def player_update_task(self):
+        """Actualiza la barra de progreso de los reproductores activos."""
+        for player in self.bot.voice_clients:
+            if not isinstance(player, wavelink.Player) or not player.playing or not player.current:
+                continue
+            
+            if hasattr(player, "last_msg") and player.last_msg:
+                try:
+                    lang = await lang_service.get_guild_lang(player.guild.id)
+                    embed = self._create_np_embed(player, player.current, lang)
+                    await player.last_msg.edit(embed=embed)
+                except Exception as e:
+                    logger.debug(f"Error actualizando player msg: {e}")
 
     async def play_autocomplete(self, interaction: discord.Interaction, current: str) -> list[app_commands.Choice[str]]:
         # Evitar errores si Lavalink no está conectado
@@ -480,32 +541,7 @@ class Music(commands.Cog):
         
         track = ctx.voice_client.current
         player = ctx.voice_client
-        
-        # Barra de progreso
-        position = player.position
-        length = track.length
-        
-        if track.is_stream:
-            pos_str = lang_service.get_text("music_live", lang)
-            len_str = "∞"
-            bar_len = settings.MUSIC_CONFIG["STREAM_BAR_LENGTH"]
-            bar = settings.MUSIC_CONFIG["PROGRESS_BAR_CHAR"] * bar_len + settings.MUSIC_CONFIG["PROGRESS_BAR_POINTER"]
-        else:
-            total_blocks = settings.MUSIC_CONFIG["PROGRESS_BAR_LENGTH"]
-            progress = int((position / length) * total_blocks) if length > 0 else 0
-            bar = settings.MUSIC_CONFIG["PROGRESS_BAR_CHAR"] * progress + settings.MUSIC_CONFIG["PROGRESS_BAR_POINTER"] + settings.MUSIC_CONFIG["PROGRESS_BAR_CHAR"] * (total_blocks - progress)
-            pos_str = f"{int(position // 1000 // 60)}:{int(position // 1000 % 60):02}"
-            len_str = f"{int(length // 1000 // 60)}:{int(length // 1000 % 60):02}"
-
-        desc = lang_service.get_text("music_np_desc", lang, title=track.title, uri=track.uri, pos=pos_str, bar=bar, len=len_str)
-
-        embed = discord.Embed(
-            title=lang_service.get_text("music_now_listening", lang),
-            description=desc,
-            color=settings.COLORS["INFO"]
-        )
-        if track.artwork: embed.set_thumbnail(url=track.artwork)
-        embed.add_field(name=lang_service.get_text("music_field_author", lang), value=track.author, inline=True)
+        embed = self._create_np_embed(player, track, lang)
         
         await ctx.send(embed=embed)
 
@@ -514,6 +550,9 @@ class Music(commands.Cog):
     @commands.Cog.listener()
     async def on_wavelink_track_start(self, payload: wavelink.TrackStartEventPayload):
         player = payload.player
+        # Registrar que la canción empezó a sonar (Feedback positivo inicial)
+        await db_service.record_song_feedback(player.guild.id, payload.track.identifier, is_skip=False)
+
         if not hasattr(player, "home") or not player.home: return
         
         # Borrar mensaje anterior si existe para no hacer spam
@@ -534,21 +573,7 @@ class Music(commands.Cog):
         track = payload.track
         lang = await lang_service.get_guild_lang(player.guild.id)
         
-        # Duración formateada
-        if track.is_stream:
-            duration_str = lang_service.get_text("music_live", lang)
-        else:
-            seconds = track.length // 1000
-            duration_str = f"{seconds // 60}:{seconds % 60:02}"
-
-        embed = discord.Embed(
-            title=lang_service.get_text("music_now_playing_title", lang),
-            description=f"{track.title}",
-            color=settings.COLORS["INFO"]
-        )
-        if track.artwork: embed.set_thumbnail(url=track.artwork)
-        embed.add_field(name=lang_service.get_text("music_field_author", lang), value=track.author, inline=True)
-        embed.add_field(name=lang_service.get_text("music_field_duration", lang), value=duration_str, inline=True)
+        embed = self._create_np_embed(player, track, lang)
         
         # Usamos author_id=None para permitir que cualquiera en el canal use los botones
         # Esto soluciona el problema de que los botones no funcionaran al inicio
@@ -565,6 +590,10 @@ class Music(commands.Cog):
         # Evitamos errores si el bot fue desconectado
         if not player or not player.guild or not player.guild.voice_client:
             return
+
+        # Registrar si la canción fue saltada (Feedback negativo)
+        if payload.reason == "replaced":
+            await db_service.record_song_feedback(player.guild.id, payload.track.identifier, is_skip=True)
 
         # 1. Si Autoplay está activado, Wavelink gestiona TODO (Cola + Recomendaciones).
         # No intervenimos para evitar conflictos de doble reproducción.

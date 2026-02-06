@@ -1,9 +1,14 @@
 import random
 import asyncio
+import aiohttp
+import base64
+import time
+import re
 import wavelink
 import logging
 from difflib import SequenceMatcher
 from config import settings
+from services import db_service
 
 logger = logging.getLogger(__name__)
 
@@ -23,17 +28,82 @@ class RecommendationEngine:
             "live", "cover", "instrumental", "slowed", "reverb", "bassboost",
             "speed up", "8d", "mashup"
         ]
+        
+        # Configuración Spotify (Opcional)
+        self.sp_client_id = settings.LAVALINK_CONFIG["SPOTIFY"]["CLIENT_ID"]
+        self.sp_client_secret = settings.LAVALINK_CONFIG["SPOTIFY"]["CLIENT_SECRET"]
+        self.sp_token = None
+        self.sp_token_expiry = 0
+
+    async def _get_spotify_token(self):
+        """Obtiene un token de acceso para la API de Spotify."""
+        if not self.sp_client_id or not self.sp_client_secret: return None
+        if self.sp_token and time.time() < self.sp_token_expiry: return self.sp_token
+
+        try:
+            auth = base64.b64encode(f"{self.sp_client_id}:{self.sp_client_secret}".encode()).decode()
+            async with aiohttp.ClientSession() as session:
+                async with session.post(
+                    "https://accounts.spotify.com/api/token",
+                    headers={"Authorization": f"Basic {auth}"},
+                    data={"grant_type": "client_credentials"}
+                ) as resp:
+                    if resp.status == 200:
+                        data = await resp.json()
+                        self.sp_token = data["access_token"]
+                        self.sp_token_expiry = time.time() + data["expires_in"] - 60
+                        return self.sp_token
+        except Exception as e:
+            logger.warning(f"⚠️ Error obteniendo token Spotify: {e}")
+        return None
+
+    async def _get_spotify_recommendations(self, seed_track: wavelink.Playable) -> list[str]:
+        """Consulta la API de Spotify para obtener recomendaciones reales."""
+        token = await self._get_spotify_token()
+        if not token: return []
+
+        clean_title = self._clean_title(seed_track.title)
+        query = f"{clean_title} {seed_track.author}"
+        
+        async with aiohttp.ClientSession() as session:
+            # 1. Buscar la canción semilla en Spotify para obtener su ID
+            async with session.get(
+                "https://api.spotify.com/v1/search",
+                headers={"Authorization": f"Bearer {token}"},
+                params={"q": query, "type": "track", "limit": 1}
+            ) as resp:
+                if resp.status != 200: return []
+                data = await resp.json()
+                if not data["tracks"]["items"]: return []
+                spotify_id = data["tracks"]["items"][0]["id"]
+
+            # 2. Pedir recomendaciones basadas en esa canción
+            async with session.get(
+                "https://api.spotify.com/v1/recommendations",
+                headers={"Authorization": f"Bearer {token}"},
+                params={"seed_tracks": spotify_id, "limit": 5}
+            ) as resp:
+                if resp.status != 200: return []
+                data = await resp.json()
+                
+                # Retornamos lista de "Título - Artista" para buscar en Lavalink
+                return [f"{t['name']} - {t['artists'][0]['name']}" for t in data["tracks"]]
 
     def _is_similar(self, a: str, b: str) -> bool:
         """Compara dos títulos y devuelve True si son casi idénticos."""
         return SequenceMatcher(None, a.lower(), b.lower()).ratio() > self.similarity_threshold
+
+    def _clean_title(self, title: str) -> str:
+        """Limpia basura del título para mejorar búsquedas."""
+        # Elimina contenido entre paréntesis o corchetes como (Official Video), [4K], etc.
+        return re.sub(r"[\(\[].*?[\)\]]", "", title).strip()
 
     def _get_style_tags(self, title: str) -> set[str]:
         """Extrae etiquetas de estilo del título."""
         if not title: return set()
         return {tag for tag in self.style_keywords if tag in title.lower()}
 
-    def _calculate_score(self, candidate: wavelink.Playable, seed: wavelink.Playable, seed_styles: set[str]) -> int:
+    def _calculate_score(self, candidate: wavelink.Playable, seed: wavelink.Playable, seed_styles: set[str], feedback: dict = None) -> int:
         """Asigna una puntuación de relevancia al candidato (0-100+)."""
         score = 100
         
@@ -60,6 +130,20 @@ class RecommendationEngine:
         if "official video" in candidate.title.lower() and "official video" in seed.title.lower():
             score -= 5 # Leve penalización para buscar variedad visual/audio
             
+        # 4. Penalización por "Live" si la original no lo era
+        if "live" in candidate.title.lower() and "live" not in seed.title.lower():
+            score -= 25
+            
+        # 5. Inteligencia Local (Feedback del Servidor)
+        if feedback:
+            plays = feedback.get('plays', 0)
+            skips = feedback.get('skips', 0)
+            if plays > 0 or skips > 0:
+                # Ratio de éxito: más plays = más puntos, más skips = menos puntos.
+                success_rate = plays / (plays + skips + 1)
+                # Ajuste de hasta +/- 50 puntos basado en la experiencia previa del servidor
+                score += int((success_rate - 0.5) * 100)
+
         return max(0, score)
 
     async def get_recommendation(self, player: wavelink.Player) -> wavelink.Playable:
@@ -79,24 +163,48 @@ class RecommendationEngine:
         author = seed_track.author or settings.ALGORITHM_CONFIG["DEFAULT_METADATA"]
         title = seed_track.title or settings.ALGORITHM_CONFIG["DEFAULT_METADATA"]
         seed_styles = self._get_style_tags(title)
+        
+        # --- ESTRATEGIA 1: SPOTIFY (INTELIGENCIA REAL) ---
+        # Si tenemos credenciales, intentamos obtener recomendaciones basadas en datos.
+        spotify_recs = await self._get_spotify_recommendations(seed_track)
+        provider = settings.LAVALINK_CONFIG.get("SEARCH_PROVIDER", "yt")
+        
+        if spotify_recs:
+            logger.info(f"🧠 [Algoritmo] Usando Spotify Intelligence ({len(spotify_recs)} candidatos)")
+            # Buscamos las recomendaciones de Spotify en Lavalink
+            tasks = [wavelink.Playable.search(f"{provider}search:{rec}") for rec in spotify_recs]
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+            
+            candidates = []
+            for res in results:
+                if isinstance(res, list) and res: candidates.append(res[0])
+            
+            # Si Spotify nos dio candidatos válidos, usamos esos (ya están filtrados por gusto)
+            # Aún así pasamos el filtro de duplicados
+            valid_spotify = [c for c in candidates if c.identifier not in played_ids]
+            if valid_spotify:
+                return random.choice(valid_spotify)
 
+        # --- ESTRATEGIA 2: HEURÍSTICA V2 (FALLBACK) ---
+        # Si Spotify falla o no está configurado, usamos el motor lógico.
+        
         # Detección de Racha de Artista (¿El usuario quiere escuchar solo a este artista?)
         artist_streak = 0
         for t in reversed(history):
             if t.author == author: artist_streak += 1
             else: break
         
-        # 2. Generación de Estrategias (Queries)
-        provider = settings.LAVALINK_CONFIG.get("SEARCH_PROVIDER", "yt")
+        # Generación de Estrategias (Queries)
         queries = []
+        clean_title = self._clean_title(title)
 
         # A. Estrategia "Radio/Mix" (Base)
-        queries.append(f"{provider}search:{title} {author} mix")
+        queries.append(f"{provider}search:{clean_title} {author} mix")
         
         # B. Estrategia "Continuidad de Estilo"
         if seed_styles:
             style_str = " ".join(seed_styles)
-            queries.append(f"{provider}search:{title} {style_str} similar")
+            queries.append(f"{provider}search:{clean_title} {style_str} similar")
         
         # C. Estrategia "Descubrimiento vs Profundidad"
         if artist_streak >= 3:
@@ -108,7 +216,7 @@ class RecommendationEngine:
             
         # D. Fallback (SoundCloud si usamos YT, para evitar bloqueos)
         if provider == "yt":
-            queries.append(f"scsearch:{title} {author} similar")
+            queries.append(f"scsearch:{clean_title} {author} similar")
 
         # 3. Búsqueda Paralela
         tasks = [wavelink.Playable.search(q) for q in queries]
@@ -120,6 +228,10 @@ class RecommendationEngine:
                 candidates.extend(res[:5]) # Tomamos top 5 de cada estrategia
             elif isinstance(res, wavelink.Playlist):
                 candidates.extend(res.tracks[:5])
+
+        # 3.5 Obtener Feedback de la DB para todos los candidatos (Carga masiva)
+        ids = [c.identifier for c in candidates]
+        server_feedback = await db_service.get_bulk_feedback(player.guild.id, ids)
 
         # 4. Filtrado y Puntuación (El Cerebro)
         scored_candidates = []
@@ -139,7 +251,8 @@ class RecommendationEngine:
                 continue
             
             # Calcular Score
-            score = self._calculate_score(track, seed_track, seed_styles)
+            track_feedback = server_feedback.get(track.identifier)
+            score = self._calculate_score(track, seed_track, seed_styles, track_feedback)
             scored_candidates.append((track, score))
 
         # 5. Selección Ponderada

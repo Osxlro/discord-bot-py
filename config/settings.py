@@ -129,12 +129,14 @@ MUSIC_CONFIG = {
         "SHUFFLE": "🔀",
         "AUTOPLAY": "♾️",
         "VOL_DOWN": "🔉",
-        "VOL_UP": "🔊"
+        "VOL_UP": "🔊",
+        "LYRICS": "📝"
     },
     "PROGRESS_BAR_CHAR": "▬",
     "PROGRESS_BAR_POINTER": "🔘",
     "VOLUME_TOLERANCE": 1,
-    "CONTROLS_TIMEOUT": None
+    "CONTROLS_TIMEOUT": None,
+    "PLAYER_UPDATE_INTERVAL": 10 # Segundos para actualizar la barra de progreso
 }
 
 # --- 11. ASSETS (IMÁGENES / GIFS) ---

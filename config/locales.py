@@ -302,6 +302,8 @@ LOCALES = {
         "music_now_playing_title": "🎶 Reproduciendo Ahora",
         "music_now_listening": "🎧 Escuchando Ahora",
         "music_np_desc": "[{title}]({uri})\n\n`{pos}` [{bar}] `{len}`",
+        "music_lyrics_title": "📝 Letra: {title}",
+        "music_lyrics_not_found": "❌ No encontré la letra de esta canción.",
         
         # --- MUSIC EXTRAS ---
         "music_control_owner_error": "❌ No puedes controlar esta sesión.",
@@ -645,6 +647,8 @@ LOCALES = {
         "music_now_playing_title": "🎶 Now Playing",
         "music_now_listening": "🎧 Now Listening",
         "music_np_desc": "{title}\n\n`{pos}` [{bar}] `{len}`",
+        "music_lyrics_title": "📝 Lyrics: {title}",
+        "music_lyrics_not_found": "❌ Lyrics not found for this track.",
 
         # --- MUSIC EXTRAS ---
         "music_control_owner_error": "❌ You cannot control this session.",
