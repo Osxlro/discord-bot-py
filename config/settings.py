@@ -3,311 +3,267 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# 1. Token y Claves
-TOKEN = os.getenv("DISCORD_TOKEN")
+# =============================================================================
+# 1. NÚCLEO Y ENTORNO (CORE)
+# =============================================================================
+TOKEN = os.getenv("DISCORD_TOKEN")  # Token principal del bot de Discord
+DATABASE_URL = os.getenv("DATABASE_URL")  # URL para DB externa (PostgreSQL/MySQL)
+REDIS_URL = os.getenv("REDIS_URL")  # URL para servidor de caché Redis
+IS_PRODUCTION = os.getenv("PRODUCTION", "False") == "True"  # Flag de entorno de producción
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # Ruta raíz del proyecto
+LOG_FILE = os.path.join(BASE_DIR, "data", "discord.log")  # Ruta del archivo de logs
 
-# Para escalado futuro:
-DATABASE_URL = os.getenv("DATABASE_URL") # Ejemplo: postgresql://user:pass@localhost/dbname
-REDIS_URL = os.getenv("REDIS_URL")       # Ejemplo: redis://localhost:6379/0
-IS_PRODUCTION = os.getenv("PRODUCTION", "False") == "True"
-
-# 2. Rutas
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
-# 3. Configuración General del Bot
+# =============================================================================
+# 2. IDENTIDAD Y ESTADO DEL BOT
+# =============================================================================
 CONFIG = {
     "bot_config": {
-        "prefix": "!",
-        "version": "3.1.0",
-        "description": "Oscurin Inc"
+        "prefix": "!",  # Prefijo para comandos de mensaje (Legacy)
+        "version": "3.1.0",  # Versión actual del bot
+        "description": "Oscurin Inc"  # Descripción general
     },
-    # Configuración de Moderación (Usada en cogs/moderacion.py)
     "moderation_config": {
-        "max_clear_msg": 50,
-        "delete_after": 5,
-        "timeout_limit": 2419200 # 28 días
+        "max_clear_msg": 50,  # Límite de mensajes para /clear
+        "delete_after": 5,  # Segundos antes de borrar confirmaciones de moderación
+        "timeout_limit": 2419200  # Límite máximo de aislamiento (28 días en seg)
     }
 }
 
-# --- 4. CONFIGURACIÓN DE JUEGO (GAMEPLAY / XP) ---
-# ¡Ajusta esto para cambiar la dificultad del servidor!
-XP_CONFIG = {
-    "MIN_XP": 15,          # Mínimo de XP por mensaje
-    "MAX_XP": 25,          # Máximo de XP por mensaje
-    "COOLDOWN": 60.0,      # Segundos de espera entre mensajes para ganar XP
-    "VOICE_AMOUNT": 15,    # XP ganada por intervalo en voz
-    "VOICE_INTERVAL": 300  # Segundos para ganar XP en voz (300s = 5 minutos)
-}
-
-# --- 5. PERMISOS Y SEGURIDAD ---
-# True: Solo TÚ (Owner) puedes usar /setup status.
-# False: TÚ y los ADMINISTRADORES pueden usarlo.
-STATUS_COMMAND_ONLY_OWNER = False 
-
-# Configuración de Backup (DM)
-SEND_BACKUP_TO_OWNER = True 
-
-# --- 6. APARIENCIA (COLORES) ---
-# Paleta de colores centralizada
-COLORS = {
-    "SUCCESS": 0x57F287,  # Verde Discord
-    "ERROR": 0xED4245,    # Rojo Discord
-    "INFO": 0x5865F2,     # Azul Blurple
-    "WARNING": 0xFEE75C,  # Amarillo
-    "XP": 0x9B59B6,       # Violeta
-    "FUN": 0xE91E63,      # Rosa
-    "MINECRAFT": 0x2ECC71, # Verde Minecraft
-    "BLUE": 0x3498DB,     # Azul Sistema
-    "GOLD": 0xF1C40F,     # Dorado Memoria
-    "TEAL": 0x1ABC9C,     # Teal Config
-    "ORANGE": 0xE67E22    # Naranja Logs
-}
-
-# --- 7. ESTADOS POR DEFECTO ---
-# Si la base de datos de estados se vacía, se pueden usar estos.
-DEFAULT_STATUSES = [
+DEFAULT_STATUSES = [  # Estados de respaldo si la DB está vacía
     {"type": "playing", "text": "Visual Studio Code"},
     {"type": "watching", "text": "a los usuarios"},
     {"type": "listening", "text": "tus comandos /"}
 ]
 
-# --- 8. GESTIÓN DE ICONO ---
-_BOT_ICON_URL = None
+_BOT_ICON_URL = None  # Almacena la URL del avatar del bot en caché
 
 def set_bot_icon(url: str):
+    """Establece la URL del icono del bot."""
     global _BOT_ICON_URL
     _BOT_ICON_URL = url
 
 def get_bot_icon() -> str:
+    """Obtiene la URL del icono del bot."""
     return _BOT_ICON_URL or ""
 
-# --- 9. CONFIGURACIÓN MINECRAFT ---
-MINECRAFT_CONFIG = {
-    "ENABLED": True,      # True: Carga el servidor web. False: No inicia el puente.
-    "PORT": 5058,         # Puerto para recibir datos del plugin de Minecraft
-    "DEFAULT_NAME": "Steve", # Nombre por defecto si el plugin no envía el autor
-    "TOKEN": "CAMBIAME_POR_UN_TOKEN_SEGURO", # Token de seguridad para el Bridge
-    "MAX_PAYLOAD_SIZE": 51200, # 50KB
-    "HOST": "0.0.0.0",
-    "MAX_QUEUE_SIZE": 50,
-    "PORT_RANGE": 3
-}
-
-# --- 10. CONFIGURACIÓN CHAOS ---
-CHAOS_CONFIG = {
-    "DEFAULT_ENABLED": True,
-    "DEFAULT_PROB": 0.01
-}
-
-# --- 11. CONFIGURACIÓN ALGORITMO (RECOMENDACIONES) ---
-ALGORITHM_CONFIG = {
-    "HISTORY_LIMIT": 30,          # Canciones a recordar para no repetir
-    "SIMILARITY_THRESHOLD": 0.85, # % de similitud para considerar duplicado
-    "DEFAULT_METADATA": "Unknown" # Texto por defecto si falta autor/título
-}
-
-# --- 12. CONFIGURACIÓN VISUAL Y TÉCNICA DE MÚSICA ---
-MUSIC_CONFIG = {
-    "QUEUE_PAGE_SIZE": 10,        # Canciones por página en /queue
-    "AUTOCOMPLETE_LIMIT": 10,     # Resultados en autocompletado
-    "PROGRESS_BAR_LENGTH": 15,    # Longitud de la barra en /np
-    "STREAM_BAR_LENGTH": 15,      # Longitud de la barra para streams
-    "CROSSFADE_DURATION": 3000,   # Duración del Fade-In en milisegundos (0 = Desactivado). Ej: 3000 para 3s.
-    "VOLUME_STEP": 10,            # Paso de volumen para botones
-    "AUTOCOMPLETE_TITLE_LIMIT": 65, # Límite de caracteres para título en búsqueda
-    "AUTOCOMPLETE_AUTHOR_LIMIT": 15, # Límite de caracteres para autor en búsqueda
-    "FADE_IN_STEPS": 15,          # Pasos para la animación de volumen
-    "LOOP_EMOJIS": {
-        "TRACK": "🔂",
-        "QUEUE": "🔁",
-        "OFF": "🔁"
-    },
-    "BUTTON_EMOJIS": {
-        "PAUSE_RESUME": "⏯️",
-        "SKIP": "⏭️",
-        "STOP": "⏹️",
-        "SHUFFLE": "🔀",
-        "AUTOPLAY": "♾️",
-        "VOL_DOWN": "🔉",
-        "VOL_UP": "🔊",
-        "LYRICS": "📝"
-    },
-    "PROGRESS_BAR_CHAR": "▬",
-    "PROGRESS_BAR_POINTER": "🔘",
-    "VOLUME_TOLERANCE": 1,
-    "CONTROLS_TIMEOUT": None
-}
-
-# --- 11. ASSETS (IMÁGENES / GIFS) ---
-ASSETS = {
-    "COINFLIP_HEADS": "https://cdn.discordapp.com/emojis/745519235303735376.gif",
-    "COINFLIP_TAILS": "https://cdn.discordapp.com/emojis/745519477935964212.gif"
-}
-
-# --- 12. CONFIGURACIÓN MÚSICA (LAVALINK) ---
+# =============================================================================
+# 3. SISTEMA DE MÚSICA (LAVALINK)
+# =============================================================================
 LAVALINK_CONFIG = {
-    # Lista de nodos para redundancia (Failover)
-    "NODES": [
-        # --- NODOS NO SSL (HTTP) ---
+    "NODES": [  # Pool de nodos para redundancia y failover
         {"HOST": "lavalink.jirayu.net", "PORT": 13592, "PASSWORD": "youshallnotpass", "SECURE": False, "IDENTIFIER": "Jirayu-NonSSL"},
         {"HOST": "lavalinkv4.serenetia.com", "PORT": 80, "PASSWORD": "https://dsc.gg/ajidevserver", "SECURE": False, "IDENTIFIER": "Serenetia-NonSSL"},
-        # --- NODOS SSL (HTTPS) ---
         {"HOST": "lavalinkv4.serenetia.com", "PORT": 443, "PASSWORD": "https://dsc.gg/ajidevserver", "SECURE": True, "IDENTIFIER": "Serenetia-SSL"},
         {"HOST": "lavalink.jirayu.net", "PORT": 443, "PASSWORD": "youshallnotpass", "SECURE": True, "IDENTIFIER": "Jirayu-SSL"},
     ],
-    "DEFAULT_VOLUME": 50,     # Volumen inicial (0-100)
-    "SEARCH_PROVIDER": "yt",  # 'yt' (YouTube), 'sc' (SoundCloud), 'sp' (Spotify - requiere nodo con Lavasrc)
-    "INACTIVITY_TIMEOUT": 300, # Segundos para desconectarse si no hay música
-    "CACHE_CAPACITY": 100,     # Capacidad del caché de Wavelink
-    # Credenciales de Spotify (Opcional)
-    "SPOTIFY": {
+    "DEFAULT_VOLUME": 50,  # Volumen por defecto al conectar
+    "SEARCH_PROVIDER": "yt",  # Proveedor de búsqueda: 'yt' (YouTube) o 'sc' (SoundCloud)
+    "INACTIVITY_TIMEOUT": 300,  # Tiempo para desconectar si el canal está vacío
+    "CACHE_CAPACITY": 100,  # Límite de canciones en el caché de Wavelink
+    "SPOTIFY": {  # Credenciales para soporte de links de Spotify
         "CLIENT_ID": os.getenv("SPOTIFY_CLIENT_ID", ""),
         "CLIENT_SECRET": os.getenv("SPOTIFY_CLIENT_SECRET", "")
     }
 }
 
-# Helper para compatibilidad (convierte nombre de color a entero)
+MUSIC_CONFIG = {
+    "QUEUE_PAGE_SIZE": 10,  # Canciones por página en el comando /queue
+    "AUTOCOMPLETE_LIMIT": 10,  # Máximo de sugerencias en el buscador
+    "PROGRESS_BAR_LENGTH": 15,  # Bloques de la barra de progreso en /np
+    "STREAM_BAR_LENGTH": 15,  # Bloques de la barra para directos
+    "CROSSFADE_DURATION": 3000,  # Milisegundos de desvanecimiento al iniciar pista
+    "VOLUME_STEP": 10,  # Cuánto sube/baja el volumen con botones
+    "AUTOCOMPLETE_TITLE_LIMIT": 65,  # Truncado de título en autocompletado
+    "AUTOCOMPLETE_AUTHOR_LIMIT": 15,  # Truncado de autor en autocompletado
+    "FADE_IN_STEPS": 15,  # Suavidad de la animación de volumen
+    "LOOP_EMOJIS": {"TRACK": "🔂", "QUEUE": "🔁", "OFF": "🔁"},
+    "BUTTON_EMOJIS": {
+        "PAUSE_RESUME": "⏯️", "SKIP": "⏭️", "STOP": "⏹️", "SHUFFLE": "🔀",
+        "AUTOPLAY": "♾️", "VOL_DOWN": "🔉", "VOL_UP": "🔊", "LYRICS": "📝"
+    },
+    "PROGRESS_BAR_CHAR": "▬",
+    "PROGRESS_BAR_POINTER": "🔘",
+    "VOLUME_TOLERANCE": 1,  # Margen para detectar cambios manuales de volumen
+    "CONTROLS_TIMEOUT": None  # Tiempo de vida de los botones (None = Infinito)
+}
+
+ALGORITHM_CONFIG = {
+    "HISTORY_LIMIT": 30,  # Canciones a recordar para evitar repeticiones en Autoplay
+    "SIMILARITY_THRESHOLD": 0.85,  # % de similitud para detectar duplicados
+    "DEFAULT_METADATA": "Unknown"  # Texto si no se encuentra autor/título
+}
+
+# =============================================================================
+# 4. GAMEPLAY Y SISTEMA DE NIVELES (XP)
+# =============================================================================
+XP_CONFIG = {
+    "MIN_XP": 15,  # XP mínima por mensaje
+    "MAX_XP": 25,  # XP máxima por mensaje
+    "COOLDOWN": 60.0,  # Segundos entre mensajes para ganar XP
+    "VOICE_AMOUNT": 15,  # XP por intervalo en canal de voz
+    "VOICE_INTERVAL": 300  # Intervalo de tiempo para XP en voz (5 min)
+}
+
+LEVELS_CONFIG = {
+    "LEADERBOARD_LIMIT": 50,  # Máximo de usuarios en el top
+    "XP_MULTIPLIER": 100,  # Multiplicador base para la curva de nivel
+    "XP_EXPONENT": 1.2,  # Exponente de dificultad de nivel
+    "REBIRTH_LEVEL": 100,  # Nivel necesario para renacer
+    "MEDALS": ["🥇", "🥈", "🥉"],  # Emojis para el podio
+    "LEADERBOARD_CHUNK_SIZE": 10  # Usuarios por página en el leaderboard
+}
+
+# =============================================================================
+# 5. BASE DE DATOS Y PERSISTENCIA
+# =============================================================================
+DB_CONFIG = {
+    "DIR_NAME": "data",  # Carpeta de la base de datos
+    "FILE_NAME": "database.sqlite3",  # Nombre del archivo SQLite
+    "TEMP_BACKUP_NAME": "temp_backup.sqlite3",  # Nombre temporal para backups
+    "RETRIES": 3,  # Reintentos si la DB está bloqueada
+    "RETRY_DELAY": 0.1  # Segundos entre reintentos
+}
+
+BACKUP_CONFIG = {
+    "HISTORY_LIMIT": 50,  # Mensajes a revisar para buscar backups antiguos
+    "MAX_BACKUPS_TO_KEEP": 3,  # Cuántos archivos de backup mantener en el DM
+    "COOLDOWN_SECONDS": 84600,  # Tiempo entre backups automáticos
+    "DM_HISTORY_LIMIT": 20,  # Límite de mensajes al limpiar el DM del owner
+    "KEYWORD": "Backup",  # Palabra clave para identificar mensajes de backup
+    "INTERVAL_HOURS": 12,  # Frecuencia de backups automáticos
+    "XP_FLUSH_MINUTES": 5  # Frecuencia para volcar XP de RAM a Disco
+}
+
+SEND_BACKUP_TO_OWNER = True  # Enviar copia de seguridad al dueño del bot
+
+# =============================================================================
+# 6. INTEGRACIONES EXTERNAS (MINECRAFT)
+# =============================================================================
+MINECRAFT_CONFIG = {
+    "ENABLED": True,  # Activar/Desactivar el servidor web del bridge
+    "PORT": 5058,  # Puerto de escucha para el plugin
+    "DEFAULT_NAME": "Steve",  # Nombre por defecto para el chat
+    "TOKEN": "CAMBIAME_POR_UN_TOKEN_SEGURO",  # Token de validación para peticiones
+    "MAX_PAYLOAD_SIZE": 51200,  # Tamaño máximo de datos recibidos (50KB)
+    "HOST": "0.0.0.0",  # Interfaz de red
+    "MAX_QUEUE_SIZE": 50,  # Mensajes pendientes para enviar al juego
+    "PORT_RANGE": 3  # Rango de puertos a probar si el principal está ocupado
+}
+
+# =============================================================================
+# 7. APARIENCIA Y UI (COLORES, EMOJIS, BARRAS)
+# =============================================================================
+COLORS = {
+    "SUCCESS": 0x57F287, "ERROR": 0xED4245, "INFO": 0x5865F2,
+    "WARNING": 0xFEE75C, "XP": 0x9B59B6, "FUN": 0xE91E63,
+    "MINECRAFT": 0x2ECC71, "BLUE": 0x3498DB, "GOLD": 0xF1C40F,
+    "TEAL": 0x1ABC9C, "ORANGE": 0xE67E22
+}
+
 def get_color(key: str) -> int:
+    """Convierte un nombre de color a su valor hexadecimal."""
     return COLORS.get(key.upper(), 0xFFFFFF)
 
-# --- 13. CONFIGURACIÓN BASE DE DATOS ---
-DB_CONFIG = {
-    "DIR_NAME": "data",
-    "FILE_NAME": "database.sqlite3",
-    "TEMP_BACKUP_NAME": "temp_backup.sqlite3",
-    "RETRIES": 3,
-    "RETRY_DELAY": 0.1
-}
-
-# --- 14. CONFIGURACIÓN BACKUP ---
-BACKUP_CONFIG = {
-    "HISTORY_LIMIT": 50,
-    "MAX_BACKUPS_TO_KEEP": 3,
-    "COOLDOWN_SECONDS": 84600, # ~23.5 horas
-    "DM_HISTORY_LIMIT": 20,
-    "KEYWORD": "Backup",
-    "INTERVAL_HOURS": 12,
-    "XP_FLUSH_MINUTES": 5
-}
-
-# --- 15. CONFIGURACIÓN UI ---
 UI_CONFIG = {
-    "PROGRESS_BAR_FILLED": "▰",
-    "PROGRESS_BAR_EMPTY": "▱",
-    "MAX_DESC_LENGTH": 200, # Descripción de perfil
-    "PROFILE_BAR_LENGTH": 10,
-    "STATUS_TRUNCATE": 97, # Truncado para select menu de status
-    "MSG_PREVIEW_TRUNCATE": 30, # Truncado para preview de mensajes en perfil
-    "BAR_LENGTH": 10, # Longitud de barras de progreso genéricas
-    "SELECT_DESC_TRUNCATE": 100 # Truncado de descripciones en menús de selección
+    "PROGRESS_BAR_FILLED": "▰", "PROGRESS_BAR_EMPTY": "▱",
+    "MAX_DESC_LENGTH": 200,  # Límite de caracteres en biografía de perfil
+    "PROFILE_BAR_LENGTH": 10,  # Longitud de barra de XP en perfil
+    "STATUS_TRUNCATE": 97,  # Truncado para menús de selección de estado
+    "MSG_PREVIEW_TRUNCATE": 30,  # Truncado para previsualización de mensajes
+    "BAR_LENGTH": 10,  # Longitud de barras de sistema (RAM/CPU)
+    "SELECT_DESC_TRUNCATE": 100  # Truncado de descripciones en menús
 }
 
-LOG_FILE = os.path.join(BASE_DIR, "data", "discord.log")
+ASSETS = {
+    "COINFLIP_HEADS": "https://cdn.discordapp.com/emojis/745519235303735376.gif",
+    "COINFLIP_TAILS": "https://cdn.discordapp.com/emojis/745519477935964212.gif"
+}
 
-# --- 16. CONFIGURACIÓN AYUDA ---
 HELP_CONFIG = {
     "EMOJI_MAP": {
-        "General": "💡", "Moderacion": "🛡️", "Niveles": "📊",
-        "Diversion": "🎲", "Configuracion": "⚙️", "Developer": "💻",
-        "Cumpleanos": "🎂", "Roles": "🎭", "Voice": "🎙️", 
-        "Perfil": "👤", "Status": "🟢", "Backup": "💾",
+        "General": "💡", "Moderacion": "🛡️", "Niveles": "📊", "Diversion": "🎲",
+        "Configuracion": "⚙️", "Developer": "💻", "Cumpleanos": "🎂", "Roles": "🎭",
+        "Voice": "🎙️", "Perfil": "👤", "Status": "🟢", "Backup": "💾",
         "Usuario": "👤", "Minecraft": "🧱", "Music": "🎵"
     },
-    "HOME_EMOJI": "🏠"
+    "HOME_EMOJI": "🏠"  # Emoji para volver al inicio del panel de ayuda
 }
 
-# --- 17. CONFIGURACIÓN VOZ ---
-VOICE_CONFIG = {
-    "RECONNECT_BACKOFF": [5, 10, 30] # Segundos entre intentos
+BOTINFO_CONFIG = {
+    "EMOJIS": {"GENERAL": "📊", "SYSTEM": "💻", "MEMORY": "🧠", "CONFIG": "⚙️"},
+    "TITLE_EMOJI": "🤖",
+    "SELECT_EMOJI": "👇"
 }
 
-# --- 18. CONFIGURACIÓN OPTIMIZACIÓN ---
-OPTIMIZATION_CONFIG = {
-    "FLUSH_INTERVAL": 60,      # Segundos
-    "CLEANUP_INTERVAL": 6      # Horas
-}
-
-# --- 19. CONFIGURACIÓN DESARROLLADOR ---
-DEV_CONFIG = {
-    "STATUS_LIMIT": 25,
-    "SERVER_LIST_CHUNK_SIZE": 10,
-    "MEMORY_TOP_LIMIT": 15
-}
-
-# --- 20. CONFIGURACIÓN NIVELES ---
-LEVELS_CONFIG = {
-    "LEADERBOARD_LIMIT": 50,
-    "XP_MULTIPLIER": 100,
-    "XP_EXPONENT": 1.2,
-    "REBIRTH_LEVEL": 100,
-    "MEDALS": ["🥇", "🥈", "🥉"],
-    "LEADERBOARD_CHUNK_SIZE": 10
-}
-
-# --- 21. CONFIGURACIÓN GENERAL ---
+# =============================================================================
+# 8. LOCALIZACIÓN Y CONFIGURACIÓN GENERAL
+# =============================================================================
 GENERAL_CONFIG = {
-    "LARGE_SERVER_THRESHOLD": 1000,
-    "DEFAULT_LANG": "es"
+    "LARGE_SERVER_THRESHOLD": 1000,  # Servidores con más de X miembros desactivan cálculos pesados
+    "DEFAULT_LANG": "es"  # Idioma por defecto del bot
 }
 
-# --- 22. CONFIGURACIÓN PAGINACIÓN ---
-PAGINATION_CONFIG = {
-    "TIMEOUT": 120,
-    "EMOJIS": {
-        "FIRST": "⏮️", "PREV": "◀️", "NEXT": "▶️", "LAST": "⏭️"
-    }
-}
-
-# --- 23. CONFIGURACIÓN PERFIL ---
-PROFILE_CONFIG = {
-    "RESET_KEYWORD": "reset"
-}
-
-# --- 24. CONFIGURACIÓN ROLES ---
-ROLES_CONFIG = {
-    "DEFAULT_EMOJI": "✨",
-    "DEFAULT_COLOR": "green"
-}
-
-# --- 25. CONFIGURACIÓN TIMEOUTS (VISTAS) ---
-TIMEOUT_CONFIG = {
-    "HELP": 120,
-    "BOT_INFO": 120,
-    "STATUS_DELETE": 60
-}
-
-# --- 26. CONFIGURACIÓN POR DEFECTO (GUILDS) ---
-DEFAULT_GUILD_CONFIG = {
+DEFAULT_GUILD_CONFIG = {  # Configuración inicial para nuevos servidores
     "language": "es",
     "chaos_enabled": 1,
     "chaos_probability": 0.01
 }
 
-# --- 27. CONFIGURACIÓN CUMPLEAÑOS ---
 BIRTHDAY_CONFIG = {
-    "CHECK_INTERVAL_HOURS": 24,
-    "CAKE_ICON": "https://emojigraph.org/media/apple/birthday-cake_1f382.png",
-    "LIST_LIMIT": 10
+    "CHECK_INTERVAL_HOURS": 24,  # Frecuencia de revisión de cumpleaños
+    "CAKE_ICON": "https://emojigraph.org/media/apple/birthday-cake_1f382.png",  # Icono de felicitación
+    "LIST_LIMIT": 10  # Próximos cumpleaños a mostrar en /cumple lista
 }
 
-# --- 28. CONFIGURACIÓN BOTINFO ---
-BOTINFO_CONFIG = {
-    "EMOJIS": {
-        "GENERAL": "📊",
-        "SYSTEM": "💻",
-        "MEMORY": "🧠",
-        "CONFIG": "⚙️"
-    },
-    "TITLE_EMOJI": "🤖",
-    "SELECT_EMOJI": "👇"
+# =============================================================================
+# 9. SISTEMA Y RENDIMIENTO (TIMEOUTS, RECONEXIÓN)
+# =============================================================================
+VOICE_CONFIG = {
+    "RECONNECT_BACKOFF": [5, 10, 30]  # Segundos entre intentos de reconexión de voz
 }
 
-# --- 29. CONFIGURACIÓN MATEMÁTICA ---
+OPTIMIZATION_CONFIG = {
+    "FLUSH_INTERVAL": 60,  # Segundos para vaciar caché de XP
+    "CLEANUP_INTERVAL": 6  # Horas para limpieza de memoria RAM
+}
+
+TIMEOUT_CONFIG = {
+    "HELP": 120,  # Segundos antes de desactivar menú de ayuda
+    "BOT_INFO": 120,  # Segundos antes de desactivar panel de info
+    "STATUS_DELETE": 60  # Segundos antes de desactivar menú de borrar estados
+}
+
+PAGINATION_CONFIG = {
+    "TIMEOUT": 120,  # Tiempo de vida de los botones de paginación
+    "EMOJIS": {"FIRST": "⏮️", "PREV": "◀️", "NEXT": "▶️", "LAST": "⏭️"}
+}
+
+# =============================================================================
+# 10. SEGURIDAD Y PERMISOS
+# =============================================================================
+STATUS_COMMAND_ONLY_OWNER = False  # True: Solo el dueño gestiona estados. False: Admins también.
+CHAOS_CONFIG = {
+    "DEFAULT_ENABLED": True,  # Estado inicial del sistema Chaos
+    "DEFAULT_PROB": 0.01  # Probabilidad por defecto (1%)
+}
+
+# =============================================================================
+# 11. UTILIDADES Y OTROS
+# =============================================================================
 MATH_CONFIG = {
-    "OP_MAP": {
+    "OP_MAP": {  # Mapeo de palabras clave a símbolos matemáticos
         "sumar": "+", "suma": "+", "add": "+", "+": "+", "mas": "+",
         "restar": "-", "resta": "-", "minus": "-", "-": "-", "menos": "-",
         "multiplicacion": "*", "multiplicar": "*", "por": "*", "*": "*", "x": "*",
         "division": "/", "dividir": "/", "div": "/", "/": "/"
     }
 }
+
+DEV_CONFIG = {
+    "STATUS_LIMIT": 25,  # Máximo de estados a mostrar en el menú de borrado
+    "SERVER_LIST_CHUNK_SIZE": 10,  # Servidores por página en /listservers
+    "MEMORY_TOP_LIMIT": 15  # Módulos a mostrar en el top de consumo de RAM
+}
+
+PROFILE_CONFIG = {"RESET_KEYWORD": "reset"}  # Palabra para limpiar campos de perfil
+ROLES_CONFIG = {"DEFAULT_EMOJI": "✨", "DEFAULT_COLOR": "green"}  # Config de botones de rol
