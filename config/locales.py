@@ -304,6 +304,7 @@ LOCALES = {
         "music_np_desc": "[{title}]({uri})\n\n`{pos}` [{bar}] `{len}`",
         "music_lyrics_title": "📝 Letra: {title}",
         "music_lyrics_not_found": "❌ No encontré la letra de esta canción.",
+        "music_requested_by": "👤 Pedido por: {user}",
         
         # --- MUSIC EXTRAS ---
         "music_control_owner_error": "❌ No puedes controlar esta sesión.",
@@ -649,6 +650,7 @@ LOCALES = {
         "music_np_desc": "{title}\n\n`{pos}` [{bar}] `{len}`",
         "music_lyrics_title": "📝 Lyrics: {title}",
         "music_lyrics_not_found": "❌ Lyrics not found for this track.",
+        "music_requested_by": "👤 Requested by: {user}",
 
         # --- MUSIC EXTRAS ---
         "music_control_owner_error": "❌ You cannot control this session.",

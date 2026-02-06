@@ -1,0 +1,272 @@
+import discord
+import asyncio
+import wavelink
+import logging
+from config import settings
+from services import lang_service, embed_service, lyrics_service
+
+logger = logging.getLogger(__name__)
+
+# =============================================================================
+# LÓGICA DE INTERFAZ (VISTAS Y BOTONES)
+# =============================================================================
+
+class MusicControls(discord.ui.View):
+    """Botones interactivos para controlar la música."""
+    def __init__(self, player: wavelink.Player, author_id: int = None, lang: str = "es"):
+        super().__init__(timeout=settings.MUSIC_CONFIG["CONTROLS_TIMEOUT"])
+        self.player = player
+        self.author_id = author_id
+        self.lang = lang
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        if not self.player.connected:
+             await interaction.response.send_message(lang_service.get_text("music_error_nothing", self.lang), ephemeral=True)
+             return False
+
+        if self.author_id and interaction.user.id != self.author_id:
+            await interaction.response.send_message(lang_service.get_text("music_control_owner_error", self.lang), ephemeral=True)
+            return False
+        
+        if not interaction.user.voice or (self.player.channel and interaction.user.voice.channel.id != self.player.channel.id):
+             await interaction.response.send_message(lang_service.get_text("music_control_voice_error", self.lang), ephemeral=True)
+             return False
+
+        return True
+
+    async def on_timeout(self):
+        for child in self.children:
+            child.disabled = True
+        try:
+            if hasattr(self.player, "last_msg") and self.player.last_msg:
+                await self.player.last_msg.edit(view=self)
+        except discord.HTTPException:
+            pass # El mensaje pudo haber sido borrado
+
+    @discord.ui.button(emoji=settings.MUSIC_CONFIG["BUTTON_EMOJIS"]["PAUSE_RESUME"], style=discord.ButtonStyle.primary, row=0)
+    async def pause_resume(self, interaction: discord.Interaction, button: discord.ui.Button):
+        new_state = not self.player.paused
+        await self.player.pause(new_state)
+        button.style = discord.ButtonStyle.danger if new_state else discord.ButtonStyle.primary
+        msg_key = "music_paused" if new_state else "music_resumed"
+        await interaction.response.edit_message(view=self)
+        await interaction.followup.send(lang_service.get_text(msg_key, self.lang), ephemeral=True)
+
+    @discord.ui.button(emoji=settings.MUSIC_CONFIG["BUTTON_EMOJIS"]["SKIP"], style=discord.ButtonStyle.secondary, row=0)
+    async def skip(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await self.player.skip(force=True)
+        msg = lang_service.get_text("music_skipped", self.lang)
+        await interaction.response.send_message(msg, ephemeral=True)
+
+    @discord.ui.button(emoji=settings.MUSIC_CONFIG["BUTTON_EMOJIS"]["STOP"], style=discord.ButtonStyle.danger, row=0)
+    async def stop_music(self, interaction: discord.Interaction, button: discord.ui.Button):
+        # 1. Actualizar UI primero para respuesta rápida
+        for child in self.children:
+            child.disabled = True
+        self.stop()
+        msg = lang_service.get_text("music_stopped", self.lang)
+        try:
+            await interaction.response.edit_message(view=self)
+            await interaction.followup.send(msg, ephemeral=True)
+        except discord.HTTPException:
+            pass
+
+        # 2. Usar helper de limpieza (evita duplicar lógica)
+        await cleanup_player(self.player.client, self.player, skip_message_edit=True)
+
+        # 3. Desconectar
+        if self.player.connected:
+            await self.player.disconnect()
+
+    @discord.ui.button(emoji=settings.MUSIC_CONFIG["BUTTON_EMOJIS"]["SHUFFLE"], style=discord.ButtonStyle.secondary, row=0)
+    async def shuffle(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.player.queue.shuffle()
+        msg = lang_service.get_text("music_shuffled", self.lang)
+        await interaction.response.send_message(msg, ephemeral=True)
+
+    @discord.ui.button(emoji=settings.MUSIC_CONFIG["LOOP_EMOJIS"]["OFF"], style=discord.ButtonStyle.secondary, row=1)
+    async def loop(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if self.player.queue.mode == wavelink.QueueMode.normal:
+            self.player.queue.mode = wavelink.QueueMode.loop
+            msg = lang_service.get_text("music_loop_track", self.lang)
+            button.emoji = settings.MUSIC_CONFIG["LOOP_EMOJIS"]["TRACK"]
+            button.style = discord.ButtonStyle.success
+        elif self.player.queue.mode == wavelink.QueueMode.loop:
+            self.player.queue.mode = wavelink.QueueMode.loop_all
+            msg = lang_service.get_text("music_loop_queue", self.lang)
+            button.emoji = settings.MUSIC_CONFIG["LOOP_EMOJIS"]["QUEUE"]
+            button.style = discord.ButtonStyle.success
+        else:
+            self.player.queue.mode = wavelink.QueueMode.normal
+            msg = lang_service.get_text("music_loop_off", self.lang)
+            button.emoji = settings.MUSIC_CONFIG["LOOP_EMOJIS"]["OFF"]
+            button.style = discord.ButtonStyle.secondary
+        
+        await interaction.response.edit_message(view=self)
+        await interaction.followup.send(msg, ephemeral=True)
+
+    @discord.ui.button(emoji=settings.MUSIC_CONFIG["BUTTON_EMOJIS"]["AUTOPLAY"], style=discord.ButtonStyle.secondary, row=1)
+    async def autoplay(self, interaction: discord.Interaction, button: discord.ui.Button):
+        current = getattr(self.player, "smart_autoplay", False)
+        self.player.smart_autoplay = not current
+        self.player.autoplay = wavelink.AutoPlayMode.disabled
+        
+        if self.player.smart_autoplay:
+            msg = lang_service.get_text("music_autoplay_on", self.lang)
+            button.style = discord.ButtonStyle.success
+        else:
+            msg = lang_service.get_text("music_autoplay_off", self.lang)
+            button.style = discord.ButtonStyle.secondary
+        
+        await interaction.response.edit_message(view=self)
+        await interaction.followup.send(msg, ephemeral=True)
+
+    @discord.ui.button(emoji=settings.MUSIC_CONFIG["BUTTON_EMOJIS"]["VOL_DOWN"], style=discord.ButtonStyle.secondary, row=1)
+    async def vol_down(self, interaction: discord.Interaction, button: discord.ui.Button):
+        new_vol = max(self.player.volume - settings.MUSIC_CONFIG["VOLUME_STEP"], 0)
+        await self.player.set_volume(new_vol)
+        await interaction.response.send_message(lang_service.get_text("music_vol_changed", self.lang, vol=new_vol), ephemeral=True)
+
+    @discord.ui.button(emoji=settings.MUSIC_CONFIG["BUTTON_EMOJIS"]["VOL_UP"], style=discord.ButtonStyle.secondary, row=1)
+    async def vol_up(self, interaction: discord.Interaction, button: discord.ui.Button):
+        new_vol = min(self.player.volume + settings.MUSIC_CONFIG["VOLUME_STEP"], 100)
+        await self.player.set_volume(new_vol)
+        await interaction.response.send_message(lang_service.get_text("music_vol_changed", self.lang, vol=new_vol), ephemeral=True)
+
+    @discord.ui.button(emoji=settings.MUSIC_CONFIG["BUTTON_EMOJIS"]["LYRICS"], style=discord.ButtonStyle.secondary, row=1)
+    async def lyrics(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.defer(ephemeral=True)
+        track = self.player.current
+        if not track or not track.title or track.is_stream:
+            return await interaction.followup.send(lang_service.get_text("music_error_nothing", self.lang), ephemeral=True)
+        
+        lyrics = await lyrics_service.get_lyrics(track.title, track.author)
+        if lyrics:
+            embed = discord.Embed(title=lang_service.get_text("music_lyrics_title", self.lang, title=track.title), description=lyrics[:4096], color=settings.COLORS["INFO"])
+            if len(lyrics) > 4096:
+                embed.set_footer(text="Letra truncada.")
+            await interaction.followup.send(embed=embed, ephemeral=True)
+        else:
+            await interaction.followup.send(lang_service.get_text("music_lyrics_not_found", self.lang), ephemeral=True)
+
+# =============================================================================
+# FUNCIONES AUXILIARES (HELPERS)
+# =============================================================================
+
+async def cleanup_player(bot, player: wavelink.Player, skip_message_edit: bool = False):
+    """Realiza limpieza de interfaz y persistencia al detener el player."""
+    if not player: return
+
+    # 1. Limpiar persistencia de Voice
+    voice_cog = bot.get_cog("Voice")
+    if voice_cog and hasattr(voice_cog, 'voice_targets'):
+        voice_cog.voice_targets.pop(player.guild.id, None)
+
+    # 2. Deshabilitar botones visualmente
+    if hasattr(player, "last_view") and player.last_view:
+        for child in player.last_view.children:
+            child.disabled = True
+        if not skip_message_edit:
+            try:
+                if player.last_msg: await player.last_msg.edit(view=player.last_view)
+            except discord.HTTPException: pass
+        player.last_view.stop()
+    
+    # Limpiar referencias
+    player.last_view = None
+    player.last_msg = None
+    
+    # Limpiar cola
+    if hasattr(player, "queue"):
+        player.queue.clear()
+        
+    # Resetear estados internos
+    player.smart_autoplay = False
+    player.last_track_error = False
+
+async def check_voice(ctx) -> bool:
+    """Verifica si el usuario puede ejecutar comandos de control."""
+    lang = await lang_service.get_guild_lang(ctx.guild.id)
+    player = ctx.voice_client
+    
+    if not player or not player.connected:
+        await ctx.send(embed=embed_service.error(lang_service.get_text("title_error", lang), lang_service.get_text("music_error_nothing", lang), lite=True), ephemeral=True)
+        return False
+        
+    if not ctx.author.voice or (player.channel and ctx.author.voice.channel.id != player.channel.id):
+        await ctx.send(embed=embed_service.error(lang_service.get_text("title_error", lang), lang_service.get_text("music_control_voice_error", lang), lite=True), ephemeral=True)
+        return False
+    return True
+
+async def fade_in(player: wavelink.Player, duration_ms: int):
+    """Simula un efecto de Fade-In ajustando el volumen gradualmente."""
+    target_vol = player.volume
+    if target_vol == 0: return
+    if player.current and player.current.length < duration_ms: return
+
+    last_set_vol = 0
+    current_track = player.current
+    
+    await player.set_volume(0)
+    
+    steps = settings.MUSIC_CONFIG["FADE_IN_STEPS"]
+    step_delay = (duration_ms / 1000) / steps
+    vol_step = target_vol / steps
+    
+    # Optimización: Evitar sleeps demasiado cortos que quemen CPU
+    if step_delay < 0.05:
+        step_delay = 0.05
+    
+    for i in range(1, steps + 1):
+        if not player.playing or player.current != current_track: return
+
+        try:
+            if not player.connected or player.paused: return
+            if last_set_vol > 0 and abs(player.volume - last_set_vol) > settings.MUSIC_CONFIG["VOLUME_TOLERANCE"]: return
+
+            await asyncio.sleep(step_delay)
+            new_vol = int(vol_step * i)
+            await player.set_volume(new_vol)
+            last_set_vol = new_vol
+        except Exception:
+            return
+    
+    await player.set_volume(target_vol)
+
+def create_np_embed(player: wavelink.Player, track: wavelink.Playable, lang: str) -> discord.Embed:
+    """Genera el embed de 'Reproduciendo Ahora' con barra de progreso."""
+    position = player.position
+    length = track.length
+    
+    if track.is_stream:
+        pos_str = lang_service.get_text("music_live", lang)
+        len_str = "∞"
+        bar_len = settings.MUSIC_CONFIG["STREAM_BAR_LENGTH"]
+        bar = settings.MUSIC_CONFIG["PROGRESS_BAR_CHAR"] * bar_len + settings.MUSIC_CONFIG["PROGRESS_BAR_POINTER"]
+    else:
+        total_blocks = settings.MUSIC_CONFIG["PROGRESS_BAR_LENGTH"]
+        if length > 0:
+            progress = int((position / length) * total_blocks)
+        else:
+            progress = 0
+            
+        progress = min(progress, total_blocks) # Asegurar que no exceda el límite visual
+        bar = settings.MUSIC_CONFIG["PROGRESS_BAR_CHAR"] * progress + settings.MUSIC_CONFIG["PROGRESS_BAR_POINTER"] + settings.MUSIC_CONFIG["PROGRESS_BAR_CHAR"] * (total_blocks - progress)
+        pos_str = f"{int(position // 1000 // 60)}:{int(position // 1000 % 60):02}"
+        len_str = f"{int(length // 1000 // 60)}:{int(length // 1000 % 60):02}"
+
+    desc = lang_service.get_text("music_np_desc", lang, title=track.title, uri=track.uri or "", pos=pos_str, bar=bar, len=len_str)
+
+    embed = discord.Embed(
+        title=lang_service.get_text("music_now_playing_title", lang),
+        description=desc,
+        color=settings.COLORS["INFO"]
+    )
+    if track.artwork: embed.set_thumbnail(url=track.artwork)
+    
+    # Mostrar quién solicitó la canción
+    if hasattr(track, "requester") and track.requester:
+        embed.set_footer(text=lang_service.get_text("music_requested_by", lang, user=track.requester.display_name), icon_url=track.requester.display_avatar.url)
+        
+    embed.add_field(name=lang_service.get_text("music_field_author", lang), value=track.author, inline=True)
+    return embed
