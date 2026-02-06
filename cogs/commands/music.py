@@ -326,9 +326,38 @@ class Music(commands.Cog):
     async def on_wavelink_track_exception(self, payload: wavelink.TrackExceptionEventPayload):
         """Maneja errores de reproducción saltando la pista."""
         logger.warning(f"⚠️ [Music] Excepción en pista ({payload.track.title}): {payload.exception}")
-        if payload.player:
-            payload.player.last_track_error = True
-            await payload.player.stop() # Dispara track_end para seguir con la cola
+        
+        player = payload.player
+        if not player: return
+
+        # --- FALLBACK SYSTEM ---
+        # Si YouTube falla (bloqueo/streams), intentamos SoundCloud automáticamente.
+        err_msg = str(payload.exception)
+        is_yt_error = "No supported audio streams" in err_msg or "403" in err_msg
+        is_yt_track = "youtube.com" in (payload.track.uri or "") or "youtu.be" in (payload.track.uri or "")
+
+        if is_yt_error and is_yt_track:
+            logger.info(f"🔄 [Music] Error de YouTube detectado. Intentando fallback a SoundCloud...")
+            try:
+                # Búsqueda espejo en SoundCloud
+                query = f"scsearch:{payload.track.title} {payload.track.author}"
+                tracks = await wavelink.Playable.search(query)
+                
+                if tracks:
+                    fallback_track = tracks[0]
+                    await player.play(fallback_track)
+                    
+                    # Aviso temporal al usuario
+                    lang = await lang_service.get_guild_lang(player.guild.id)
+                    if hasattr(player, "home") and player.home:
+                        await player.home.send(embed=embed_service.warning(lang_service.get_text("title_info", lang), f"⚠️ YouTube bloqueó la reproducción. Intentando desde SoundCloud:\n🎵 **{fallback_track.title}**", lite=True), delete_after=10)
+                    return # ¡Importante! Salimos para evitar el stop() de abajo
+            except Exception as e:
+                logger.error(f"❌ Fallback fallido: {e}")
+
+        # Si no es recuperable o falló el fallback
+        player.last_track_error = True
+        await player.stop() # Dispara track_end para seguir con la cola
 
     @commands.Cog.listener()
     async def on_wavelink_track_stuck(self, payload: wavelink.TrackStuckEventPayload):
@@ -698,6 +727,7 @@ class Music(commands.Cog):
         # Registrar si la canción fue saltada (Feedback negativo)
         if payload.reason == "replaced":
             await db_service.record_song_feedback(player.guild.id, payload.track.identifier, is_skip=True)
+            return # <--- FIX: Si fue reemplazada (Fallback o Skip), no seguir con la cola automática
 
         # 1. Si Autoplay está activado, Wavelink gestiona TODO (Cola + Recomendaciones).
         # No intervenimos para evitar conflictos de doble reproducción.
