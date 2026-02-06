@@ -216,15 +216,31 @@ class Music(commands.Cog):
         if not wavelink.Pool.nodes:
             try:
                 node_config = settings.LAVALINK_CONFIG
-                protocol = "https" if node_config.get("SECURE") else "http"
-                nodes = [
-                    wavelink.Node(
-                        uri=f"{protocol}://{node_config['HOST']}:{node_config['PORT']}",
-                        password=node_config['PASSWORD']
+                nodes = []
+
+                # Soporte para múltiples nodos (Redundancia)
+                if "NODES" in node_config:
+                    for node in node_config["NODES"]:
+                        protocol = "https" if node.get("SECURE") else "http"
+                        nodes.append(
+                            wavelink.Node(
+                                identifier=node.get("IDENTIFIER", node["HOST"]),
+                                uri=f"{protocol}://{node['HOST']}:{node['PORT']}",
+                                password=node['PASSWORD']
+                            )
+                        )
+                # Soporte legacy (Configuración simple)
+                elif "HOST" in node_config:
+                    protocol = "https" if node_config.get("SECURE") else "http"
+                    nodes.append(
+                        wavelink.Node(
+                            uri=f"{protocol}://{node_config['HOST']}:{node_config['PORT']}",
+                            password=node_config['PASSWORD']
+                        )
                     )
-                ]
+
                 await wavelink.Pool.connect(nodes=nodes, client=self.bot, cache_capacity=settings.LAVALINK_CONFIG.get("CACHE_CAPACITY", 100))
-                logger.info("🔗 [Music] Conectando a nodos Lavalink...")
+                logger.info(f"🔗 [Music] Iniciando conexión con {len(nodes)} nodos Lavalink...")
             except Exception as e:
                 logger.error(f"❌ [Music] No se pudo conectar a Lavalink: {e}")
                 logger.warning("⚠️ El bot inició, pero la música no funcionará hasta que Lavalink esté online.")
@@ -363,6 +379,8 @@ class Music(commands.Cog):
                 msg = lang_service.get_text("music_err_youtube_block", lang)
             elif "FriendlyException" in err_str:
                 msg = lang_service.get_text("music_err_load_failed", lang, error=err_str)
+            elif "SSLCertVerificationError" in err_str or "CERTIFICATE_VERIFY_FAILED" in err_str:
+                msg = "❌ **Error de Nodo:** El certificado SSL del servidor de música ha expirado. Por favor cambia el nodo en `settings.py` (Usa puerto 2333 o cambia de host)."
             else:
                 msg = lang_service.get_text("music_err_generic", lang, error=err_str)
                 

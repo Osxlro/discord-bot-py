@@ -146,10 +146,15 @@ ASSETS = {
 
 # --- 12. CONFIGURACIÓN MÚSICA (LAVALINK) ---
 LAVALINK_CONFIG = {
-    "HOST": "lavalink.jirayu.net",     # Nodo público más estable
-    "PORT": 443,                       # Puerto SSL estándar
-    "PASSWORD": "youshallnotpass",   # Contraseña del nodo
-    "SECURE": True,                    # True si el puerto es 443/SSL
+    # Lista de nodos para redundancia (Failover)
+    "NODES": [
+        # --- NODOS NO SSL (HTTP) ---
+        {"HOST": "lavalink.jirayu.net", "PORT": 13592, "PASSWORD": "youshallnotpass", "SECURE": False, "IDENTIFIER": "Jirayu-NonSSL"},
+        {"HOST": "lavalinkv4.serenetia.com", "PORT": 80, "PASSWORD": "https://dsc.gg/ajidevserver", "SECURE": False, "IDENTIFIER": "Serenetia-NonSSL"},
+        # --- NODOS SSL (HTTPS) ---
+        {"HOST": "lavalinkv4.serenetia.com", "PORT": 443, "PASSWORD": "https://dsc.gg/ajidevserver", "SECURE": True, "IDENTIFIER": "Serenetia-SSL"},
+        {"HOST": "lavalink.jirayu.net", "PORT": 443, "PASSWORD": "youshallnotpass", "SECURE": True, "IDENTIFIER": "Jirayu-SSL"},
+    ],
     "DEFAULT_VOLUME": 50,     # Volumen inicial (0-100)
     "SEARCH_PROVIDER": "yt",  # 'yt' (YouTube), 'sc' (SoundCloud), 'sp' (Spotify - requiere nodo con Lavasrc)
     "INACTIVITY_TIMEOUT": 300, # Segundos para desconectarse si no hay música
