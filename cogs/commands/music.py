@@ -5,7 +5,7 @@ import logging
 import random
 import re
 from discord import app_commands
-from discord.ext import commands, tasks
+from discord.ext import commands
 from config import settings
 from services import embed_service, lang_service, pagination_service, algorithm_service, db_service, lyrics_service
 
@@ -137,10 +137,6 @@ class Music(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.recommender = algorithm_service.RecommendationEngine()
-        self.player_update_task.start()
-
-    def cog_unload(self):
-        self.player_update_task.cancel()
 
     async def _fade_in(self, player: wavelink.Player, duration_ms: int):
         """Simula un efecto de Fade-In ajustando el volumen gradualmente."""
@@ -236,21 +232,6 @@ class Music(commands.Cog):
     @commands.Cog.listener()
     async def on_wavelink_node_ready(self, payload: wavelink.NodeReadyEventPayload):
         logger.info(f"✅ [Music] Nodo Lavalink conectado: {payload.node.identifier}")
-
-    @tasks.loop(seconds=settings.MUSIC_CONFIG["PLAYER_UPDATE_INTERVAL"])
-    async def player_update_task(self):
-        """Actualiza la barra de progreso de los reproductores activos."""
-        for player in self.bot.voice_clients:
-            if not isinstance(player, wavelink.Player) or not player.playing or not player.current:
-                continue
-            
-            if hasattr(player, "last_msg") and player.last_msg:
-                try:
-                    lang = await lang_service.get_guild_lang(player.guild.id)
-                    embed = self._create_np_embed(player, player.current, lang)
-                    await player.last_msg.edit(embed=embed)
-                except Exception as e:
-                    logger.debug(f"Error actualizando player msg: {e}")
 
     async def play_autocomplete(self, interaction: discord.Interaction, current: str) -> list[app_commands.Choice[str]]:
         # Evitar errores si Lavalink no está conectado

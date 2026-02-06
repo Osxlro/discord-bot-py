@@ -135,8 +135,7 @@ MUSIC_CONFIG = {
     "PROGRESS_BAR_CHAR": "▬",
     "PROGRESS_BAR_POINTER": "🔘",
     "VOLUME_TOLERANCE": 1,
-    "CONTROLS_TIMEOUT": None,
-    "PLAYER_UPDATE_INTERVAL": 10 # Segundos para actualizar la barra de progreso
+    "CONTROLS_TIMEOUT": None
 }
 
 # --- 11. ASSETS (IMÁGENES / GIFS) ---
