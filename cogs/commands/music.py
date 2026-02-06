@@ -525,7 +525,7 @@ class Music(commands.Cog):
     async def volume(self, ctx: commands.Context, nivel: int):
         lang = await lang_service.get_guild_lang(ctx.guild.id)
         if not ctx.voice_client:
-            return await ctx.send(embed=embed_service.error(lang_service.get_text("title_error", lang), lang_service.get_text("music_error_nothing", lang)))
+            return await ctx.send(embed=embed_service.error(lang_service.get_text("title_error", lang), lang_service.get_text("music_error_nothing", lang), lite=True, ephemeral=True))
             
         nivel = max(0, min(100, nivel))
         await ctx.voice_client.set_volume(nivel)
@@ -537,7 +537,7 @@ class Music(commands.Cog):
     async def nowlistening(self, ctx: commands.Context):
         lang = await lang_service.get_guild_lang(ctx.guild.id)
         if not ctx.voice_client or not ctx.voice_client.playing or not ctx.voice_client.current:
-            return await ctx.send(embed=embed_service.error(lang_service.get_text("title_error", lang), lang_service.get_text("music_error_nothing", lang), lite=True))
+            return await ctx.send(embed=embed_service.error(lang_service.get_text("title_error", lang), lang_service.get_text("music_error_nothing", lang), lite=True, ephemeral=True))
         
         track = ctx.voice_client.current
         player = ctx.voice_client
