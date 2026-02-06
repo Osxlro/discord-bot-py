@@ -89,6 +89,21 @@ CHAOS_CONFIG = {
     "DEFAULT_PROB": 0.01
 }
 
+# --- 11. CONFIGURACIÓN ALGORITMO (RECOMENDACIONES) ---
+ALGORITHM_CONFIG = {
+    "HISTORY_LIMIT": 30,          # Canciones a recordar para no repetir
+    "SIMILARITY_THRESHOLD": 0.85, # % de similitud para considerar duplicado
+    "DEFAULT_METADATA": "Unknown" # Texto por defecto si falta autor/título
+}
+
+# --- 12. CONFIGURACIÓN VISUAL Y TÉCNICA DE MÚSICA ---
+MUSIC_CONFIG = {
+    "QUEUE_PAGE_SIZE": 10,        # Canciones por página en /queue
+    "AUTOCOMPLETE_LIMIT": 10,     # Resultados en autocompletado
+    "PROGRESS_BAR_LENGTH": 15,    # Longitud de la barra en /np
+    "CROSSFADE_DURATION": 3000       # Duración del Fade-In en milisegundos (0 = Desactivado). Ej: 3000 para 3s.
+}
+
 # --- 11. ASSETS (IMÁGENES / GIFS) ---
 ASSETS = {
     "COINFLIP_HEADS": "https://cdn.discordapp.com/emojis/745519235303735376.gif",

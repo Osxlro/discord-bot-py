@@ -271,6 +271,11 @@ LOCALES = {
         "music_queue_footer": "Página {current}/{total} • Total: {tracks} pistas",
         "music_field_author": "👤 Autor",
         "music_field_duration": "⏳ Duración",
+        "music_err_lavalink_nodes": "❌ Lavalink no está disponible (Nodos caídos).",
+        "music_err_youtube_block": "❌ **Bloqueo de YouTube:** El nodo de música está siendo limitado por YouTube.\n💡 **Intenta:** Usar SoundCloud (`/play scsearch:cancion`) o cambiar de nodo.",
+        "music_err_load_failed": "❌ No se pudo cargar la canción: {error}",
+        "music_err_generic": "Error: {error}",
+        "music_vol_changed": "🔊 {vol}%",
         
         # --- TITLES (GENERIC) ---
         "title_success": "Éxito",
@@ -568,6 +573,11 @@ LOCALES = {
         "music_queue_footer": "Page {current}/{total} • Total: {tracks} tracks",
         "music_field_author": "👤 Author",
         "music_field_duration": "⏳ Duration",
+        "music_err_lavalink_nodes": "❌ Lavalink is unavailable (Nodes down).",
+        "music_err_youtube_block": "❌ **YouTube Block:** The music node is being rate-limited by YouTube.\n💡 **Try:** Using SoundCloud (`/play scsearch:song`) or changing nodes.",
+        "music_err_load_failed": "❌ Could not load track: {error}",
+        "music_err_generic": "Error: {error}",
+        "music_vol_changed": "🔊 {vol}%",
 
         # --- TITLES (GENERIC) ---
         "title_success": "Success",

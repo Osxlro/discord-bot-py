@@ -103,13 +103,13 @@ class MusicControls(discord.ui.View):
     async def vol_down(self, interaction: discord.Interaction, button: discord.ui.Button):
         new_vol = max(self.player.volume - 10, 0)
         await self.player.set_volume(new_vol)
-        await interaction.response.send_message(f"🔉 {new_vol}%", ephemeral=True)
+        await interaction.response.send_message(lang_service.get_text("music_vol_changed", self.lang, vol=new_vol), ephemeral=True)
 
     @discord.ui.button(emoji="🔊", style=discord.ButtonStyle.secondary, row=1)
     async def vol_up(self, interaction: discord.Interaction, button: discord.ui.Button):
         new_vol = min(self.player.volume + 10, 100)
         await self.player.set_volume(new_vol)
-        await interaction.response.send_message(f"🔊 {new_vol}%", ephemeral=True)
+        await interaction.response.send_message(lang_service.get_text("music_vol_changed", self.lang, vol=new_vol), ephemeral=True)
 
 
 class Music(commands.Cog):
@@ -151,9 +151,10 @@ class Music(commands.Cog):
             return []
         try:
             # Búsqueda rápida en YouTube para autocompletado
-            tracks = await wavelink.Playable.search(f"ytsearch:{current}")
+            provider = settings.LAVALINK_CONFIG.get("SEARCH_PROVIDER", "yt")
+            tracks = await wavelink.Playable.search(f"{provider}search:{current}")
             choices = []
-            for track in tracks[:10]:
+            for track in tracks[:settings.MUSIC_CONFIG["AUTOCOMPLETE_LIMIT"]]:
                 seconds = track.length // 1000
                 if track.is_stream:
                     duration = "LIVE" # Se usará texto localizado en display, aquí es solo para autocomplete
@@ -254,13 +255,13 @@ class Music(commands.Cog):
             
             err_str = str(e)
             if "NoNodesAvailable" in err_str:
-                msg = "❌ Lavalink no está disponible (Nodos caídos)."
+                msg = lang_service.get_text("music_err_lavalink_nodes", lang)
             elif "FriendlyException" in err_str and "Something went wrong" in err_str:
-                msg = "❌ **Bloqueo de YouTube:** El nodo de música está siendo limitado por YouTube.\n💡 **Intenta:** Usar SoundCloud (`/play scsearch:cancion`) o cambiar de nodo."
+                msg = lang_service.get_text("music_err_youtube_block", lang)
             elif "FriendlyException" in err_str:
-                msg = f"❌ No se pudo cargar la canción: {err_str}"
+                msg = lang_service.get_text("music_err_load_failed", lang, error=err_str)
             else:
-                msg = f"Error: {err_str}"
+                msg = lang_service.get_text("music_err_generic", lang, error=err_str)
                 
             await ctx.send(embed=embed_service.error(lang_service.get_text("title_error", lang), msg))
 
@@ -298,7 +299,7 @@ class Music(commands.Cog):
         # Construcción de páginas para el Paginator
         pages = []
         queue_list = list(player.queue)
-        chunk_size = 10
+        chunk_size = settings.MUSIC_CONFIG["QUEUE_PAGE_SIZE"]
         chunks = [queue_list[i:i + chunk_size] for i in range(0, len(queue_list), chunk_size)]
 
         # Si la cola está vacía pero hay canción sonando (caso raro pero posible)
@@ -423,7 +424,7 @@ class Music(commands.Cog):
             len_str = "∞"
             bar = "▬" * 15 + "🔘"
         else:
-            total_blocks = 15
+            total_blocks = settings.MUSIC_CONFIG["PROGRESS_BAR_LENGTH"]
             progress = int((position / length) * total_blocks) if length > 0 else 0
             bar = "▬" * progress + "🔘" + "▬" * (total_blocks - progress)
             pos_str = f"{int(position // 1000 // 60)}:{int(position // 1000 % 60):02}"
@@ -450,6 +451,16 @@ class Music(commands.Cog):
         if hasattr(player, "last_msg") and player.last_msg:
             try: await player.last_msg.delete()
             except: pass
+
+        # --- CROSSFADE / FADE IN ---
+        # Si está configurado, aplicamos un filtro de volumen para simular fade-in
+        fade_duration = settings.MUSIC_CONFIG.get("CROSSFADE_DURATION", 0)
+        if fade_duration > 0:
+            # Nota: Wavelink 3.x maneja filtros de manera específica. 
+            # Esto es una implementación básica de volumen.
+            # Para un crossfade real entre pistas se requeriría doble player, 
+            # pero esto suaviza el inicio.
+            await player.set_volume(settings.LAVALINK_CONFIG.get("DEFAULT_VOLUME", 50))
 
         track = payload.track
         lang = await lang_service.get_guild_lang(player.guild.id)

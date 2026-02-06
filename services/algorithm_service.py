@@ -14,8 +14,8 @@ class RecommendationEngine:
     """
     
     def __init__(self):
-        self.history_limit = 30 # Recordar últimas 30 canciones para no repetir
-        self.similarity_threshold = 0.85 # Si el título se parece un 85%, es la misma canción
+        self.history_limit = settings.ALGORITHM_CONFIG["HISTORY_LIMIT"]
+        self.similarity_threshold = settings.ALGORITHM_CONFIG["SIMILARITY_THRESHOLD"]
 
     def _is_similar(self, a: str, b: str) -> bool:
         """Compara dos títulos y devuelve True si son casi idénticos."""
@@ -40,8 +40,8 @@ class RecommendationEngine:
         
         # 3. Generar Estrategias de Búsqueda (Queries)
         # Buscamos variedad: Mix del artista, canciones similares, etc.
-        author = seed_track.author or "Unknown"
-        title = seed_track.title or "Unknown"
+        author = seed_track.author or settings.ALGORITHM_CONFIG["DEFAULT_METADATA"]
+        title = seed_track.title or settings.ALGORITHM_CONFIG["DEFAULT_METADATA"]
         
         # Usamos el proveedor configurado en settings (yt, sc, sp)
         provider = settings.LAVALINK_CONFIG.get("SEARCH_PROVIDER", "yt")
