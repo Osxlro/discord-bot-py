@@ -248,7 +248,7 @@ class Music(commands.Cog):
                     identifier = config.get("IDENTIFIER", config["HOST"])
                     
                     # Limpieza preventiva de nodos zombies
-                    existing = wavelink.Pool.get_node(identifier)
+                    existing = wavelink.Pool.nodes.get(identifier)
                     if existing:
                         await existing.close()
 
