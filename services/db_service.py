@@ -55,6 +55,7 @@ async def init_db():
     await db.execute("PRAGMA journal_mode=WAL;") 
     await db.execute("PRAGMA synchronous=NORMAL;")
     await db.execute("PRAGMA temp_store=MEMORY;") # Operaciones temporales en RAM
+    await db.execute("PRAGMA foreign_keys=ON;") # Asegurar integridad referencial
     
     # --- DEFINICIÓN DE TABLAS ---
     

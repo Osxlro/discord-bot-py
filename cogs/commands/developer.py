@@ -14,6 +14,12 @@ from config import settings
 
 logger = logging.getLogger(__name__)
 
+try:
+    import psutil
+    HAS_PSUTIL = True
+except ImportError:
+    HAS_PSUTIL = False
+
 class StatusSelect(discord.ui.Select):
     def __init__(self, options, placeholder_text):
         super().__init__(
@@ -68,8 +74,8 @@ class BotInfoView(discord.ui.View):
         return await asyncio.to_thread(self._get_psutil_info_sync)
 
     def _get_psutil_info_sync(self):
+        if not HAS_PSUTIL: return {"available": False}
         try:
-            import psutil
             proc = psutil.Process()
             with proc.oneshot():
                 cpu_proc = proc.cpu_percent()
@@ -81,7 +87,7 @@ class BotInfoView(discord.ui.View):
                 "cpu_sys": psutil.cpu_percent(), "ram_sys": psutil.virtual_memory(), 
                 "disk": psutil.disk_usage(".") if os.path.exists(".") else None, "available": True
             }
-        except ImportError:
+        except Exception:
             return {"available": False}
 
     def _make_bar(self, percent, length=settings.UI_CONFIG["BAR_LENGTH"]):
@@ -300,11 +306,6 @@ class Developer(commands.Cog):
     @commands.is_owner()
     async def memoria(self, ctx: commands.Context, accion: Literal["ver", "iniciar", "detener"] = "ver"):
         lang = await lang_service.get_guild_lang(ctx.guild.id if ctx.guild else None)
-        try:
-            import psutil
-            has_psutil = True
-        except ImportError:
-            has_psutil = False
 
         if accion == "iniciar":
             if not tracemalloc.is_tracing():
@@ -326,7 +327,7 @@ class Developer(commands.Cog):
         await ctx.defer()
         desc = ""
         
-        if has_psutil:
+        if HAS_PSUTIL:
             process = psutil.Process(os.getpid())
             mem = process.memory_info().rss / 1024 / 1024
             desc += lang_service.get_text("dev_mem_total", lang, mem=mem)

@@ -1,6 +1,7 @@
 import discord
 import logging
 from discord.ext import commands
+from collections import deque
 from aiohttp import web
 from config import settings
 from services import lang_service, db_service
@@ -13,7 +14,7 @@ class Minecraft(commands.Cog):
         self.site = None
         self.runner = None
         self.player_stats = {} 
-        self.pending_messages = []
+        self.pending_messages = deque()
         # ID del canal donde se enviará el chat de Minecraft (Opcional: configúralo con un comando)
         self.chat_channel_id = None
 
@@ -122,7 +123,7 @@ class Minecraft(commands.Cog):
         # El plugin de Minecraft consulta este endpoint periódicamente (polling)
         # para obtener mensajes enviados desde Discord.
         if self.pending_messages:
-            msg = self.pending_messages.pop(0)
+            msg = self.pending_messages.popleft()
             return web.json_response(msg)
         return web.json_response({})
 
@@ -168,11 +169,11 @@ class Minecraft(commands.Cog):
     @commands.hybrid_command(name="mc", description="Envía mensaje al juego")
     async def mc(self, ctx: commands.Context, mensaje: str):
         lang = await lang_service.get_guild_lang(ctx.guild.id)
-        self.pending_messages.append({"autor": ctx.author.display_name, "mensaje": mensaje})
+        self.pending_messages.append({"autor": ctx.author.display_name, "mensaje": mensaje.strip()})
         
         # Optimización: Limitar la cola para evitar fugas de memoria si el servidor MC cae
         if len(self.pending_messages) > settings.MINECRAFT_CONFIG.get("MAX_QUEUE_SIZE", 50):
-            self.pending_messages.pop(0)
+            self.pending_messages.popleft()
             
         logger.info(f"Mensaje enviado a MC por {ctx.author}: {mensaje}")
         msg = lang_service.get_text("mc_msg_sent", lang, message=mensaje)
