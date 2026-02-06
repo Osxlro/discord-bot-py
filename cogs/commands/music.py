@@ -1,4 +1,5 @@
 import discord
+import asyncio
 import wavelink
 import logging
 import random
@@ -48,11 +49,11 @@ class MusicControls(discord.ui.View):
         await interaction.response.send_message(msg, ephemeral=True)
 
     @discord.ui.button(emoji="⏹️", style=discord.ButtonStyle.danger, row=0)
-    async def stop(self, interaction: discord.Interaction, button: discord.ui.Button):
+    async def stop_music(self, interaction: discord.Interaction, button: discord.ui.Button):
         await self.player.disconnect()
         msg = lang_service.get_text("music_stopped", self.lang)
         await interaction.response.send_message(msg, ephemeral=True)
-        self.stop() # Detiene la vista
+        self.stop() # Detiene la vista (View.stop)
 
     @discord.ui.button(emoji="🔀", style=discord.ButtonStyle.secondary, row=0)
     async def shuffle(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -116,6 +117,27 @@ class Music(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.recommender = algorithm_service.RecommendationEngine()
+
+    async def _fade_in(self, player: wavelink.Player, duration_ms: int):
+        """Simula un efecto de Fade-In ajustando el volumen gradualmente."""
+        # Objetivo: Volumen actual configurado o el default
+        target_vol = player.volume
+        
+        # Inicio: Volumen 0
+        await player.set_volume(0)
+        
+        # Animación
+        steps = 15
+        step_delay = (duration_ms / 1000) / steps
+        vol_step = target_vol / steps
+        
+        for i in range(1, steps + 1):
+            await asyncio.sleep(step_delay)
+            new_vol = int(vol_step * i)
+            await player.set_volume(new_vol)
+        
+        # Asegurar volumen final exacto
+        await player.set_volume(target_vol)
 
     async def cog_load(self):
         """Conecta a Lavalink al cargar el Cog."""
@@ -456,11 +478,7 @@ class Music(commands.Cog):
         # Si está configurado, aplicamos un filtro de volumen para simular fade-in
         fade_duration = settings.MUSIC_CONFIG.get("CROSSFADE_DURATION", 0)
         if fade_duration > 0:
-            # Nota: Wavelink 3.x maneja filtros de manera específica. 
-            # Esto es una implementación básica de volumen.
-            # Para un crossfade real entre pistas se requeriría doble player, 
-            # pero esto suaviza el inicio.
-            await player.set_volume(settings.LAVALINK_CONFIG.get("DEFAULT_VOLUME", 50))
+            self.bot.loop.create_task(self._fade_in(player, fade_duration))
 
         track = payload.track
         lang = await lang_service.get_guild_lang(player.guild.id)
@@ -493,7 +511,7 @@ class Music(commands.Cog):
         player = payload.player
         
         # Evitamos errores si el bot fue desconectado
-        if not player.guild.voice_client:
+        if not player or not player.guild or not player.guild.voice_client:
             return
 
         # 1. Si Autoplay está activado, Wavelink gestiona TODO (Cola + Recomendaciones).
