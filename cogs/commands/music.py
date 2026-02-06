@@ -172,11 +172,10 @@ class Music(commands.Cog):
             if not tracks: return [] # Maneja None y lista vacía
             choices = []
             for track in tracks[:settings.MUSIC_CONFIG["AUTOCOMPLETE_LIMIT"]]:
-                seconds = track.length // 1000
                 if track.is_stream:
                     duration = "LIVE" # Se usará texto localizado en display, aquí es solo para autocomplete
                 else:
-                    duration = f"{seconds // 60}:{seconds % 60:02}"
+                    duration = music_service.format_duration(track.length)
                 
                 title_limit = settings.MUSIC_CONFIG["AUTOCOMPLETE_TITLE_LIMIT"]
                 author_limit = settings.MUSIC_CONFIG["AUTOCOMPLETE_AUTHOR_LIMIT"]
@@ -216,13 +215,21 @@ class Music(commands.Cog):
 
         # 2. Obtener o crear Player
         try:
-            if not ctx.voice_client:
+            # Verificar si existe un cliente de voz y si es del tipo correcto (Wavelink Player)
+            if ctx.voice_client and not isinstance(ctx.voice_client, wavelink.Player):
+                await ctx.voice_client.disconnect(force=True)
                 player: wavelink.Player = await ctx.author.voice.channel.connect(cls=wavelink.Player, self_deaf=True)
                 await player.set_volume(settings.LAVALINK_CONFIG.get("DEFAULT_VOLUME", 50))
+            
+            elif not ctx.voice_client:
+                player: wavelink.Player = await ctx.author.voice.channel.connect(cls=wavelink.Player, self_deaf=True)
+                await player.set_volume(settings.LAVALINK_CONFIG.get("DEFAULT_VOLUME", 50))
+            
             else:
                 player: wavelink.Player = ctx.voice_client
                 if not player.connected:
                     await player.connect(cls=wavelink.Player, self_deaf=True, channel=ctx.author.voice.channel)
+                    # No reseteamos volumen aquí si ya existía el player, para mantener preferencia de usuario
         except Exception as e:
             return await ctx.send(embed=embed_service.error(lang_service.get_text("title_error", lang), str(e)))
 
@@ -274,7 +281,7 @@ class Music(commands.Cog):
                             break
                     except Exception as e:
                         last_err = e
-                        # logger.warning(f"⚠️ Fallo búsqueda en {source} ('{busqueda}'): {e}") # Reduce spam en logs
+                        logger.debug(f"⚠️ Fallo búsqueda en {source} ('{busqueda}'): {e}")
                         continue
                 
                 # Si fallaron todos los intentos y hubo error, lo lanzamos
@@ -289,17 +296,23 @@ class Music(commands.Cog):
             player.autoplay = wavelink.AutoPlayMode.disabled
 
             if isinstance(tracks, wavelink.Playlist):
+                # FIX: Evitar bloqueo si la playlist está vacía
+                if not tracks:
+                    return await ctx.send(embed=embed_service.warning(lang_service.get_text("title_error", lang), "Playlist is empty."))
+
                 for track in tracks:
                     track.requester = ctx.author
                     await player.queue.put_wait(track)
+                    # Ceder control al loop para evitar bloqueos en playlists masivas
+                    await asyncio.sleep(0)
                 
-                msg = lang_service.get_text("music_playlist_added", lang, name=tracks.name, count=len(tracks))
+                msg = lang_service.get_text("music_playlist_added", lang, name=tracks.name or "Playlist", count=len(tracks))
                 await ctx.send(embed=embed_service.success(lang_service.get_text("title_queue", lang), msg, lite=True))
                 
                 if not player.playing:
                     first_track = player.queue.get()
                     await player.play(first_track)
-                    # Confirmación visual de lo que empieza a sonar
+                    # Confirmación visual de lo que empieza a sonar (UX)
                     msg_np = lang_service.get_text("music_playing", lang)
                     await ctx.send(embed=embed_service.success(lang_service.get_text("title_music", lang), f"{msg_np}: **{first_track.title}**", lite=True), delete_after=15)
             else:
@@ -342,7 +355,8 @@ class Music(commands.Cog):
             # Usar helper de limpieza del servicio
             await music_service.cleanup_player(self.bot, player)
 
-            await player.disconnect()
+            if player.connected:
+                await player.disconnect()
             msg = lang_service.get_text("music_stopped", lang)
             await ctx.send(embed=embed_service.success(lang_service.get_text("title_music", lang), msg, lite=True))
         else:
@@ -354,7 +368,7 @@ class Music(commands.Cog):
         lang = await lang_service.get_guild_lang(ctx.guild.id)
         if not await music_service.check_voice(ctx): return
 
-        if ctx.voice_client and ctx.voice_client.playing:
+        if ctx.voice_client and ctx.voice_client.playing and ctx.voice_client.current:
             # Registrar feedback negativo para el algoritmo
             if ctx.voice_client.current:
                 await db_service.record_song_feedback(ctx.guild.id, ctx.voice_client.current.identifier, is_skip=True)
@@ -370,7 +384,7 @@ class Music(commands.Cog):
         lang = await lang_service.get_guild_lang(ctx.guild.id)
         player: wavelink.Player = ctx.voice_client
         
-        if not player or not player.playing:
+        if not player or (not player.current and player.queue.is_empty):
             msg = lang_service.get_text("music_error_nothing", lang)
             return await ctx.send(embed=embed_service.warning(lang_service.get_text("title_queue", lang), msg, lite=True))
 
@@ -562,6 +576,7 @@ class Music(commands.Cog):
     @commands.Cog.listener()
     async def on_wavelink_track_end(self, payload: wavelink.TrackEndEventPayload):
         player = payload.player
+        logger.debug(f"🎵 [Music] TrackEnd: {payload.track.title} Reason: {payload.reason}")
         
         # Si el bot fue desconectado (ej. expulsado o manual), limpiamos y salimos
         if not player or not player.connected:
@@ -601,7 +616,14 @@ class Music(commands.Cog):
         # 4. Smart Autoplay (Si la cola está vacía)
         if getattr(player, "smart_autoplay", False):
             try:
-                recommendation = await self.recommender.get_recommendation(player)
+                # UX: Mostrar que está "pensando" la siguiente canción
+                recommendation = None
+                try:
+                    async with player.home.typing():
+                        recommendation = await self.recommender.get_recommendation(player)
+                except Exception:
+                    recommendation = await self.recommender.get_recommendation(player)
+
                 if recommendation:
                     await player.play(recommendation)
                     return
