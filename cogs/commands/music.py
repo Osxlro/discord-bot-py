@@ -5,7 +5,7 @@ import logging
 import random
 import re
 from discord import app_commands
-from discord.ext import commands
+from discord.ext import commands, tasks
 from config import settings
 from services import embed_service, lang_service, pagination_service, algorithm_service, db_service, lyrics_service
 
@@ -237,7 +237,7 @@ class Music(commands.Cog):
     async def on_wavelink_node_ready(self, payload: wavelink.NodeReadyEventPayload):
         logger.info(f"✅ [Music] Nodo Lavalink conectado: {payload.node.identifier}")
 
-    @commands.tasks.loop(seconds=settings.MUSIC_CONFIG["PLAYER_UPDATE_INTERVAL"])
+    @tasks.loop(seconds=settings.MUSIC_CONFIG["PLAYER_UPDATE_INTERVAL"])
     async def player_update_task(self):
         """Actualiza la barra de progreso de los reproductores activos."""
         for player in self.bot.voice_clients:
