@@ -23,14 +23,14 @@ class Backup(commands.Cog):
     async def _cleanup_dm(self, channel: discord.DMChannel):
         """Limpia backups antiguos, manteniendo los 3 más recientes."""
         backups_encontrados = []
-        async for message in channel.history(limit=50):
+        async for message in channel.history(limit=settings.BACKUP_CONFIG["HISTORY_LIMIT"]):
             es_mio = message.author.id == self.bot.user.id
             tiene_archivo = len(message.attachments) > 0
             if es_mio and tiene_archivo and "Backup" in message.content:
                 backups_encontrados.append(message)
 
-        if len(backups_encontrados) > 3:
-            for msg in backups_encontrados[3:]:
+        if len(backups_encontrados) > settings.BACKUP_CONFIG["MAX_BACKUPS_TO_KEEP"]:
+            for msg in backups_encontrados[settings.BACKUP_CONFIG["MAX_BACKUPS_TO_KEEP"]:]:
                 try:
                     await msg.delete()
                     await asyncio.sleep(1)
@@ -47,8 +47,8 @@ class Backup(commands.Cog):
         await self.bot.wait_until_ready()
         
         # Rutas usando pathlib
-        db_path = pathlib.Path(settings.BASE_DIR) / "data" / "database.sqlite3"
-        temp_backup_path = db_path.with_name("temp_backup.sqlite3")
+        db_path = pathlib.Path(settings.BASE_DIR) / settings.DB_CONFIG["DIR_NAME"] / settings.DB_CONFIG["FILE_NAME"]
+        temp_backup_path = db_path.with_name(settings.DB_CONFIG["TEMP_BACKUP_NAME"])
         
         if not db_path.exists():
             return
@@ -66,7 +66,7 @@ class Backup(commands.Cog):
             dm_channel = await owner.create_dm()
             
             # Revisamos el historial reciente para no saturar al dueño con archivos duplicados.
-            async for message in dm_channel.history(limit=20): 
+            async for message in dm_channel.history(limit=settings.BACKUP_CONFIG["DM_HISTORY_LIMIT"]): 
                 if message.author.id == self.bot.user.id and len(message.attachments) > 0 and "Backup" in message.content:
                     ultimo_backup = message
                     break
@@ -76,7 +76,7 @@ class Backup(commands.Cog):
                 now = datetime.datetime.now(datetime.timezone.utc)
                 diff = now - ultimo_backup.created_at
                 # Si han pasado menos de 23.5 horas, abortamos (damos margen de 30min)
-                if diff.total_seconds() < 84600: 
+                if diff.total_seconds() < settings.BACKUP_CONFIG["COOLDOWN_SECONDS"]: 
                     return 
 
             # 2. Crear copia temporal para evitar bloqueos/corrupción durante el envío

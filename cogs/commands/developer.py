@@ -10,6 +10,7 @@ from discord import app_commands
 from discord.ext import commands
 from typing import Literal
 from services import db_service, embed_service, lang_service, pagination_service
+from config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -151,9 +152,9 @@ class BotInfoView(discord.ui.View):
 
     async def get_config_embed(self):
         embed = discord.Embed(title="⚙️ Configuración y Estado", color=discord.Color.teal())
-        embed.add_field(name="🌐 Idiomas", value="Español (`es`), English (`en`)", inline=False)
         lang = await lang_service.get_guild_lang(self.ctx.guild.id if self.ctx.guild else None)
-        log_size = f"{os.path.getsize('data/discord.log')/1024:.1f} KB" if os.path.exists("data/discord.log") else "0 KB"
+        embed.add_field(name="🌐 Idiomas", value=lang_service.get_text("lang_list", lang), inline=False)
+        log_size = f"{os.path.getsize(settings.LOG_FILE)/1024:.1f} KB" if os.path.exists(settings.LOG_FILE) else "0 KB"
         embed.add_field(name="📝 Log File", value=f"`{log_size}`", inline=True)
         rows = await db_service.fetch_all("SELECT type, text FROM bot_statuses")
         status_txt = "\n".join([f"• [{r['type']}] {r['text']}" for r in rows[:5]]) + (f"\n... y {len(rows)-5} más." if len(rows) > 5 else "") if rows else lang_service.get_text("log_none", lang)

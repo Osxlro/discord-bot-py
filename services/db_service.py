@@ -8,11 +8,11 @@ from config import settings
 # --- CONFIGURACIÓN ---
 logger = logging.getLogger(__name__)
 
-DATA_DIR = os.path.join(settings.BASE_DIR, "data")
+DATA_DIR = os.path.join(settings.BASE_DIR, settings.DB_CONFIG["DIR_NAME"])
 if not os.path.exists(DATA_DIR):
     os.makedirs(DATA_DIR)
 
-DB_NAME = "database.sqlite3"
+DB_NAME = settings.DB_CONFIG["FILE_NAME"]
 DB_PATH = os.path.join(DATA_DIR, DB_NAME)
 _connection = None
 
@@ -216,7 +216,7 @@ async def flush_xp_cache():
     # Recolectamos solo los datos "sucios" (modificados)
     # Esto reduce la carga de trabajo al procesar solo lo que realmente cambió.
     pending_clean = {} # Usamos un dict para guardar el snapshot de XP
-    for key, data in _xp_cache.items():
+    for key, data in list(_xp_cache.items()): # Iteramos sobre una copia para seguridad
         if data['dirty']:
             updates.append((data['xp'], data['level'], data['rebirths'], key[0], key[1]))
             pending_clean[key] = data['xp'] # Guardamos la XP exacta que estamos enviando a DB
@@ -257,7 +257,7 @@ async def get_guild_config(guild_id: int) -> dict:
     Usa caché en RAM para evitar lecturas constantes a disco.
     """
     if guild_id in _config_cache:
-        return _config_cache[guild_id]
+        return _config_cache[guild_id].copy() # Retornamos copia para evitar mutación del caché
 
     row = await fetch_one("SELECT * FROM guild_config WHERE guild_id = ?", (guild_id,))
     
@@ -273,7 +273,7 @@ async def get_guild_config(guild_id: int) -> dict:
         }
     
     _config_cache[guild_id] = config
-    return config
+    return config.copy()
 
 async def update_guild_config(guild_id: int, updates: dict):
     """Actualiza la configuración en DB y refresca el CACHÉ."""

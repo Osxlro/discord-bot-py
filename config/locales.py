@@ -12,6 +12,10 @@ LOCALES = {
         "error_missing_args": "❌ Faltan argumentos.",
         "error_cooldown": "⏳ Estás yendo muy rápido. Espera {seconds}s.",
         "error_old_messages": "⚠️ No puedo borrar mensajes de hace más de 14 días (Limitación de Discord).",
+        "error_max_chars": "❌ Máximo {max} caracteres.",
+        "lang_list": "Español (`es`), English (`en`)",
+        "lang_name_es": "Español 🇪🇸",
+        "lang_name_en": "English 🇺🇸",
         
         # --- GENERAL ---
         "ping_msg": "🏓 Pong! Latencia: **{ms}ms**",
@@ -114,6 +118,7 @@ LOCALES = {
         "role_title_perms": "Permisos",
         
         # --- UTILS (Chaos, Mención, Bienvenida, Backup) ---
+        "autorole_reason": "Auto Rol de Bienvenida",
         "chaos_bang": "¡Pum! **{user}** ha tenido mala suerte ({prob}%).\nEstarás aislado por 1 minuto.",
         "mention_response_default": "¡Hola! Soy **{bot}**.\nUsa `/help` para ver mis comandos.",
         "mention_title": "👋 Hola",
@@ -315,6 +320,10 @@ LOCALES = {
         "error_missing_args": "Missing arguments.",
         "error_cooldown": "You are going too fast. Wait {seconds}s.",
         "error_old_messages": "⚠️ I cannot delete messages older than 14 days (Discord Limitation).",
+        "error_max_chars": "❌ Max {max} characters.",
+        "lang_list": "Spanish (`es`), English (`en`)",
+        "lang_name_es": "Spanish 🇪🇸",
+        "lang_name_en": "English 🇺🇸",
         
         # --- GENERAL ---
         "ping_msg": "🏓 Pong! Latency: **{ms}ms**",
@@ -417,6 +426,7 @@ LOCALES = {
         "role_title_perms": "Permissions",
         
         # --- UTILS ---
+        "autorole_reason": "Welcome Auto Role",
         "chaos_bang": "Bang! **{user}** ran out of luck ({prob}%).\nPunishment: 1 minute timeout.",
         "mention_response_default": "Hi! I am **{bot}**.\nUse `/help` to see my commands.",
         "mention_title": "👋 Hello",

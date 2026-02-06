@@ -51,6 +51,12 @@ class MusicControls(discord.ui.View):
     @discord.ui.button(emoji="⏹️", style=discord.ButtonStyle.danger, row=0)
     async def stop_music(self, interaction: discord.Interaction, button: discord.ui.Button):
         await self.player.disconnect()
+        
+        # Fix: Limpiar persistencia de Voice si existe para evitar auto-reconexión
+        voice_cog = self.player.client.get_cog("Voice")
+        if voice_cog and hasattr(voice_cog, 'voice_targets'):
+            voice_cog.voice_targets.pop(self.player.guild.id, None)
+            
         msg = lang_service.get_text("music_stopped", self.lang)
         await interaction.response.send_message(msg, ephemeral=True)
         self.stop() # Detiene la vista (View.stop)
@@ -122,6 +128,11 @@ class Music(commands.Cog):
         """Simula un efecto de Fade-In ajustando el volumen gradualmente."""
         # Objetivo: Volumen actual configurado o el default
         target_vol = player.volume
+        
+        # Si el volumen es 0, no hay nada que hacer (ahorra recursos)
+        if target_vol == 0:
+            return
+
         last_set_vol = 0 # Para detectar cambios manuales
         current_track = player.current # Guardamos referencia para verificar cambios
         
@@ -129,7 +140,7 @@ class Music(commands.Cog):
         await player.set_volume(0)
         
         # Animación
-        steps = 15
+        steps = settings.MUSIC_CONFIG["FADE_IN_STEPS"]
         step_delay = (duration_ms / 1000) / steps
         vol_step = target_vol / steps
         
@@ -461,7 +472,7 @@ class Music(commands.Cog):
     @commands.hybrid_command(name="nowlistening", aliases=["np"], description="Muestra la canción actual.")
     async def nowlistening(self, ctx: commands.Context):
         lang = await lang_service.get_guild_lang(ctx.guild.id)
-        if not ctx.voice_client or not ctx.voice_client.playing:
+        if not ctx.voice_client or not ctx.voice_client.playing or not ctx.voice_client.current:
             return await ctx.send(embed=embed_service.error(lang_service.get_text("title_error", lang), lang_service.get_text("music_error_nothing", lang), lite=True))
         
         track = ctx.voice_client.current

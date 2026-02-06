@@ -3,6 +3,7 @@ from discord.ext import commands
 from discord import app_commands
 from typing import Literal
 from services import db_service, embed_service, lang_service
+from config import settings
 
 class Perfil(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -32,7 +33,7 @@ class Perfil(commands.Cog):
         xp_next = db_service.calculate_xp_required(nivel)
         progreso = min(xp / xp_next, 1.0)
         bloques = int(progreso * 10)
-        barra = "▰" * bloques + "▱" * (10 - bloques)
+        barra = settings.UI_CONFIG["PROGRESS_BAR_FILLED"] * bloques + settings.UI_CONFIG["PROGRESS_BAR_EMPTY"] * (10 - bloques)
 
         # Embed
         title = lang_service.get_text("profile_title", lang, user=target.display_name)
@@ -66,8 +67,8 @@ class Perfil(commands.Cog):
     @app_commands.describe(texto="Máximo 200 caracteres.")
     async def set_desc(self, ctx: commands.Context, texto: str):
         lang = await lang_service.get_guild_lang(ctx.guild.id)
-        if len(texto) > 200: 
-            await ctx.reply("Max 200 chars.", ephemeral=True)
+        if len(texto) > settings.UI_CONFIG["MAX_DESC_LENGTH"]: 
+            await ctx.reply(lang_service.get_text("error_max_chars", lang, max=settings.UI_CONFIG["MAX_DESC_LENGTH"]), ephemeral=True)
             return
         
         # Optimización: INSERT OR REPLACE para evitar doble consulta

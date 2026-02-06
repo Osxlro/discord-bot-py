@@ -51,7 +51,8 @@ class Voice(commands.Cog):
                 else:
                     await ctx.voice_client.move_to(channel)
                     # Aseguramos que siga en modo "Chill" (Sordo/Mute) al moverse
-                    try: await ctx.guild.me.edit(deafen=True, mute=True)
+                    try: 
+                        if ctx.guild.me.voice: await ctx.guild.me.edit(deafen=True, mute=True)
                     except: pass
             else:
                 await channel.connect(cls=wavelink.Player, self_deaf=True, self_mute=True)

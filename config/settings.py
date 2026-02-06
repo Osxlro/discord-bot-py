@@ -101,7 +101,8 @@ MUSIC_CONFIG = {
     "QUEUE_PAGE_SIZE": 10,        # Canciones por página en /queue
     "AUTOCOMPLETE_LIMIT": 10,     # Resultados en autocompletado
     "PROGRESS_BAR_LENGTH": 15,    # Longitud de la barra en /np
-    "CROSSFADE_DURATION": 3000       # Duración del Fade-In en milisegundos (0 = Desactivado). Ej: 3000 para 3s.
+    "CROSSFADE_DURATION": 3000,   # Duración del Fade-In en milisegundos (0 = Desactivado). Ej: 3000 para 3s.
+    "FADE_IN_STEPS": 15           # Pasos para la animación de volumen
 }
 
 # --- 11. ASSETS (IMÁGENES / GIFS) ---
@@ -129,3 +130,27 @@ LAVALINK_CONFIG = {
 # Helper para compatibilidad (convierte nombre de color a entero)
 def get_color(key: str) -> int:
     return COLORS.get(key.upper(), 0xFFFFFF)
+
+# --- 13. CONFIGURACIÓN BASE DE DATOS ---
+DB_CONFIG = {
+    "DIR_NAME": "data",
+    "FILE_NAME": "database.sqlite3",
+    "TEMP_BACKUP_NAME": "temp_backup.sqlite3"
+}
+
+# --- 14. CONFIGURACIÓN BACKUP ---
+BACKUP_CONFIG = {
+    "HISTORY_LIMIT": 50,
+    "MAX_BACKUPS_TO_KEEP": 3,
+    "COOLDOWN_SECONDS": 84600, # ~23.5 horas
+    "DM_HISTORY_LIMIT": 20
+}
+
+# --- 15. CONFIGURACIÓN UI ---
+UI_CONFIG = {
+    "PROGRESS_BAR_FILLED": "▰",
+    "PROGRESS_BAR_EMPTY": "▱",
+    "MAX_DESC_LENGTH": 200
+}
+
+LOG_FILE = os.path.join(BASE_DIR, "data", "discord.log")

@@ -200,8 +200,12 @@ class General(commands.Cog):
 
         # Cálculo de estadísticas
         # Nota: guild.members requiere intents de miembros activados para ser exacto
-        humans = len([m for m in guild.members if not m.bot])
-        bots = guild.member_count - humans
+        # Optimización: Si hay muchos miembros, evitamos la iteración pesada
+        if guild.member_count > 1000:
+            humans, bots = "N/A", "N/A" # Ahorramos CPU en servidores grandes
+        else:
+            humans = len([m for m in guild.members if not m.bot])
+            bots = guild.member_count - humans
         
         title = lang_service.get_text("serverinfo_title", lang, name=guild.name)
         
@@ -224,7 +228,7 @@ class General(commands.Cog):
         embed.add_field(name=lang_service.get_text("serverinfo_stats", lang), value=stats_txt, inline=False)
 
         # Campo 3: Configuración del Bot
-        lang_name = "Español 🇪🇸" if config.get("language") == "es" else "English 🇺🇸"
+        lang_name = lang_service.get_text("lang_name_es", lang) if config.get("language") == "es" else lang_service.get_text("lang_name_en", lang)
         conf_txt = lang_service.get_text("serverinfo_conf_desc", lang,
             language=lang_name,
             welcome=fmt(config.get("welcome_channel_id"), "ch"),

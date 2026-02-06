@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands
-from services import db_service
+from services import db_service, lang_service
 
 class AutoRole(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -23,7 +23,8 @@ class AutoRole(commands.Cog):
         if role:
             try:
                 # 3. Dar el rol
-                await member.add_roles(role, reason="Auto Rol de Bienvenida")
+                lang = await lang_service.get_guild_lang(member.guild.id)
+                await member.add_roles(role, reason=lang_service.get_text("autorole_reason", lang))
             except discord.Forbidden:
                 print(f"❌ Error AutoRol: No tengo permisos para dar el rol {role.name} en {member.guild.name}")
             except Exception as e:
