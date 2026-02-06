@@ -68,7 +68,7 @@ class Niveles(commands.Cog):
         lang = await lang_service.get_guild_lang(ctx.guild.id)
         
         rows = await db_service.fetch_all(
-            "SELECT user_id, level, xp, rebirths FROM guild_stats WHERE guild_id = ? ORDER BY rebirths DESC, level DESC, xp DESC LIMIT 50", 
+            f"SELECT user_id, level, xp, rebirths FROM guild_stats WHERE guild_id = ? ORDER BY rebirths DESC, level DESC, xp DESC LIMIT {settings.LEVELS_CONFIG['LEADERBOARD_LIMIT']}", 
             (ctx.guild.id,)
         )
         
@@ -77,7 +77,7 @@ class Niveles(commands.Cog):
             await ctx.reply(embed=embed_service.info(lang_service.get_text("title_empty", lang), msg))
             return
 
-        chunk_size = 10
+        chunk_size = settings.LEVELS_CONFIG["LEADERBOARD_CHUNK_SIZE"]
         chunks = [rows[i:i + chunk_size] for i in range(0, len(rows), chunk_size)]
         pages = []
 
@@ -98,11 +98,11 @@ class Niveles(commands.Cog):
                 xp_fmt = f"{row['xp']:,}" # Formato con comas (ej: 1,200)
                 
                 if j == 1:
-                    lines.append(f"🥇 **{name}**\n> 👑 {rebirth_text}Nvl **{row['level']}** • ✨ `{xp_fmt}` XP")
+                    lines.append(f"{settings.LEVELS_CONFIG['MEDALS'][0]} **{name}**\n> 👑 {rebirth_text}Nvl **{row['level']}** • ✨ `{xp_fmt}` XP")
                 elif j == 2:
-                    lines.append(f"🥈 **{name}**\n> 🛡️ {rebirth_text}Nvl **{row['level']}** • ✨ `{xp_fmt}` XP")
+                    lines.append(f"{settings.LEVELS_CONFIG['MEDALS'][1]} **{name}**\n> 🛡️ {rebirth_text}Nvl **{row['level']}** • ✨ `{xp_fmt}` XP")
                 elif j == 3:
-                    lines.append(f"🥉 **{name}**\n> ⚔️ {rebirth_text}Nvl **{row['level']}** • ✨ `{xp_fmt}` XP")
+                    lines.append(f"{settings.LEVELS_CONFIG['MEDALS'][2]} **{name}**\n> ⚔️ {rebirth_text}Nvl **{row['level']}** • ✨ `{xp_fmt}` XP")
                 else:
                     lines.append(f"`#{j}` **{name}** • {rebirth_text}Nvl {row['level']} • `{xp_fmt}` XP")
             

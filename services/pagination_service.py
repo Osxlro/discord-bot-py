@@ -1,11 +1,13 @@
 import discord
 import logging
 from services import lang_service
+from config import settings
 
 logger = logging.getLogger(__name__)
 
 class Paginator(discord.ui.View):
-    def __init__(self, pages: list[discord.Embed], author_id: int, timeout: float = 120):
+    def __init__(self, pages: list[discord.Embed], author_id: int, timeout: float = None):
+        timeout = timeout or settings.PAGINATION_CONFIG["TIMEOUT"]
         super().__init__(timeout=timeout)
         self.pages = pages
         self.author_id = author_id
@@ -14,6 +16,12 @@ class Paginator(discord.ui.View):
         
         # Configuramos el estado inicial de los botones
         self.update_buttons()
+        
+        # Actualizamos emojis desde settings
+        self.first_page.emoji = settings.PAGINATION_CONFIG["EMOJIS"]["FIRST"]
+        self.prev_page.emoji = settings.PAGINATION_CONFIG["EMOJIS"]["PREV"]
+        self.next_page.emoji = settings.PAGINATION_CONFIG["EMOJIS"]["NEXT"]
+        self.last_page.emoji = settings.PAGINATION_CONFIG["EMOJIS"]["LAST"]
 
     def update_buttons(self):
         # Desactivar botones de retroceso si estamos en la primera página
@@ -45,29 +53,29 @@ class Paginator(discord.ui.View):
             try: await self.message.edit(view=self)
             except: pass
 
-    @discord.ui.button(label="⏮️", style=discord.ButtonStyle.secondary)
+    @discord.ui.button(style=discord.ButtonStyle.secondary)
     async def first_page(self, interaction: discord.Interaction, button: discord.ui.Button):
         self.current_page = 0
         self.update_buttons()
         await interaction.response.edit_message(embed=self.pages[self.current_page], view=self)
 
-    @discord.ui.button(label="◀️", style=discord.ButtonStyle.primary)
+    @discord.ui.button(style=discord.ButtonStyle.primary)
     async def prev_page(self, interaction: discord.Interaction, button: discord.ui.Button):
         self.current_page -= 1
         self.update_buttons()
         await interaction.response.edit_message(embed=self.pages[self.current_page], view=self)
 
-    @discord.ui.button(label="1/1", style=discord.ButtonStyle.gray, disabled=True)
+    @discord.ui.button(label="1/1", style=discord.ButtonStyle.gray, disabled=True, row=0)
     async def counter(self, interaction: discord.Interaction, button: discord.ui.Button):
         pass # Botón meramente visual
 
-    @discord.ui.button(label="▶️", style=discord.ButtonStyle.primary)
+    @discord.ui.button(style=discord.ButtonStyle.primary)
     async def next_page(self, interaction: discord.Interaction, button: discord.ui.Button):
         self.current_page += 1
         self.update_buttons()
         await interaction.response.edit_message(embed=self.pages[self.current_page], view=self)
 
-    @discord.ui.button(label="⏭️", style=discord.ButtonStyle.secondary)
+    @discord.ui.button(style=discord.ButtonStyle.secondary)
     async def last_page(self, interaction: discord.Interaction, button: discord.ui.Button):
         self.current_page = len(self.pages) - 1
         self.update_buttons()

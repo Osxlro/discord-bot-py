@@ -485,7 +485,8 @@ class Music(commands.Cog):
         if track.is_stream:
             pos_str = lang_service.get_text("music_live", lang)
             len_str = "∞"
-            bar = "▬" * 15 + "🔘"
+            bar_len = settings.MUSIC_CONFIG["STREAM_BAR_LENGTH"]
+            bar = "▬" * bar_len + "🔘"
         else:
             total_blocks = settings.MUSIC_CONFIG["PROGRESS_BAR_LENGTH"]
             progress = int((position / length) * total_blocks) if length > 0 else 0

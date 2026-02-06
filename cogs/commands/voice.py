@@ -3,6 +3,7 @@ import asyncio
 import wavelink
 from discord.ext import commands
 from services import embed_service, lang_service
+from config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -108,7 +109,7 @@ class Voice(commands.Cog):
         channel = guild.get_channel(channel_id)
         if not channel: return
 
-        backoff = [5, 10, 30] # Segundos de espera entre intentos
+        backoff = settings.VOICE_CONFIG["RECONNECT_BACKOFF"]
         
         for i, wait in enumerate(backoff):
             await asyncio.sleep(wait)

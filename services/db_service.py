@@ -302,7 +302,7 @@ async def update_guild_config(guild_id: int, updates: dict):
 
 def calculate_xp_required(level: int) -> int:
     """Calcula la XP necesaria para alcanzar el siguiente nivel."""
-    return int(100 * (level ** 1.2))
+    return int(settings.LEVELS_CONFIG["XP_MULTIPLIER"] * (level ** settings.LEVELS_CONFIG["XP_EXPONENT"]))
 
 async def add_xp(guild_id: int, user_id: int, amount: int) -> tuple[int, bool]:
     """
@@ -345,7 +345,8 @@ async def do_rebirth(guild_id: int, user_id: int) -> tuple[bool, any]:
     row = await fetch_one("SELECT level, rebirths FROM guild_stats WHERE guild_id = ? AND user_id = ?", (guild_id, user_id))
     
     if not row: return False, "no_data"
-    if row['level'] < 100: return False, row['level']
+    min_level = settings.LEVELS_CONFIG["REBIRTH_LEVEL"]
+    if row['level'] < min_level: return False, row['level']
     
     new_reb = row['rebirths'] + 1
     

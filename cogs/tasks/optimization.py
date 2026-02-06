@@ -4,6 +4,7 @@ import logging
 import discord
 from discord.ext import commands, tasks
 from services import db_service
+from config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +20,7 @@ class OptimizationTasks(commands.Cog):
 
     # TAREA 1: Guardado de datos (Frecuente - cada 60s)
     # Evita perder XP si el bot se reinicia.
-    @tasks.loop(seconds=60)
+    @tasks.loop(seconds=settings.OPTIMIZATION_CONFIG["FLUSH_INTERVAL"])
     async def cache_flush_loop(self):
         try:
             await db_service.flush_xp_cache()
@@ -33,7 +34,7 @@ class OptimizationTasks(commands.Cog):
 
     # TAREA 2: Limpieza de RAM (Lenta - cada 6 horas)
     # Libera memoria acumulada de configuraciones viejas.
-    @tasks.loop(hours=6)
+    @tasks.loop(hours=settings.OPTIMIZATION_CONFIG["CLEANUP_INTERVAL"])
     async def memory_cleanup_loop(self):
         try:
             # 1. Guardamos todo antes de limpiar por seguridad

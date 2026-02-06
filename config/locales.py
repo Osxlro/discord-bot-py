@@ -35,6 +35,7 @@ LOCALES = {
         "timeout_invalid": "❌ Tiempo inválido. Usa: `10m`, `1h`, `1d`.",
         "timeout_success": "🔇 **{user}** aislado por **{time}**.\n📝 Razón: {reason}",
         "untimeout_success": "🔊 **{user}** ya puede hablar.",
+        "timeout_limit_error": "❌ El tiempo máximo de aislamiento es de 28 días.",
         "mod_title_kick": "Expulsión",
         "mod_title_ban": "Ban",
         
@@ -186,6 +187,7 @@ LOCALES = {
         "dev_mem_libs": "📚 Librerías",
         "dev_mem_others": "📄 Otros",
         "dev_interaction_error": "❌ Solo quien ejecutó el comando puede usar esto.",
+        "dev_psutil_error": "⚠️ `psutil` no está instalado.",
         
         # --- BOTINFO LABELS ---
         "botinfo_name": "🆔 Nombre",
@@ -343,6 +345,7 @@ LOCALES = {
         "timeout_invalid": "❌ Invalid time. Use: `10m`, `1h`, `1d`.",
         "timeout_success": "🔇 **{user}** timed out for **{time}**.\n📝 Reason: {reason}",
         "untimeout_success": "🔊 **{user}** can speak now.",
+        "timeout_limit_error": "❌ The maximum timeout duration is 28 days.",
         "mod_title_kick": "Kick",
         "mod_title_ban": "Ban",
         
@@ -494,6 +497,7 @@ LOCALES = {
         "dev_mem_libs": "📚 Libraries",
         "dev_mem_others": "📄 Others",
         "dev_interaction_error": "❌ Only the command executor can use this.",
+        "dev_psutil_error": "⚠️ `psutil` is not installed.",
 
         # --- BOTINFO LABELS ---
         "botinfo_name": "🆔 Name",

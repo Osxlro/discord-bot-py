@@ -3,16 +3,9 @@ import logging
 from discord import app_commands
 from discord.ext import commands
 from services import embed_service, translator_service, lang_service, db_service
+from config import settings
 
 logger = logging.getLogger(__name__)
-
-EMOJI_MAP = {
-    "General": "💡", "Moderacion": "🛡️", "Niveles": "📊",
-    "Diversion": "🎲", "Configuracion": "⚙️", "Developer": "💻",
-    "Cumpleanos": "🎂", "Roles": "🎭", "Voice": "🎙️", 
-    "Perfil": "👤", "Status": "🟢", "Backup": "💾",
-    "Usuario": "👤", "Minecraft": "🧱", "Music": "🎵"
-}
 
 class HelpSelect(discord.ui.Select):
     def __init__(self, bot, ctx, lang):
@@ -25,7 +18,7 @@ class HelpSelect(discord.ui.Select):
                 label=lang_service.get_text("help_home", lang),
                 description=lang_service.get_text("help_home_desc", lang),
                 value="home",
-                emoji="🏠"
+                emoji=settings.HELP_CONFIG["HOME_EMOJI"]
             )
         ]
 
@@ -42,7 +35,7 @@ class HelpSelect(discord.ui.Select):
                 label=name,
                 description=description[:100],
                 value=name,
-                emoji=EMOJI_MAP.get(name, "📂")
+                emoji=settings.HELP_CONFIG["EMOJI_MAP"].get(name, "📂")
             ))
 
         super().__init__(
@@ -71,7 +64,7 @@ class HelpSelect(discord.ui.Select):
             module_desc = lang_service.get_text("help_module_desc", self.lang, module=value)
             
             embed = discord.Embed(
-                title=f"{EMOJI_MAP.get(value, '📂')} {title}",
+                title=f"{settings.HELP_CONFIG['EMOJI_MAP'].get(value, '📂')} {title}",
                 description=f"*{module_desc}*\n\n",
                 color=self.ctx.guild.me.color if self.ctx.guild else discord.Color.blurple()
             )
@@ -201,7 +194,7 @@ class General(commands.Cog):
         # Cálculo de estadísticas
         # Nota: guild.members requiere intents de miembros activados para ser exacto
         # Optimización: Si hay muchos miembros, evitamos la iteración pesada
-        if guild.member_count > 1000:
+        if guild.member_count > settings.GENERAL_CONFIG["LARGE_SERVER_THRESHOLD"]:
             humans, bots = "N/A", "N/A" # Ahorramos CPU en servidores grandes
         else:
             humans = len([m for m in guild.members if not m.bot])

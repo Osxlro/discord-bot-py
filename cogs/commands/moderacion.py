@@ -47,7 +47,8 @@ class Moderacion(commands.Cog):
             
             title = lang_service.get_text("clear_success", lang)
             desc = lang_service.get_text("clear_desc", lang, count=count)
-            await ctx.send(embed=embed_service.success(title, desc, lite=True), delete_after=5)
+            delete_after = settings.CONFIG.get("moderation_config", {}).get("delete_after", 5)
+            await ctx.send(embed=embed_service.success(title, desc, lite=True), delete_after=delete_after)
             
         except discord.HTTPException:
             # Si falla (generalmente por mensajes viejos), avisamos
@@ -69,8 +70,9 @@ class Moderacion(commands.Cog):
             await ctx.reply(embed=embed_service.error(lang_service.get_text("title_error", lang), lang_service.get_text("timeout_invalid", lang), lite=True), ephemeral=True)
             return
         
-        if seconds > 2419200: # 28 días en segundos (Límite de Discord)
-            await ctx.reply(embed=embed_service.error(lang_service.get_text("title_error", lang), "❌ El tiempo máximo de aislamiento es de 28 días.", lite=True), ephemeral=True)
+        limit = settings.CONFIG.get("moderation_config", {}).get("timeout_limit", 2419200)
+        if seconds > limit:
+            await ctx.reply(embed=embed_service.error(lang_service.get_text("title_error", lang), lang_service.get_text("timeout_limit_error", lang), lite=True), ephemeral=True)
             return
             
         try:

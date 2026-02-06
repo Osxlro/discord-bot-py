@@ -32,8 +32,9 @@ class Perfil(commands.Cog):
         # Barra de progreso
         xp_next = db_service.calculate_xp_required(nivel)
         progreso = min(xp / xp_next, 1.0)
-        bloques = int(progreso * 10)
-        barra = settings.UI_CONFIG["PROGRESS_BAR_FILLED"] * bloques + settings.UI_CONFIG["PROGRESS_BAR_EMPTY"] * (10 - bloques)
+        bar_len = settings.UI_CONFIG["PROFILE_BAR_LENGTH"]
+        bloques = int(progreso * bar_len)
+        barra = settings.UI_CONFIG["PROGRESS_BAR_FILLED"] * bloques + settings.UI_CONFIG["PROGRESS_BAR_EMPTY"] * (bar_len - bloques)
 
         # Embed
         title = lang_service.get_text("profile_title", lang, user=target.display_name)
@@ -86,7 +87,7 @@ class Perfil(commands.Cog):
     )
     async def set_personal_msg(self, ctx: commands.Context, tipo: Literal["Nivel", "Cumpleaños"], texto: str):
         lang = await lang_service.get_guild_lang(ctx.guild.id)
-        val = None if texto.lower() == "reset" else texto
+        val = None if texto.lower() == settings.PROFILE_CONFIG["RESET_KEYWORD"] else texto
         columna = "personal_level_msg" if tipo == "Nivel" else "personal_birthday_msg"
         
         # Optimización: INSERT OR REPLACE

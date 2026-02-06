@@ -23,7 +23,9 @@ CONFIG = {
     },
     # Configuración de Moderación (Usada en cogs/moderacion.py)
     "moderation_config": {
-        "max_clear_msg": 50
+        "max_clear_msg": 50,
+        "delete_after": 5,
+        "timeout_limit": 2419200 # 28 días
     }
 }
 
@@ -80,7 +82,8 @@ MINECRAFT_CONFIG = {
     "ENABLED": True,      # True: Carga el servidor web. False: No inicia el puente.
     "PORT": 5058,         # Puerto para recibir datos del plugin de Minecraft
     "DEFAULT_NAME": "Steve", # Nombre por defecto si el plugin no envía el autor
-    "TOKEN": "CAMBIAME_POR_UN_TOKEN_SEGURO" # Token de seguridad para el Bridge
+    "TOKEN": "CAMBIAME_POR_UN_TOKEN_SEGURO", # Token de seguridad para el Bridge
+    "MAX_PAYLOAD_SIZE": 51200 # 50KB
 }
 
 # --- 10. CONFIGURACIÓN CHAOS ---
@@ -101,6 +104,7 @@ MUSIC_CONFIG = {
     "QUEUE_PAGE_SIZE": 10,        # Canciones por página en /queue
     "AUTOCOMPLETE_LIMIT": 10,     # Resultados en autocompletado
     "PROGRESS_BAR_LENGTH": 15,    # Longitud de la barra en /np
+    "STREAM_BAR_LENGTH": 15,      # Longitud de la barra para streams
     "CROSSFADE_DURATION": 3000,   # Duración del Fade-In en milisegundos (0 = Desactivado). Ej: 3000 para 3s.
     "FADE_IN_STEPS": 15           # Pasos para la animación de volumen
 }
@@ -143,14 +147,73 @@ BACKUP_CONFIG = {
     "HISTORY_LIMIT": 50,
     "MAX_BACKUPS_TO_KEEP": 3,
     "COOLDOWN_SECONDS": 84600, # ~23.5 horas
-    "DM_HISTORY_LIMIT": 20
+    "DM_HISTORY_LIMIT": 20,
+    "KEYWORD": "Backup"
 }
 
 # --- 15. CONFIGURACIÓN UI ---
 UI_CONFIG = {
     "PROGRESS_BAR_FILLED": "▰",
     "PROGRESS_BAR_EMPTY": "▱",
-    "MAX_DESC_LENGTH": 200
+    "MAX_DESC_LENGTH": 200,
+    "PROFILE_BAR_LENGTH": 10
 }
 
 LOG_FILE = os.path.join(BASE_DIR, "data", "discord.log")
+
+# --- 16. CONFIGURACIÓN AYUDA ---
+HELP_CONFIG = {
+    "EMOJI_MAP": {
+        "General": "💡", "Moderacion": "🛡️", "Niveles": "📊",
+        "Diversion": "🎲", "Configuracion": "⚙️", "Developer": "💻",
+        "Cumpleanos": "🎂", "Roles": "🎭", "Voice": "🎙️", 
+        "Perfil": "👤", "Status": "🟢", "Backup": "💾",
+        "Usuario": "👤", "Minecraft": "🧱", "Music": "🎵"
+    },
+    "HOME_EMOJI": "🏠"
+}
+
+# --- 17. CONFIGURACIÓN VOZ ---
+VOICE_CONFIG = {
+    "RECONNECT_BACKOFF": [5, 10, 30] # Segundos entre intentos
+}
+
+# --- 18. CONFIGURACIÓN OPTIMIZACIÓN ---
+OPTIMIZATION_CONFIG = {
+    "FLUSH_INTERVAL": 60,      # Segundos
+    "CLEANUP_INTERVAL": 6      # Horas
+}
+
+# --- 19. CONFIGURACIÓN DESARROLLADOR ---
+DEV_CONFIG = {
+    "STATUS_LIMIT": 25,
+    "SERVER_LIST_CHUNK_SIZE": 10
+}
+
+# --- 20. CONFIGURACIÓN NIVELES ---
+LEVELS_CONFIG = {
+    "LEADERBOARD_LIMIT": 50,
+    "XP_MULTIPLIER": 100,
+    "XP_EXPONENT": 1.2,
+    "REBIRTH_LEVEL": 100,
+    "MEDALS": ["🥇", "🥈", "🥉"],
+    "LEADERBOARD_CHUNK_SIZE": 10
+}
+
+# --- 21. CONFIGURACIÓN GENERAL ---
+GENERAL_CONFIG = {
+    "LARGE_SERVER_THRESHOLD": 1000
+}
+
+# --- 22. CONFIGURACIÓN PAGINACIÓN ---
+PAGINATION_CONFIG = {
+    "TIMEOUT": 120,
+    "EMOJIS": {
+        "FIRST": "⏮️", "PREV": "◀️", "NEXT": "▶️", "LAST": "⏭️"
+    }
+}
+
+# --- 23. CONFIGURACIÓN PERFIL ---
+PROFILE_CONFIG = {
+    "RESET_KEYWORD": "reset"
+}

@@ -68,7 +68,7 @@ class Minecraft(commands.Cog):
             return False, web.Response(status=401, text="Unauthorized")
         
         # 2. Validar Tamaño (Max 50KB)
-        if request.content_length > 50 * 1024:
+        if request.content_length > settings.MINECRAFT_CONFIG.get("MAX_PAYLOAD_SIZE", 51200):
             return False, web.Response(status=413, text="Payload too large")
             
         return True, None

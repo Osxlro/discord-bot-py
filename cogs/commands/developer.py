@@ -101,7 +101,7 @@ class BotInfoView(discord.ui.View):
         info = await self._get_psutil_info()
         embed = discord.Embed(title="💻 Estado del Sistema", color=discord.Color.blue())
         if not info["available"]:
-            embed.description = "⚠️ `psutil` no está instalado."
+            embed.description = lang_service.get_text("dev_psutil_error", await lang_service.get_guild_lang(self.ctx.guild.id if self.ctx.guild else None))
             return embed
 
         lang = await lang_service.get_guild_lang(self.ctx.guild.id if self.ctx.guild else None)
@@ -217,7 +217,7 @@ class Developer(commands.Cog):
     async def eliminar(self, ctx: commands.Context):
         lang = await lang_service.get_guild_lang(ctx.guild.id if ctx.guild else None)
         # Optimización: Traer solo los últimos 25 registros en lugar de toda la tabla
-        rows = await db_service.fetch_all("SELECT id, type, text FROM bot_statuses ORDER BY id DESC LIMIT 25")
+        rows = await db_service.fetch_all(f"SELECT id, type, text FROM bot_statuses ORDER BY id DESC LIMIT {settings.DEV_CONFIG['STATUS_LIMIT']}")
         
         if not rows:
             return await ctx.send(embed=embed_service.warning(lang_service.get_text("title_status", lang), lang_service.get_text("status_empty", lang)), ephemeral=True)
@@ -246,7 +246,7 @@ class Developer(commands.Cog):
             return await ctx.send(embed=embed_service.warning(lang_service.get_text("title_info", lang), lang_service.get_text("dev_servers_none", lang)), ephemeral=True)
 
         pages = []
-        chunk_size = 10
+        chunk_size = settings.DEV_CONFIG["SERVER_LIST_CHUNK_SIZE"]
         chunks = [guilds[i:i + chunk_size] for i in range(0, len(guilds), chunk_size)]
 
         for i, chunk in enumerate(chunks):

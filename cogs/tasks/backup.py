@@ -26,7 +26,7 @@ class Backup(commands.Cog):
         async for message in channel.history(limit=settings.BACKUP_CONFIG["HISTORY_LIMIT"]):
             es_mio = message.author.id == self.bot.user.id
             tiene_archivo = len(message.attachments) > 0
-            if es_mio and tiene_archivo and "Backup" in message.content:
+            if es_mio and tiene_archivo and settings.BACKUP_CONFIG["KEYWORD"] in message.content:
                 backups_encontrados.append(message)
 
         if len(backups_encontrados) > settings.BACKUP_CONFIG["MAX_BACKUPS_TO_KEEP"]:
@@ -67,7 +67,7 @@ class Backup(commands.Cog):
             
             # Revisamos el historial reciente para no saturar al dueño con archivos duplicados.
             async for message in dm_channel.history(limit=settings.BACKUP_CONFIG["DM_HISTORY_LIMIT"]): 
-                if message.author.id == self.bot.user.id and len(message.attachments) > 0 and "Backup" in message.content:
+                if message.author.id == self.bot.user.id and len(message.attachments) > 0 and settings.BACKUP_CONFIG["KEYWORD"] in message.content:
                     ultimo_backup = message
                     break
             
