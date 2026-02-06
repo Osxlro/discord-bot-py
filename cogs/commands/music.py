@@ -137,6 +137,8 @@ class Music(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.recommender = algorithm_service.RecommendationEngine()
+        self.node_configs = []
+        self._is_connecting = False
 
     async def _fade_in(self, player: wavelink.Player, duration_ms: int):
         """Simula un efecto de Fade-In ajustando el volumen gradualmente."""
@@ -210,44 +212,85 @@ class Music(commands.Cog):
         self.bot.loop.create_task(self.connect_nodes())
 
     async def connect_nodes(self):
-        """Intenta conectar a Lavalink en segundo plano."""
+        """Configura y conecta al primer nodo disponible (Failover)."""
         await self.bot.wait_until_ready()
         
-        if not wavelink.Pool.nodes:
-            try:
-                node_config = settings.LAVALINK_CONFIG
-                nodes = []
+        # Cargar lista de nodos
+        node_config = settings.LAVALINK_CONFIG
+        if "NODES" in node_config:
+            self.node_configs = list(node_config["NODES"])
+        elif "HOST" in node_config:
+            self.node_configs = [node_config]
 
-                # Soporte para múltiples nodos (Redundancia)
-                if "NODES" in node_config:
-                    for node in node_config["NODES"]:
-                        protocol = "https" if node.get("SECURE") else "http"
-                        nodes.append(
-                            wavelink.Node(
-                                identifier=node.get("IDENTIFIER", node["HOST"]),
-                                uri=f"{protocol}://{node['HOST']}:{node['PORT']}",
-                                password=node['PASSWORD']
-                            )
-                        )
-                # Soporte legacy (Configuración simple)
-                elif "HOST" in node_config:
-                    protocol = "https" if node_config.get("SECURE") else "http"
-                    nodes.append(
-                        wavelink.Node(
-                            uri=f"{protocol}://{node_config['HOST']}:{node_config['PORT']}",
-                            password=node_config['PASSWORD']
-                        )
-                    )
+        await self.connect_best_node()
 
-                await wavelink.Pool.connect(nodes=nodes, client=self.bot, cache_capacity=settings.LAVALINK_CONFIG.get("CACHE_CAPACITY", 100))
-                logger.info(f"🔗 [Music] Iniciando conexión con {len(nodes)} nodos Lavalink...")
-            except Exception as e:
-                logger.error(f"❌ [Music] No se pudo conectar a Lavalink: {e}")
-                logger.warning("⚠️ El bot inició, pero la música no funcionará hasta que Lavalink esté online.")
+    async def connect_best_node(self):
+        """Itera sobre los nodos configurados hasta conectar uno."""
+        if self._is_connecting or not self.node_configs:
+            return
+        
+        self._is_connecting = True
+        try:
+            while True:
+                # Si ya hay un nodo conectado, terminamos
+                if wavelink.Pool.nodes:
+                    for node in wavelink.Pool.nodes.values():
+                        if node.status == wavelink.NodeStatus.CONNECTED:
+                            return
+
+                logger.info(f"🔄 [Music] Buscando mejor nodo disponible entre {len(self.node_configs)} opciones...")
+
+                for _ in range(len(self.node_configs)):
+                    # Rotación: Tomar primero, mover al final
+                    config = self.node_configs.pop(0)
+                    self.node_configs.append(config)
+                    
+                    identifier = config.get("IDENTIFIER", config["HOST"])
+                    
+                    # Limpieza preventiva de nodos zombies
+                    existing = wavelink.Pool.get_node(identifier)
+                    if existing:
+                        await existing.close()
+
+                    try:
+                        protocol = "https" if config.get("SECURE") else "http"
+                        node = wavelink.Node(
+                            identifier=identifier,
+                            uri=f"{protocol}://{config['HOST']}:{config['PORT']}",
+                            password=config['PASSWORD']
+                        )
+                        
+                        # Intentar conectar SOLO este nodo
+                        await wavelink.Pool.connect(nodes=[node], client=self.bot, cache_capacity=settings.LAVALINK_CONFIG.get("CACHE_CAPACITY", 100))
+                        
+                        # Esperar confirmación (Timeout corto para evitar bloqueos)
+                        try:
+                            def check(p): return p.node.identifier == identifier
+                            await self.bot.wait_for('wavelink_node_ready', check=check, timeout=10.0)
+                            return # Éxito, salimos del bucle
+                        except asyncio.TimeoutError:
+                            logger.warning(f"⚠️ [Music] Nodo {identifier} no respondió. Probando siguiente...")
+                            node = wavelink.Pool.get_node(identifier)
+                            if node: await node.close() # Matar reintentos
+                            
+                    except Exception as e:
+                        logger.error(f"❌ [Music] Error nodo {identifier}: {e}")
+                
+                logger.error("❌ [Music] Todos los nodos fallaron. Reintentando en 30s...")
+                await asyncio.sleep(30)
+        finally:
+            self._is_connecting = False
 
     @commands.Cog.listener()
     async def on_wavelink_node_ready(self, payload: wavelink.NodeReadyEventPayload):
         logger.info(f"✅ [Music] Nodo Lavalink conectado: {payload.node.identifier}")
+
+    @commands.Cog.listener()
+    async def on_wavelink_node_closed(self, payload: wavelink.NodeClosedEventPayload):
+        """Detecta caída de nodo y activa Failover."""
+        logger.warning(f"⚠️ [Music] Nodo {payload.node.identifier} desconectado. Iniciando Failover...")
+        await asyncio.sleep(1)
+        await self.connect_best_node()
 
     async def play_autocomplete(self, interaction: discord.Interaction, current: str) -> list[app_commands.Choice[str]]:
         # Evitar errores si Lavalink no está conectado
