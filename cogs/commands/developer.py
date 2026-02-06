@@ -26,7 +26,7 @@ class StatusSelect(discord.ui.Select):
         await db_service.execute("DELETE FROM bot_statuses WHERE id = ?", (status_id,))
         logger.info(f"Status eliminado (ID: {status_id}) por {interaction.user}")
         
-        lang = await lang_service.get_guild_lang(interaction.guild_id)
+        lang = await lang_service.get_guild_lang(interaction.guild_id if interaction.guild_id else None)
         await interaction.response.edit_message(
             embed=embed_service.success(lang_service.get_text("title_status", lang), lang_service.get_text("dev_status_deleted", lang)), 
             view=None
@@ -45,7 +45,7 @@ class BotInfoView(discord.ui.View):
 
     async def interaction_check(self, interaction: discord.Interaction):
         if interaction.user.id != self.ctx.author.id:
-            lang = await lang_service.get_guild_lang(interaction.guild_id)
+            lang = await lang_service.get_guild_lang(interaction.guild_id if interaction.guild_id else None)
             await interaction.response.send_message(lang_service.get_text("dev_interaction_error", lang), ephemeral=True)
             return False
         return True
@@ -81,7 +81,7 @@ class BotInfoView(discord.ui.View):
             d, h = divmod(h, 24)
             uptime_str = f"{d}d {h}h {m}m {s}s"
 
-        lang = await lang_service.get_guild_lang(self.ctx.guild.id)
+        lang = await lang_service.get_guild_lang(self.ctx.guild.id if self.ctx.guild else None)
         embed = discord.Embed(title=f"🤖 {lang_service.get_text('help_title', lang)}", color=discord.Color.blurple())
         embed.set_thumbnail(url=self.bot.user.display_avatar.url)
         embed.add_field(name=lang_service.get_text("botinfo_name", lang), value=f"{self.bot.user}", inline=True)
@@ -99,7 +99,7 @@ class BotInfoView(discord.ui.View):
             embed.description = "⚠️ `psutil` no está instalado."
             return embed
 
-        lang = await lang_service.get_guild_lang(self.ctx.guild.id)
+        lang = await lang_service.get_guild_lang(self.ctx.guild.id if self.ctx.guild else None)
         embed.add_field(name=lang_service.get_text("botinfo_cpu", lang), value=f"`{info['cpu_proc']:.1f}%` / `{info['cpu_sys']:.1f}%`", inline=True)
         ram_bar = self._make_bar(info['ram_sys'].percent)
         embed.add_field(name=f"{lang_service.get_text('botinfo_ram', lang)} ({info['ram_sys'].percent}%)", value=f"{ram_bar}\nTotal: `{info['ram_sys'].total / 1024**3:.1f} GB`\nBot: `{info['mem_proc']:.1f} MB`", inline=False)
@@ -111,7 +111,7 @@ class BotInfoView(discord.ui.View):
 
     async def get_memory_embed(self):
         embed = discord.Embed(title="🧠 Monitor de Memoria", color=discord.Color.gold())
-        lang = await lang_service.get_guild_lang(self.ctx.guild.id)
+        lang = await lang_service.get_guild_lang(self.ctx.guild.id if self.ctx.guild else None)
         if not tracemalloc.is_tracing():
             embed.description = lang_service.get_text("dev_mem_nodetail", lang)
             info = await self._get_psutil_info()
@@ -119,7 +119,12 @@ class BotInfoView(discord.ui.View):
         else:
             snapshot = tracemalloc.take_snapshot()
             stats = snapshot.statistics('filename')
-            grouped = {"🧩 Cogs": 0, "🛠️ Services": 0, "📚 Libs": 0, "📄 Otros": 0}
+            
+            # Inicializamos con las claves localizadas correctas para evitar KeyError
+            key_libs = lang_service.get_text("dev_mem_libs", lang)
+            key_others = lang_service.get_text("dev_mem_others", lang)
+            grouped = {"🧩 Cogs": 0, "🛠️ Services": 0, key_libs: 0, key_others: 0}
+            
             details = []
             for stat in stats:
                 path = stat.traceback[0].filename
@@ -130,8 +135,8 @@ class BotInfoView(discord.ui.View):
                 elif "services" in path:
                     grouped["🛠️ Services"] += size
                     details.append((f"🛠️ {path.split('services')[-1].replace(os.sep, '/').lstrip('/')}", size))
-                elif "site-packages" in path or "lib" in path: grouped[lang_service.get_text("dev_mem_libs", lang)] += size
-                else: grouped[lang_service.get_text("dev_mem_others", lang)] += size
+                elif "site-packages" in path or "lib" in path: grouped[key_libs] += size
+                else: grouped[key_others] += size
             
             desc = "**Resumen:**\n" + "\n".join([f"**{k}:** `{v/1024/1024:.2f} MB`" for k, v in grouped.items()])
             desc += "\n\n" + lang_service.get_text("dev_mem_top", lang)
@@ -143,7 +148,7 @@ class BotInfoView(discord.ui.View):
     async def get_config_embed(self):
         embed = discord.Embed(title="⚙️ Configuración y Estado", color=discord.Color.teal())
         embed.add_field(name="🌐 Idiomas", value="Español (`es`), English (`en`)", inline=False)
-        lang = await lang_service.get_guild_lang(self.ctx.guild.id)
+        lang = await lang_service.get_guild_lang(self.ctx.guild.id if self.ctx.guild else None)
         log_size = f"{os.path.getsize('data/discord.log')/1024:.1f} KB" if os.path.exists("data/discord.log") else "0 KB"
         embed.add_field(name="📝 Log File", value=f"`{log_size}`", inline=True)
         rows = await db_service.fetch_all("SELECT type, text FROM bot_statuses")
@@ -180,7 +185,7 @@ class Developer(commands.Cog):
     @status_group.command(name="listar", description="Muestra la lista de estados configurados.")
     async def listar(self, ctx: commands.Context):
         # Listado solo para el admin (EPHEMERAL)
-        lang = await lang_service.get_guild_lang(ctx.guild.id)
+        lang = await lang_service.get_guild_lang(ctx.guild.id if ctx.guild else None)
         rows = await db_service.fetch_all("SELECT type, text FROM bot_statuses")
         
         if not rows:
@@ -198,14 +203,14 @@ class Developer(commands.Cog):
     async def agregar(self, ctx: commands.Context, tipo: Literal["playing", "watching", "listening", "competing"], texto: str):
         await db_service.execute("INSERT INTO bot_statuses (type, text) VALUES (?, ?)", (tipo, texto))
         logger.info(f"Status agregado: [{tipo}] {texto} por {ctx.author}")
-        lang = await lang_service.get_guild_lang(ctx.guild.id)
+        lang = await lang_service.get_guild_lang(ctx.guild.id if ctx.guild else None)
         msg = lang_service.get_text("status_add", lang, text=texto, type=tipo)
 
         await ctx.send(embed=embed_service.success(lang_service.get_text("dev_status_saved", lang), msg), ephemeral=True)
 
     @status_group.command(name="eliminar", description="Elimina un estado seleccionándolo de la lista.")
     async def eliminar(self, ctx: commands.Context):
-        lang = await lang_service.get_guild_lang(ctx.guild.id)
+        lang = await lang_service.get_guild_lang(ctx.guild.id if ctx.guild else None)
         # Optimización: Traer solo los últimos 25 registros en lugar de toda la tabla
         rows = await db_service.fetch_all("SELECT id, type, text FROM bot_statuses ORDER BY id DESC LIMIT 25")
         
@@ -230,7 +235,7 @@ class Developer(commands.Cog):
         
         guilds = sorted(self.bot.guilds, key=lambda g: g.member_count, reverse=True)
         # Como es comando de owner, podemos forzar español o usar el del server actual, usaremos el del server actual por consistencia
-        lang = await lang_service.get_guild_lang(ctx.guild.id)
+        lang = await lang_service.get_guild_lang(ctx.guild.id if ctx.guild else None)
         
         if not guilds:
             return await ctx.send(embed=embed_service.warning(lang_service.get_text("title_info", lang), lang_service.get_text("dev_servers_none", lang)), ephemeral=True)
@@ -257,7 +262,7 @@ class Developer(commands.Cog):
     @commands.command(name="sync", hidden=True)
     @commands.is_owner()
     async def sync(self, ctx: commands.Context):
-        lang = await lang_service.get_guild_lang(ctx.guild.id)
+        lang = await lang_service.get_guild_lang(ctx.guild.id if ctx.guild else None)
         msg = await ctx.send(lang_service.get_text("dev_sync_start", lang))
         try:
             synced = await self.bot.tree.sync()
@@ -268,7 +273,7 @@ class Developer(commands.Cog):
     @commands.hybrid_command(name="memoria", description="Analiza el consumo de RAM del bot.")
     @commands.is_owner()
     async def memoria(self, ctx: commands.Context, accion: Literal["ver", "iniciar", "detener"] = "ver"):
-        lang = await lang_service.get_guild_lang(ctx.guild.id)
+        lang = await lang_service.get_guild_lang(ctx.guild.id if ctx.guild else None)
         try:
             import psutil
             has_psutil = True

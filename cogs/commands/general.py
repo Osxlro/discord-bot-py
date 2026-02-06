@@ -109,7 +109,7 @@ class General(commands.Cog):
 
     @staticmethod
     async def get_home_embed(ctx):
-        lang = await lang_service.get_guild_lang(ctx.guild.id)
+        lang = await lang_service.get_guild_lang(ctx.guild.id if ctx.guild else None)
         
         cogs_count = len(ctx.bot.cogs)
         total_cmds = len([c for c in ctx.bot.commands if not c.hidden])
@@ -137,14 +137,14 @@ class General(commands.Cog):
 
     @commands.hybrid_command(name="help", description="Muestra el panel de ayuda y comandos.")
     async def help(self, ctx: commands.Context):
-        lang = await lang_service.get_guild_lang(ctx.guild.id)
+        lang = await lang_service.get_guild_lang(ctx.guild.id if ctx.guild else None)
         embed = await self.get_home_embed(ctx)
         view = HelpView(self.bot, ctx, lang)
         await ctx.send(embed=embed, view=view)
 
     @commands.hybrid_command(name="ping", description="Muestra la latencia actual del bot.")
     async def ping(self, ctx: commands.Context):
-        lang = await lang_service.get_guild_lang(ctx.guild.id)
+        lang = await lang_service.get_guild_lang(ctx.guild.id if ctx.guild else None)
         ms = round(self.bot.latency * 1000)
         
         txt = lang_service.get_text("ping_msg", lang, ms=ms)
@@ -153,7 +153,7 @@ class General(commands.Cog):
     @commands.hybrid_command(name="calc", description="Calculadora flexible. Ej: /calc + 5 10")
     @app_commands.describe(operacion="Usa símbolos (+, -, *, /)", num1="Primer número", num2="Segundo número")
     async def calc(self, ctx: commands.Context, operacion: str, num1: float, num2: float):
-        lang = await lang_service.get_guild_lang(ctx.guild.id)
+        lang = await lang_service.get_guild_lang(ctx.guild.id if ctx.guild else None)
         op_map = {
             "sumar": "+", "suma": "+", "add": "+", "+": "+", "mas": "+",
             "restar": "-", "resta": "-", "minus": "-", "-": "-", "menos": "-",

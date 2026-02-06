@@ -11,7 +11,7 @@ class Diversion(commands.Cog):
     @commands.hybrid_command(name="jumbo", description="Muestra la imagen de un emoji en grande.")
     @app_commands.describe(emoji="Pon aquí el emoji personalizado")
     async def jumbo(self, ctx: commands.Context, emoji: str):
-        lang = await lang_service.get_guild_lang(ctx.guild.id)
+        lang = await lang_service.get_guild_lang(ctx.guild.id if ctx.guild else None)
         try:
             partial_emoji = discord.PartialEmoji.from_str(emoji)
             if partial_emoji.is_custom_emoji():
@@ -26,7 +26,7 @@ class Diversion(commands.Cog):
 
     @commands.hybrid_command(name="coinflip", description="Lanza una moneda.")
     async def coinflip(self, ctx: commands.Context):
-        lang = await lang_service.get_guild_lang(ctx.guild.id)
+        lang = await lang_service.get_guild_lang(ctx.guild.id if ctx.guild else None)
         res, url_gif = random_service.obtener_cara_cruz()
         
         title = lang_service.get_text("coinflip_title", lang)
@@ -36,7 +36,7 @@ class Diversion(commands.Cog):
 
     @commands.hybrid_command(name="eleccion", description="Elige entre dos opciones.")
     async def eleccion(self, ctx: commands.Context, opcion_a: str, opcion_b: str):
-        lang = await lang_service.get_guild_lang(ctx.guild.id)
+        lang = await lang_service.get_guild_lang(ctx.guild.id if ctx.guild else None)
         eleccion = random_service.elegir_opcion(opcion_a, opcion_b)
         
         title = lang_service.get_text("choice_title", lang)
@@ -46,15 +46,15 @@ class Diversion(commands.Cog):
 
     @commands.hybrid_command(name="emojimix", description="Mezcla dos emojis.")
     async def emojimix(self, ctx: commands.Context, emoji1: str, emoji2: str):
-        lang = await lang_service.get_guild_lang(ctx.guild.id)
+        lang = await lang_service.get_guild_lang(ctx.guild.id if ctx.guild else None)
         url = emojimixer_service.generar_url_emojimix(emoji1, emoji2)
         await ctx.reply(embed=embed_service.info(lang_service.get_text("emojimix_title", lang), f"{emoji1} + {emoji2}", image=url))
 
     @commands.hybrid_command(name="confess", description="Confesión anónima.")
     @app_commands.describe(secreto="Tu secreto.")
     async def confesar(self, ctx: commands.Context, *, secreto: str):
-        lang = await lang_service.get_guild_lang(ctx.guild.id)
-        config = await db_service.get_guild_config(ctx.guild.id)
+        lang = await lang_service.get_guild_lang(ctx.guild.id if ctx.guild else None)
+        config = await db_service.get_guild_config(ctx.guild.id if ctx.guild else None)
         channel_id = config.get('confessions_channel_id')
 
         if not channel_id:
@@ -78,7 +78,7 @@ class Diversion(commands.Cog):
     @commands.hybrid_command(name="8ball", description="Pregúntale a la bola mágica.")
     @app_commands.describe(pregunta="Tu pregunta")
     async def eightball(self, ctx: commands.Context, pregunta: str):
-        lang = await lang_service.get_guild_lang(ctx.guild.id)
+        lang = await lang_service.get_guild_lang(ctx.guild.id if ctx.guild else None)
         respuestas = lang_service.get_text("8ball_responses", lang).split("|")
         respuesta = random.choice(respuestas)
         await ctx.reply(embed=embed_service.info("🎱 8-Ball", f"**P:** {pregunta}\n**R:** {respuesta}", lite=True))
