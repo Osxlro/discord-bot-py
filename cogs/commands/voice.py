@@ -11,6 +11,14 @@ class Voice(commands.Cog):
         self.bot = bot
         self.voice_targets = {} # {guild_id: channel_id} - Dónde debería estar el bot
 
+    def cog_unload(self):
+        """Limpia las conexiones de voz al descargar el cog."""
+        for guild_id in list(self.voice_targets.keys()):
+            guild = self.bot.get_guild(guild_id)
+            if guild and guild.voice_client:
+                self.bot.loop.create_task(guild.voice_client.disconnect(force=True))
+        self.voice_targets.clear()
+
     @commands.hybrid_command(name="join", description="Conecta el bot a tu canal de voz (Modo Chill).")
     async def join(self, ctx: commands.Context):
         lang = await lang_service.get_guild_lang(ctx.guild.id)
@@ -43,7 +51,8 @@ class Voice(commands.Cog):
                 else:
                     await ctx.voice_client.move_to(channel)
                     # Aseguramos que siga en modo "Chill" (Sordo/Mute) al moverse
-                    await ctx.guild.me.edit(deafen=True, mute=True)
+                    try: await ctx.guild.me.edit(deafen=True, mute=True)
+                    except: pass
             else:
                 await channel.connect(cls=wavelink.Player, self_deaf=True, self_mute=True)
             
@@ -62,8 +71,7 @@ class Voice(commands.Cog):
         
         if ctx.voice_client:
             # Eliminamos la persistencia porque el usuario pidió salir
-            if ctx.guild.id in self.voice_targets:
-                del self.voice_targets[ctx.guild.id]
+            self.voice_targets.pop(ctx.guild.id, None)
                 
             await ctx.voice_client.disconnect()
             msg = lang_service.get_text("voice_leave", lang)
@@ -79,8 +87,14 @@ class Voice(commands.Cog):
         """Detecta desconexiones forzadas o inesperadas."""
         # Si el bot es el que cambió de estado
         if member.id == self.bot.user.id:
-            # Si estaba en un canal y ahora no (Desconexión)
-            if before.channel is not None and after.channel is None:
+            # 1. Movimiento manual (o por comando) a otro canal
+            if before.channel is not None and after.channel is not None and before.channel.id != after.channel.id:
+                if member.guild.id in self.voice_targets:
+                    self.voice_targets[member.guild.id] = after.channel.id
+                    logger.info(f"🔄 [Voice] Bot movido manualmente a {after.channel.name} en {member.guild.name}. Objetivo actualizado.")
+
+            # 2. Desconexión inesperada
+            elif before.channel is not None and after.channel is None:
                 target_channel_id = self.voice_targets.get(member.guild.id)
                 
                 # Si tenemos un objetivo guardado, intentamos reconectar
@@ -109,8 +123,7 @@ class Voice(commands.Cog):
                 logger.error(f"❌ [Voice] Fallo reconexión ({i+1}): {e}")
         
         # Si falla todo, limpiamos el target
-        if guild.id in self.voice_targets:
-            del self.voice_targets[guild.id]
+        self.voice_targets.pop(guild.id, None)
 
 async def setup(bot):
     await bot.add_cog(Voice(bot))

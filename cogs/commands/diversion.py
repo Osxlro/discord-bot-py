@@ -70,10 +70,15 @@ class Diversion(commands.Cog):
         title = lang_service.get_text("confess_title", lang)
         embed = discord.Embed(title=title, description=f"\"{secreto}\"", color=discord.Color.random())
         embed.set_footer(text=lang_service.get_text("confess_anon", lang))
-        await canal.send(embed=embed)
-
-        msg = lang_service.get_text("confess_sent", lang, channel=canal.mention)
-        await ctx.reply(embed=embed_service.success(lang_service.get_text("title_success", lang), msg, lite=True), ephemeral=True)
+        
+        try:
+            await canal.send(embed=embed)
+            msg = lang_service.get_text("confess_sent", lang, channel=canal.mention)
+            await ctx.reply(embed=embed_service.success(lang_service.get_text("title_success", lang), msg, lite=True), ephemeral=True)
+        except discord.Forbidden:
+            await ctx.reply(embed=embed_service.error(lang_service.get_text("title_error", lang), "❌ No tengo permisos para enviar mensajes en ese canal.", lite=True), ephemeral=True)
+        except Exception as e:
+            await ctx.reply(embed=embed_service.error(lang_service.get_text("title_error", lang), f"Error: {e}", lite=True), ephemeral=True)
 
     @commands.hybrid_command(name="8ball", description="Pregúntale a la bola mágica.")
     @app_commands.describe(pregunta="Tu pregunta")

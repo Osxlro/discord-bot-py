@@ -1,4 +1,5 @@
 import logging
+import asyncio
 import os
 import tracemalloc
 import platform
@@ -51,6 +52,9 @@ class BotInfoView(discord.ui.View):
         return True
 
     async def _get_psutil_info(self):
+        return await asyncio.to_thread(self._get_psutil_info_sync)
+
+    def _get_psutil_info_sync(self):
         try:
             import psutil
             proc = psutil.Process()
@@ -257,7 +261,7 @@ class Developer(commands.Cog):
             await ctx.send(embed=pages[0], ephemeral=True)
         else:
             view = pagination_service.Paginator(pages, ctx.author.id)
-            await ctx.send(embed=pages[0], view=view, ephemeral=True)
+            view.message = await ctx.send(embed=pages[0], view=view, ephemeral=True)
 
     @commands.command(name="sync", hidden=True)
     @commands.is_owner()
@@ -328,6 +332,14 @@ class Developer(commands.Cog):
         view = BotInfoView(ctx, self.bot)
         embed = await view.get_general_embed()
         await ctx.send(embed=embed, view=view)
+
+    @commands.hybrid_command(name="db_maintenance", description="Ejecuta mantenimiento (VACUUM) en la base de datos.")
+    @commands.is_owner()
+    async def db_maintenance(self, ctx: commands.Context):
+        await ctx.defer()
+        # Ejecutamos VACUUM manualmente para compactar la DB
+        await db_service.execute("VACUUM;")
+        await ctx.send(embed=embed_service.success("Mantenimiento", "✅ Base de datos optimizada (VACUUM completado)."))
 
 async def setup(bot):
     await bot.add_cog(Developer(bot))

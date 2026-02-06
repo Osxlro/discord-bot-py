@@ -122,6 +122,8 @@ class Music(commands.Cog):
         """Simula un efecto de Fade-In ajustando el volumen gradualmente."""
         # Objetivo: Volumen actual configurado o el default
         target_vol = player.volume
+        last_set_vol = 0 # Para detectar cambios manuales
+        current_track = player.current # Guardamos referencia para verificar cambios
         
         # Inicio: Volumen 0
         await player.set_volume(0)
@@ -132,9 +134,19 @@ class Music(commands.Cog):
         vol_step = target_vol / steps
         
         for i in range(1, steps + 1):
+            # Si la canción cambió o se detuvo, cancelamos el fade para no afectar la siguiente
+            if not player.playing or player.current != current_track:
+                return
+
+            # Si el volumen cambió externamente (ej: usuario usó /volume), cancelamos el fade
+            # Usamos un margen de error de 1 por posibles redondeos
+            if last_set_vol > 0 and abs(player.volume - last_set_vol) > 1:
+                return
+
             await asyncio.sleep(step_delay)
             new_vol = int(vol_step * i)
             await player.set_volume(new_vol)
+            last_set_vol = new_vol
         
         # Asegurar volumen final exacto
         await player.set_volume(target_vol)
@@ -169,6 +181,10 @@ class Music(commands.Cog):
         logger.info(f"✅ [Music] Nodo Lavalink conectado: {payload.node.identifier}")
 
     async def play_autocomplete(self, interaction: discord.Interaction, current: str) -> list[app_commands.Choice[str]]:
+        # Evitar errores si Lavalink no está conectado
+        if not wavelink.Pool.nodes:
+            return []
+            
         if not current:
             return []
         try:
@@ -185,7 +201,8 @@ class Music(commands.Cog):
                 name = f"[{duration}] {track.title[:65]} - {track.author[:15]}"
                 choices.append(app_commands.Choice(name=name, value=track.uri or track.title))
             return choices
-        except Exception:
+        except Exception as e:
+            logger.debug(f"Error en autocompletado de música: {e}")
             return []
 
     @commands.hybrid_command(name="play", description="Reproduce música desde YouTube, SoundCloud, etc.")
@@ -214,6 +231,14 @@ class Music(commands.Cog):
             # Si el bot está muteado (por ejemplo, por /join de voice.py), lo desmuteamos
             if ctx.guild.me.voice.self_mute:
                 await ctx.guild.me.edit(mute=False)
+            
+            # Si el usuario está en otro canal, movemos al bot
+            if ctx.author.voice.channel.id != player.channel.id:
+                await player.move_to(ctx.author.voice.channel)
+                # Actualizar target de Voice cog si existe para evitar que intente devolverlo
+                voice_cog = self.bot.get_cog("Voice")
+                if voice_cog and hasattr(voice_cog, 'voice_targets') and ctx.guild.id in voice_cog.voice_targets:
+                    voice_cog.voice_targets[ctx.guild.id] = ctx.author.voice.channel.id
 
         # Guardamos el canal de texto para enviar mensajes de "Now Playing"
         player.home = ctx.channel
@@ -291,6 +316,11 @@ class Music(commands.Cog):
     async def stop(self, ctx: commands.Context):
         lang = await lang_service.get_guild_lang(ctx.guild.id)
         if ctx.voice_client:
+            # Fix conflicto con Voice Cog: Limpiamos la persistencia para evitar auto-reconexión
+            voice_cog = self.bot.get_cog("Voice")
+            if voice_cog and hasattr(voice_cog, 'voice_targets'):
+                voice_cog.voice_targets.pop(ctx.guild.id, None)
+
             await ctx.voice_client.disconnect()
             msg = lang_service.get_text("music_stopped", lang)
             await ctx.send(embed=embed_service.success(lang_service.get_text("title_music", lang), msg, lite=True))
@@ -347,7 +377,7 @@ class Music(commands.Cog):
             await ctx.send(embed=pages[0])
         else:
             view = pagination_service.Paginator(pages, ctx.author.id)
-            await ctx.send(embed=pages[0], view=view)
+            view.message = await ctx.send(embed=pages[0], view=view)
 
     @commands.hybrid_command(name="pause", description="Pausa o reanuda la música.")
     async def pause(self, ctx: commands.Context):
@@ -473,6 +503,10 @@ class Music(commands.Cog):
         if hasattr(player, "last_msg") and player.last_msg:
             try: await player.last_msg.delete()
             except: pass
+            
+        # Detener vista anterior para liberar recursos y evitar interacciones en mensajes viejos
+        if hasattr(player, "last_view") and player.last_view:
+            player.last_view.stop()
 
         # --- CROSSFADE / FADE IN ---
         # Si está configurado, aplicamos un filtro de volumen para simular fade-in
@@ -502,7 +536,8 @@ class Music(commands.Cog):
         # Usamos author_id=None para permitir que cualquiera en el canal use los botones
         # Esto soluciona el problema de que los botones no funcionaran al inicio
         view = MusicControls(player, author_id=None, lang=lang) 
-
+        
+        player.last_view = view # Guardamos referencia para detenerla luego
         player.last_msg = await player.home.send(embed=embed, view=view)
 
     # Evento para reproducir siguiente canción automáticamente

@@ -54,10 +54,8 @@ async def init_db():
     # WAL permite que las lecturas no bloqueen las escrituras y viceversa.
     await db.execute("PRAGMA journal_mode=WAL;") 
     await db.execute("PRAGMA synchronous=NORMAL;")
+    await db.execute("PRAGMA temp_store=MEMORY;") # Operaciones temporales en RAM
     
-    # Compactar base de datos al inicio para liberar espacio en disco
-    await db.execute("VACUUM;")
-
     # --- DEFINICIÓN DE TABLAS ---
     
     # 1. Usuarios (Preferencias globales)
@@ -243,6 +241,9 @@ async def flush_xp_cache():
                 if key in _xp_cache:
                     if _xp_cache[key]['xp'] == saved_xp:
                         _xp_cache[key]['dirty'] = False
+            
+            # Limpieza de memoria para evitar leaks (Memory Leak Fix)
+            clear_xp_cache_safe()
         except Exception as e:
             logger.error(f"⚠️ Error guardando caché de XP: {e}")
 

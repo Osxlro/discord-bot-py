@@ -115,7 +115,7 @@ class Niveles(commands.Cog):
             await ctx.reply(embed=pages[0])
         else:
             view = pagination_service.Paginator(pages, ctx.author.id)
-            await ctx.reply(embed=pages[0], view=view)
+            view.message = await ctx.reply(embed=pages[0], view=view)
 
     @commands.hybrid_command(name="rebirth", description="Reinicia tu nivel (requiere Nivel 100) para ganar un Rebirth.")
     async def rebirth(self, ctx: commands.Context):

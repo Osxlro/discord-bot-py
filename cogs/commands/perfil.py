@@ -29,7 +29,7 @@ class Perfil(commands.Cog):
         rebirths = guild_data['rebirths'] if guild_data else 0
         
         # Barra de progreso
-        xp_next = int(100 * (nivel ** 1.2)) 
+        xp_next = db_service.calculate_xp_required(nivel)
         progreso = min(xp / xp_next, 1.0)
         bloques = int(progreso * 10)
         barra = "▰" * bloques + "▱" * (10 - bloques)

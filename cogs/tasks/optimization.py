@@ -1,4 +1,5 @@
 import gc
+import asyncio
 import logging
 import discord
 from discord.ext import commands, tasks
@@ -47,7 +48,7 @@ class OptimizationTasks(commands.Cog):
                 db_service.clear_xp_cache_safe()
             
             # 4. Forzamos a Python a liberar memoria no usada
-            gc.collect()
+            await asyncio.to_thread(gc.collect)
             logger.info("🧹 [Sistema] Mantenimiento de memoria completado (RAM liberada).")
         except Exception as e:
             logger.error(f"⚠️ Error en limpieza de memoria: {e}")

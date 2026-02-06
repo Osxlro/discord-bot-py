@@ -41,6 +41,10 @@ class Moderacion(commands.Cog):
             deleted = await ctx.channel.purge(limit=cantidad)
             count = len(deleted)
             
+            if count == 0:
+                await ctx.send(embed=embed_service.warning(lang_service.get_text("title_info", lang), lang_service.get_text("error_old_messages", lang), lite=True), ephemeral=True)
+                return
+            
             title = lang_service.get_text("clear_success", lang)
             desc = lang_service.get_text("clear_desc", lang, count=count)
             await ctx.send(embed=embed_service.success(title, desc, lite=True), delete_after=5)
@@ -63,6 +67,10 @@ class Moderacion(commands.Cog):
         seconds = self._parse_time(tiempo)
         if seconds == 0:
             await ctx.reply(embed=embed_service.error(lang_service.get_text("title_error", lang), lang_service.get_text("timeout_invalid", lang), lite=True), ephemeral=True)
+            return
+        
+        if seconds > 2419200: # 28 días en segundos (Límite de Discord)
+            await ctx.reply(embed=embed_service.error(lang_service.get_text("title_error", lang), "❌ El tiempo máximo de aislamiento es de 28 días.", lite=True), ephemeral=True)
             return
             
         try:

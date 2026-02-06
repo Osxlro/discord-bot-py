@@ -14,9 +14,11 @@ class Backup(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.backup_db.start()
+        self.flush_xp.start()
 
     def cog_unload(self):
         self.backup_db.cancel()
+        self.flush_xp.cancel()
 
     async def _cleanup_dm(self, channel: discord.DMChannel):
         """Limpia backups antiguos, manteniendo los 3 más recientes."""
@@ -34,6 +36,11 @@ class Backup(commands.Cog):
                     await asyncio.sleep(1)
                 except discord.HTTPException:
                     pass
+
+    @tasks.loop(minutes=5)
+    async def flush_xp(self):
+        """Guarda el caché de XP en la base de datos periódicamente."""
+        await db_service.flush_xp_cache()
 
     @tasks.loop(hours=12)
     async def backup_db(self):
@@ -73,7 +80,7 @@ class Backup(commands.Cog):
                     return 
 
             # 2. Crear copia temporal para evitar bloqueos/corrupción durante el envío
-            shutil.copy2(db_path, temp_backup_path)
+            await asyncio.to_thread(shutil.copy2, db_path, temp_backup_path)
 
             # 3. ENVIAR BACKUP
             fecha = datetime.date.today().strftime("%Y-%m-%d")

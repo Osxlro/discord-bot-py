@@ -10,6 +10,7 @@ class Paginator(discord.ui.View):
         self.pages = pages
         self.author_id = author_id
         self.current_page = 0
+        self.message = None # Referencia al mensaje para deshabilitar botones al final
         
         # Configuramos el estado inicial de los botones
         self.update_buttons()
@@ -39,8 +40,10 @@ class Paginator(discord.ui.View):
         # Desactivar todo cuando se acabe el tiempo
         for child in self.children:
             child.disabled = True
-        # Nota: Para editar el mensaje original se necesitaría guardar la referencia del mensaje
-        # pero en interacciones híbridas a veces es complejo. Por ahora solo deja de responder.
+        
+        if self.message:
+            try: await self.message.edit(view=self)
+            except: pass
 
     @discord.ui.button(label="⏮️", style=discord.ButtonStyle.secondary)
     async def first_page(self, interaction: discord.Interaction, button: discord.ui.Button):
