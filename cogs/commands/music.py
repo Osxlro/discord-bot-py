@@ -536,6 +536,8 @@ class Music(commands.Cog):
     @commands.Cog.listener()
     async def on_wavelink_track_start(self, payload: wavelink.TrackStartEventPayload):
         player = payload.player
+        if not player: return
+
         # Registrar que la canción empezó a sonar (Feedback positivo inicial)
         await db_service.record_song_feedback(player.guild.id, payload.track.identifier, is_skip=False)
 
