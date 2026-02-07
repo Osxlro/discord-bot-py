@@ -630,7 +630,8 @@ class Music(commands.Cog):
                     await player.play(recommendation)
                     return
             except Exception as e:
-                logger.error(f"❌ Error en Autoplay Recomendación: {e}")
+                err_msg = str(e) or "Unknown Node Error"
+                logger.error(f"❌ Error en Autoplay Recomendación: {err_msg}")
                 # Si falla, simplemente no reproduce nada y deja que el bot quede en silencio/idle
                 if hasattr(player, "home") and player.home:
                     try:
@@ -641,9 +642,14 @@ class Music(commands.Cog):
         # Deshabilitar botones del último mensaje para indicar fin de sesión.
         await music_service.cleanup_player(self.bot, player)
         
-        # Desconectar automáticamente para ahorrar recursos
+        # Desconectar automáticamente para ahorrar recursos (Protegido contra fallos de nodo)
         if player.connected:
-            await player.disconnect()
+            try:
+                await player.disconnect()
+            except Exception:
+                # Si el nodo ya murió o devolvió 500, ignoramos el error de desconexión
+                pass
+
             if hasattr(player, "home") and player.home:
                 lang = await lang_service.get_guild_lang(player.guild.id)
                 msg = lang_service.get_text("music_queue_empty", lang)
