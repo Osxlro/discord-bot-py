@@ -277,4 +277,16 @@ class RecommendationEngine:
                 return top_tier[0][0] # Fallback al mejor absoluto
             
         logger.warning(f"⚠️ No se encontraron recomendaciones válidas para: {seed_track.title}")
+
+        # --- FALLBACK: REPRODUCCIÓN HISTÓRICA (AUTO-DJ) ---
+        # Si el algoritmo falla, reproducimos algo del historial para mantener la música sonando.
+        if len(history) > 1:
+            # Evitamos la última canción (seed_track) para no repetir inmediatamente
+            # Tomamos una muestra aleatoria de las últimas 50 canciones
+            pool = history[-min(len(history), 50):-1]
+            if pool:
+                fallback = random.choice(pool)
+                logger.info(f"🔄 [Algoritmo] Fallback Histórico: {fallback.title}")
+                return fallback
+
         return None
