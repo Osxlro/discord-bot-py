@@ -42,32 +42,31 @@ class Music(commands.Cog):
 
         await self.connect_best_node()
 
-    async def connect_best_node(self):
+    async def connect_best_node(self, max_retries=3):
         """Itera sobre los nodos configurados hasta conectar uno."""
         if self._is_connecting or not self.node_configs:
             return
         
         self._is_connecting = True
         try:
-            while True:
+            for i in range(max_retries):
                 # Si ya hay un nodo conectado, terminamos
                 if wavelink.Pool.nodes:
                     for node in wavelink.Pool.nodes.values():
                         if node.status == wavelink.NodeStatus.CONNECTED:
                             return
 
-                logger.info(f"🔄 [Music] Buscando mejor nodo disponible entre {len(self.node_configs)} opciones...")
+                logger.info(f"🔄 [Music] Intento de conexión {i+1}/{max_retries}...")
 
-                for _ in range(len(self.node_configs)):
-                    # Rotación: Tomar primero, mover al final
-                    config = self.node_configs.pop(0)
-                    self.node_configs.append(config)
-                    
+                for config in self.node_configs:
                     identifier = config.get("IDENTIFIER", config["HOST"])
                     
                     # Limpieza preventiva de nodos zombies
-                    existing = wavelink.Pool.nodes.get(identifier)
+                    existing = wavelink.Pool.get_node(identifier)
                     if existing:
+                        if existing.status == wavelink.NodeStatus.CONNECTED:
+                            return
+                        # Cerrar nodo si está en estado desconectado/conectando para evitar fugas
                         await existing.close()
 
                     try:
@@ -83,20 +82,28 @@ class Music(commands.Cog):
                         
                         # Esperar confirmación (Timeout corto para evitar bloqueos)
                         try:
-                            def check(p): return p.node.identifier == identifier
+                            def check(p): return p.node.identifier == identifier and p.node.status == wavelink.NodeStatus.CONNECTED
                             await self.bot.wait_for('wavelink_node_ready', check=check, timeout=10.0)
+                            
+                            # Si conecta, aseguramos que el monitor esté corriendo
+                            if not self.node_monitor.is_running():
+                                self.node_monitor.start()
                             return # Éxito, salimos del bucle
                         except asyncio.TimeoutError:
-                            logger.warning(f"⚠️ [Music] Nodo {identifier} no respondió. Probando siguiente...")
+                            logger.warning(f"⚠️ [Music] Nodo {identifier} no respondió. Cerrando...")
                             node = wavelink.Pool.get_node(identifier)
                             if node: await node.close() # Matar reintentos
                             
                     except Exception as e:
                         logger.error(f"❌ [Music] Error nodo {identifier}: {e}")
                 
-                logger.error("❌ [Music] Todos los nodos fallaron. Reintentando en 30s...")
-                if self.bot.is_closed(): return
-                await asyncio.sleep(30)
+                if i < max_retries - 1:
+                    await asyncio.sleep(5)
+            
+            # Si fallan todos los intentos
+            logger.error("❌ [Music] No se pudo conectar a Lavalink. Deteniendo reintentos automáticos.")
+            if self.node_monitor.is_running():
+                self.node_monitor.cancel()
         finally:
             self._is_connecting = False
 
@@ -105,18 +112,14 @@ class Music(commands.Cog):
         """Monitorea el estado de los nodos y reconecta si es necesario."""
         await self.bot.wait_until_ready()
         
-        # Si no hay nodos en el pool, intentamos conectar
-        if not wavelink.Pool.nodes:
-            logger.warning("⚠️ [Music] No hay nodos registrados en el Pool. Intentando reconectar...")
-            await self.connect_nodes()
-            return
+        # Verificar si hay nodos conectados
+        if wavelink.Pool.nodes:
+             if any(node.status == wavelink.NodeStatus.CONNECTED for node in wavelink.Pool.nodes.values()):
+                 return
 
-        # Verificar si todos los nodos están desconectados
-        any_connected = any(node.status == wavelink.NodeStatus.CONNECTED for node in wavelink.Pool.nodes.values())
-        
-        if not any_connected:
-            logger.warning("⚠️ [Music] Todos los nodos están desconectados. Forzando reconexión...")
-            await self.connect_best_node()
+        logger.warning("⚠️ [Music] Monitor: Nodos desconectados. Intentando reconectar (1 intento)...")
+        # Solo 1 intento en el monitor periódico para no saturar logs
+        await self.connect_best_node(max_retries=1)
 
     @commands.Cog.listener()
     async def on_wavelink_node_ready(self, payload: wavelink.NodeReadyEventPayload):
@@ -221,9 +224,13 @@ class Music(commands.Cog):
         busqueda = busqueda.strip()
         lang = await lang_service.get_guild_lang(ctx.guild.id)
 
-        # Verificación rápida de nodos antes de procesar nada
-        if not wavelink.Pool.nodes:
-            return await ctx.send(embed=embed_service.error(lang_service.get_text("title_error", lang), lang_service.get_text("music_err_lavalink_nodes", lang)))
+        # Verificación y conexión bajo demanda si los nodos están caídos
+        if not wavelink.Pool.nodes or not any(n.status == wavelink.NodeStatus.CONNECTED for n in wavelink.Pool.nodes.values()):
+            await ctx.send(embed=embed_service.info(lang_service.get_text("title_info", lang), "🔄 Conectando a servicios de música...", lite=True))
+            await self.connect_best_node(max_retries=3)
+            
+            if not wavelink.Pool.nodes or not any(n.status == wavelink.NodeStatus.CONNECTED for n in wavelink.Pool.nodes.values()):
+                return await ctx.send(embed=embed_service.error(lang_service.get_text("title_error", lang), lang_service.get_text("music_err_lavalink_nodes", lang)))
 
         if not busqueda:
             return await ctx.send(embed=embed_service.warning(lang_service.get_text("title_error", lang), lang_service.get_text("error_missing_args", lang)))
