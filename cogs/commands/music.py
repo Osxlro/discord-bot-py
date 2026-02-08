@@ -5,7 +5,7 @@ import logging
 import random
 import re
 from discord import app_commands
-from discord.ext import commands
+from discord.ext import commands, tasks
 from config import settings
 from services import embed_service, lang_service, pagination_service, algorithm_service, db_service, music_service
 
@@ -24,6 +24,10 @@ class Music(commands.Cog):
         """Conecta a Lavalink al cargar el Cog."""
         # Usamos create_task para no bloquear el arranque del bot si Lavalink está caído
         self.bot.loop.create_task(self.connect_nodes())
+        self.node_monitor.start()
+
+    async def cog_unload(self):
+        self.node_monitor.cancel()
 
     async def connect_nodes(self):
         """Configura y conecta al primer nodo disponible (Failover)."""
@@ -96,6 +100,24 @@ class Music(commands.Cog):
         finally:
             self._is_connecting = False
 
+    @tasks.loop(minutes=1)
+    async def node_monitor(self):
+        """Monitorea el estado de los nodos y reconecta si es necesario."""
+        await self.bot.wait_until_ready()
+        
+        # Si no hay nodos en el pool, intentamos conectar
+        if not wavelink.Pool.nodes:
+            logger.warning("⚠️ [Music] No hay nodos registrados en el Pool. Intentando reconectar...")
+            await self.connect_nodes()
+            return
+
+        # Verificar si todos los nodos están desconectados
+        any_connected = any(node.status == wavelink.NodeStatus.CONNECTED for node in wavelink.Pool.nodes.values())
+        
+        if not any_connected:
+            logger.warning("⚠️ [Music] Todos los nodos están desconectados. Forzando reconexión...")
+            await self.connect_best_node()
+
     @commands.Cog.listener()
     async def on_wavelink_node_ready(self, payload: wavelink.NodeReadyEventPayload):
         logger.info(f"✅ [Music] Nodo Lavalink conectado: {payload.node.identifier}")
@@ -115,6 +137,9 @@ class Music(commands.Cog):
         player = payload.player
         if not player: return
 
+        # Guardamos la posición actual para intentar reanudar ahí (Smart Seek)
+        current_position = int(player.position) if player else 0
+
         # --- FALLBACK SYSTEM ---
         # Si YouTube falla (bloqueo/streams), intentamos SoundCloud automáticamente.
         err_msg = str(payload.exception)
@@ -133,7 +158,9 @@ class Music(commands.Cog):
                     # Preservar quién pidió la canción original
                     if hasattr(payload.track, "requester"):
                         fallback_track.requester = payload.track.requester
-                    await player.play(fallback_track)
+                    
+                    # Reproducir desde donde se quedó (si es posible)
+                    await player.play(fallback_track, start=current_position)
                     
                     # Aviso temporal al usuario
                     lang = await lang_service.get_guild_lang(player.guild.id)
