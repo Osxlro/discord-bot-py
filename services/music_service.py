@@ -270,6 +270,20 @@ async def fade_in(player: wavelink.Player, duration_ms: int):
     
     await player.set_volume(target_vol)
 
+class SafePlayer(wavelink.Player):
+    """
+    Player personalizado que captura errores de conexión con el nodo (ej. 500 Internal Server Error)
+    durante la actualización del servidor de voz, evitando que el bot crashee o quede en estado zombie.
+    """
+    async def on_voice_server_update(self, data: dict):
+        try:
+            await super().on_voice_server_update(data)
+        except Exception as e:
+            logger.warning(f"⚠️ [SafePlayer] Fallo al enviar actualización de voz al nodo: {e}")
+            # Si el nodo rechaza la conexión, desconectamos localmente para limpiar estado
+            try: await self.disconnect()
+            except: pass
+
 def format_duration(milliseconds: int) -> str:
     """Formatea milisegundos a MM:SS o HH:MM:SS."""
     seconds = milliseconds // 1000

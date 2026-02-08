@@ -101,9 +101,9 @@ class Music(commands.Cog):
         logger.info(f"✅ [Music] Nodo Lavalink conectado: {payload.node.identifier}")
 
     @commands.Cog.listener()
-    async def on_wavelink_node_closed(self, payload: wavelink.NodeClosedEventPayload):
+    async def on_wavelink_node_closed(self, node: wavelink.Node, payload: wavelink.NodeClosedEventPayload = None):
         """Detecta caída de nodo y activa Failover."""
-        logger.warning(f"⚠️ [Music] Nodo {payload.node.identifier} desconectado. Iniciando Failover...")
+        logger.warning(f"⚠️ [Music] Nodo {node.identifier} desconectado. Iniciando Failover...")
         await asyncio.sleep(1)
         await self.connect_best_node()
 
@@ -118,7 +118,7 @@ class Music(commands.Cog):
         # --- FALLBACK SYSTEM ---
         # Si YouTube falla (bloqueo/streams), intentamos SoundCloud automáticamente.
         err_msg = str(payload.exception)
-        is_yt_error = "No supported audio streams" in err_msg or "403" in err_msg
+        is_yt_error = "No supported audio streams" in err_msg or "403" in err_msg or "not available" in err_msg
         is_yt_track = "youtube.com" in (payload.track.uri or "") or "youtu.be" in (payload.track.uri or "")
 
         if is_yt_error and is_yt_track:
@@ -218,17 +218,17 @@ class Music(commands.Cog):
             # Verificar si existe un cliente de voz y si es del tipo correcto (Wavelink Player)
             if ctx.voice_client and not isinstance(ctx.voice_client, wavelink.Player):
                 await ctx.voice_client.disconnect(force=True)
-                player: wavelink.Player = await ctx.author.voice.channel.connect(cls=wavelink.Player, self_deaf=True)
+                player: wavelink.Player = await ctx.author.voice.channel.connect(cls=music_service.SafePlayer, self_deaf=True)
                 await player.set_volume(settings.LAVALINK_CONFIG.get("DEFAULT_VOLUME", 50))
             
             elif not ctx.voice_client:
-                player: wavelink.Player = await ctx.author.voice.channel.connect(cls=wavelink.Player, self_deaf=True)
+                player: wavelink.Player = await ctx.author.voice.channel.connect(cls=music_service.SafePlayer, self_deaf=True)
                 await player.set_volume(settings.LAVALINK_CONFIG.get("DEFAULT_VOLUME", 50))
             
             else:
                 player: wavelink.Player = ctx.voice_client
                 if not player.connected:
-                    await player.connect(cls=wavelink.Player, self_deaf=True, channel=ctx.author.voice.channel)
+                    await player.connect(cls=music_service.SafePlayer, self_deaf=True, channel=ctx.author.voice.channel)
                     # No reseteamos volumen aquí si ya existía el player, para mantener preferencia de usuario
         except Exception as e:
             return await ctx.send(embed=embed_service.error(lang_service.get_text("title_error", lang), str(e)))
