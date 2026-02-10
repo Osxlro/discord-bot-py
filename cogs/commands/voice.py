@@ -106,10 +106,25 @@ class Voice(commands.Cog):
         for i, wait in enumerate(backoff):
             await asyncio.sleep(wait)
             try:
-                if guild.voice_client and guild.voice_client.connected:
-                    return # Ya se reconectó
+                vc = guild.voice_client
+                is_connected = False
+                
+                # Verificación híbrida (Wavelink vs Standard)
+                if vc:
+                    if hasattr(vc, 'connected'): is_connected = vc.connected
+                    elif hasattr(vc, 'is_connected'): is_connected = vc.is_connected()
+                
+                if is_connected: return # Ya se reconectó
                 
                 logger.info(f"🔄 [Voice] Intento de reconexión {i+1}/{len(backoff)} en {guild.name}...")
+                
+                # Limpieza previa por si quedó un cliente zombie
+                if vc:
+                    try:
+                        await vc.disconnect(force=True)
+                    except:
+                        pass
+
                 # Reconexión estándar
                 await channel.connect(self_deaf=True, self_mute=True)
                 logger.info(f"✅ [Voice] Reconexión exitosa en {guild.name}.")

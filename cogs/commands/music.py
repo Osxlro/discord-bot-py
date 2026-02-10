@@ -62,7 +62,7 @@ class Music(commands.Cog):
                     identifier = config.get("IDENTIFIER", config["HOST"])
                     
                     # Limpieza preventiva de nodos zombies
-                    existing = wavelink.Pool.get_node(identifier)
+                    existing = wavelink.Pool.nodes.get(identifier)
                     if existing:
                         if existing.status == wavelink.NodeStatus.CONNECTED:
                             return
@@ -91,7 +91,7 @@ class Music(commands.Cog):
                             return # Éxito, salimos del bucle
                         except asyncio.TimeoutError:
                             logger.warning(f"⚠️ [Music] Nodo {identifier} no respondió. Cerrando...")
-                            node = wavelink.Pool.get_node(identifier)
+                            node = wavelink.Pool.nodes.get(identifier)
                             if node: await node.close() # Matar reintentos
                             
                     except Exception as e:
