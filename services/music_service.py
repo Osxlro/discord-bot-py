@@ -2,10 +2,13 @@ import discord
 import asyncio
 import wavelink
 import logging
+from discord import app_commands
 from config import settings
 from services import lang_service, embed_service, lyrics_service, voice_service
 
 logger = logging.getLogger(__name__)
+
+_is_connecting = False
 
 # =============================================================================
 # LÓGICA DE INTERFAZ (VISTAS Y BOTONES)
@@ -218,6 +221,94 @@ async def cleanup_player(bot, player: wavelink.Player, skip_message_edit: bool =
     # Resetear estados internos
     player.smart_autoplay = False
     player.last_track_error = False
+
+async def connect_nodes(bot):
+    """Configura y conecta al primer nodo disponible (Failover)."""
+    await bot.wait_until_ready()
+    
+    node_config = settings.LAVALINK_CONFIG
+    node_configs = []
+    if "NODES" in node_config:
+        node_configs = list(node_config["NODES"])
+    elif "HOST" in node_config:
+        node_configs = [node_config]
+
+    await connect_best_node(bot, node_configs)
+
+async def connect_best_node(bot, node_configs, max_retries=3):
+    """Itera sobre los nodos configurados hasta conectar uno."""
+    global _is_connecting
+    if _is_connecting or not node_configs:
+        return
+    
+    _is_connecting = True
+    try:
+        for i in range(max_retries):
+            if wavelink.Pool.nodes:
+                for node in wavelink.Pool.nodes.values():
+                    if node.status == wavelink.NodeStatus.CONNECTED:
+                        return
+
+            logger.info(f"🔄 [Music Service] Intento de conexión {i+1}/{max_retries}...")
+
+            for config in node_configs:
+                identifier = config.get("IDENTIFIER", config["HOST"])
+                
+                if identifier in wavelink.Pool.nodes:
+                    old_node = wavelink.Pool.get_node(identifier=identifier)
+                    if old_node.status == wavelink.NodeStatus.CONNECTED and i == 0:
+                        return
+                    
+                    logger.debug(f"🧹 [Music Service] Limpiando nodo antiguo: {identifier}")
+                    await old_node.close()
+
+                try:
+                    protocol = "https" if config.get("SECURE") else "http"
+                    node = wavelink.Node(
+                        identifier=identifier,
+                        uri=f"{protocol}://{config['HOST']}:{config['PORT']}",
+                        password=config['PASSWORD']
+                    )
+                    
+                    await wavelink.Pool.connect(nodes=[node], client=bot, cache_capacity=settings.LAVALINK_CONFIG.get("CACHE_CAPACITY", 100))
+                    
+                    try:
+                        def check(p): return p.node.identifier == identifier and p.node.status == wavelink.NodeStatus.CONNECTED
+                        await bot.wait_for('wavelink_node_ready', check=check, timeout=10.0)
+                        return 
+                    except asyncio.TimeoutError:
+                        logger.warning(f"⚠️ [Music Service] Nodo {identifier} no respondió. Cerrando...")
+                        node = wavelink.Pool.nodes.get(identifier)
+                        if node: await node.close()
+                            
+                except Exception as e:
+                    logger.error(f"❌ [Music Service] Error nodo {identifier}: {e}")
+            
+            if i < max_retries - 1:
+                await asyncio.sleep(5)
+    finally:
+        _is_connecting = False
+
+async def get_search_choices(current: str) -> list[app_commands.Choice[str]]:
+    """Genera opciones para el autocompletado de búsqueda."""
+    if not wavelink.Pool.nodes or not current:
+        return []
+    try:
+        provider = settings.LAVALINK_CONFIG.get("SEARCH_PROVIDER", "yt")
+        tracks = await wavelink.Playable.search(f"{provider}search:{current}")
+        if not tracks: return []
+        
+        choices = []
+        for track in tracks[:settings.MUSIC_CONFIG["AUTOCOMPLETE_LIMIT"]]:
+            duration = "LIVE" if track.is_stream else format_duration(track.length)
+            title_limit = settings.MUSIC_CONFIG["AUTOCOMPLETE_TITLE_LIMIT"]
+            author_limit = settings.MUSIC_CONFIG["AUTOCOMPLETE_AUTHOR_LIMIT"]
+            name = f"[{duration}] {track.title[:title_limit]} - {track.author[:author_limit]}"
+            choices.append(app_commands.Choice(name=name, value=track.uri or track.title))
+        return choices
+    except Exception as e:
+        logger.debug(f"Error en autocompletado de música: {e}")
+        return []
 
 async def check_voice(ctx) -> bool:
     """Verifica si el usuario puede ejecutar comandos de control."""
