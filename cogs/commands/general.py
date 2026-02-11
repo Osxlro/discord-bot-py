@@ -3,7 +3,7 @@ import logging
 from discord import app_commands
 from discord.ext import commands
 from config.locales import LOCALES
-from services import embed_service, translator_service, lang_service, db_service
+from services import embed_service, translator_service, lang_service, db_service, help_service
 from config import settings
 
 logger = logging.getLogger(__name__)
@@ -14,31 +14,8 @@ class HelpSelect(discord.ui.Select):
         self.ctx = ctx
         self.lang = lang
         
-        options = [
-            discord.SelectOption(
-                label=lang_service.get_text("help_home", lang),
-                description=lang_service.get_text("help_home_desc", lang),
-                value="home",
-                emoji=settings.HELP_CONFIG["HOME_EMOJI"]
-            )
-        ]
-
-        for name, cog in bot.cogs.items():
-            cmds = cog.get_commands()
-            if not cmds: continue
-            if not any(not c.hidden for c in cmds): continue
-
-            desc_key = f"help_desc_{name.lower()}"
-            description = lang_service.get_text(desc_key, lang)
-            if description == desc_key: description = lang_service.get_text("help_default_module_desc", lang, name=name)
-
-            options.append(discord.SelectOption(
-                label=name,
-                description=description[:settings.UI_CONFIG["SELECT_DESC_TRUNCATE"]],
-                value=name,
-                emoji=settings.HELP_CONFIG["EMOJI_MAP"].get(name, "📂")
-            ))
-
+        options = help_service.get_help_options(bot, lang)
+        
         super().__init__(
             placeholder=lang_service.get_text("help_placeholder", lang),
             min_values=1, 
@@ -55,37 +32,10 @@ class HelpSelect(discord.ui.Select):
         value = self.values[0]
 
         if value == "home":
-            embed = await General.get_home_embed(self.ctx)
+            embed = await help_service.get_home_embed(self.bot, self.ctx.guild, self.ctx.author, self.lang)
             await interaction.response.edit_message(embed=embed)
         else:
-            cog = self.bot.get_cog(value)
-            if not cog: return
-            
-            title = lang_service.get_text("help_module_title", self.lang, module=value)
-            module_desc = lang_service.get_text("help_module_desc", self.lang, module=value)
-            
-            embed = discord.Embed(
-                title=f"{settings.HELP_CONFIG['EMOJI_MAP'].get(value, '📂')} {title}",
-                description=f"*{module_desc}*\n\n",
-                color=self.ctx.guild.me.color if self.ctx.guild else discord.Color.blurple()
-            )
-
-            cmds_list = []
-            for cmd in cog.get_commands():
-                if cmd.hidden: continue
-                
-                if isinstance(cmd, (commands.HybridGroup, commands.Group)):
-                    for sub in cmd.commands:
-                        desc_cmd = sub.description or sub.short_doc or "..."
-                        cmds_list.append(f"**/{cmd.name} {sub.name}**\n> └ {desc_cmd}")
-                else:
-                    desc_cmd = cmd.description or cmd.short_doc or "..."
-                    cmds_list.append(f"**/{cmd.name}**\n> └ {desc_cmd}")
-
-            embed.description += "\n".join(cmds_list) if cmds_list else lang_service.get_text("help_no_cmds", self.lang)
-            footer_txt = lang_service.get_text("help_total_cmds", self.lang, count=len(cmds_list))
-            embed.set_footer(text=footer_txt, icon_url=self.bot.user.display_avatar.url)
-
+            embed = help_service.get_module_embed(self.bot, value, self.ctx.guild, self.lang)
             await interaction.response.edit_message(embed=embed)
 
 class HelpView(discord.ui.View):
@@ -103,39 +53,10 @@ class General(commands.Cog):
     async def cog_unload(self):
         self.bot.tree.remove_command(self.ctx_menu.name, type=self.ctx_menu.type)
 
-    @staticmethod
-    async def get_home_embed(ctx):
-        lang = await lang_service.get_guild_lang(ctx.guild.id if ctx.guild else None)
-        
-        cogs_count = len(ctx.bot.cogs)
-        total_cmds = len([c for c in ctx.bot.commands if not c.hidden])
-        
-        title = lang_service.get_text("help_title", lang)
-        desc = lang_service.get_text("help_desc", lang, user=ctx.author.display_name)
-        stats = lang_service.get_text("help_stats", lang, cats=cogs_count, cmds=total_cmds)
-        stats_title = lang_service.get_text("help_stats_title", lang)
-        # Limpiamos el texto de stats para que se vea mejor
-        stats = stats.replace("•", ">").replace("\n", "\n")
-        
-        embed = discord.Embed(
-            title=f"✨ {title}",
-            description=f"{desc}\n\n{stats_title}\n{stats}",
-            color=ctx.guild.me.color if ctx.guild else discord.Color.blurple()
-        )
-        
-        cats = [f"• {name}" for name in ctx.bot.cogs.keys() if ctx.bot.get_cog(name).get_commands()]
-        cats_formatted = "\n".join(cats)
-        
-        embed.add_field(name=f"{lang_service.get_text('help_categories', lang)}", value=f"```\n{cats_formatted}\n```", inline=False)
-        embed.set_thumbnail(url=ctx.bot.user.display_avatar.url)
-        embed.set_footer(text=lang_service.get_text("help_home_footer", lang), icon_url=ctx.bot.user.display_avatar.url)
-        
-        return embed
-
     @commands.hybrid_command(name="help", description="Muestra el panel de ayuda y comandos.")
     async def help(self, ctx: commands.Context):
         lang = await lang_service.get_guild_lang(ctx.guild.id if ctx.guild else None)
-        embed = await self.get_home_embed(ctx)
+        embed = await help_service.get_home_embed(self.bot, ctx.guild, ctx.author, lang)
         view = HelpView(self.bot, ctx, lang)
         await ctx.send(embed=embed, view=view)
 
