@@ -7,7 +7,7 @@ import re
 from discord import app_commands
 from discord.ext import commands, tasks
 from config import settings
-from services import embed_service, lang_service, pagination_service, algorithm_service, db_service, music_service
+from services import embed_service, lang_service, pagination_service, algorithm_service, db_service, music_service, voice_service
 
 logger = logging.getLogger(__name__)
 
@@ -62,12 +62,13 @@ class Music(commands.Cog):
                     identifier = config.get("IDENTIFIER", config["HOST"])
                     
                     # Limpieza preventiva de nodos zombies
-                    existing = wavelink.Pool.nodes.get(identifier)
-                    if existing:
-                        if existing.status == wavelink.NodeStatus.CONNECTED:
-                            return
-                        # Cerrar nodo si está en estado desconectado/conectando para evitar fugas
-                        await existing.close()
+                    if identifier in wavelink.Pool.nodes:
+                        old_node = wavelink.Pool.get_node(identifier=identifier)
+                        if old_node.status == wavelink.NodeStatus.CONNECTED and i == 0:
+                            return # Ya está bien, no reintentar
+                        
+                        logger.debug(f"🧹 [Music] Limpiando nodo antiguo: {identifier}")
+                        await old_node.close()
 
                     try:
                         protocol = "https" if config.get("SECURE") else "http"
@@ -120,6 +121,17 @@ class Music(commands.Cog):
         logger.warning("⚠️ [Music] Monitor: Nodos desconectados. Intentando reconectar (1 intento)...")
         # Solo 1 intento en el monitor periódico para no saturar logs
         await self.connect_best_node(max_retries=1)
+
+    @commands.Cog.listener()
+    async def on_wavelink_node_error(self, node: wavelink.Node, error: Exception):
+        """Maneja errores críticos de comunicación con el nodo."""
+        err_msg = str(error)
+        logger.error(f"❌ [Music] Error crítico en nodo {node.identifier}: {err_msg}")
+        
+        # Si el nodo devuelve error 500 o fallos de JSON (visto en logs), forzamos cierre y failover
+        if "500" in err_msg or "mimetype" in err_msg.lower():
+            await node.close()
+            await self.connect_best_node()
 
     @commands.Cog.listener()
     async def on_wavelink_node_ready(self, payload: wavelink.NodeReadyEventPayload):
@@ -277,10 +289,7 @@ class Music(commands.Cog):
             if player.channel and ctx.author.voice.channel.id != player.channel.id:
                 try:
                     await player.move_to(ctx.author.voice.channel)
-                    # Actualizar target de Voice cog si existe para evitar que intente devolverlo
-                    voice_cog = self.bot.get_cog("Voice")
-                    if voice_cog and hasattr(voice_cog, 'voice_targets'):
-                        voice_cog.voice_targets[ctx.guild.id] = ctx.author.voice.channel.id
+                    voice_service.voice_targets[ctx.guild.id] = ctx.author.voice.channel.id
                 except Exception as e:
                     return await ctx.send(embed=embed_service.error(lang_service.get_text("title_error", lang), str(e)))
 

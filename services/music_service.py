@@ -3,7 +3,7 @@ import asyncio
 import wavelink
 import logging
 from config import settings
-from services import lang_service, embed_service, lyrics_service
+from services import lang_service, embed_service, lyrics_service, voice_service
 
 logger = logging.getLogger(__name__)
 
@@ -193,9 +193,7 @@ async def cleanup_player(bot, player: wavelink.Player, skip_message_edit: bool =
     if not player: return
 
     # 1. Limpiar persistencia de Voice
-    voice_cog = bot.get_cog("Voice")
-    if voice_cog and hasattr(voice_cog, 'voice_targets'):
-        voice_cog.voice_targets.pop(player.guild.id, None)
+    voice_service.voice_targets.pop(player.guild.id, None)
 
     # 2. Deshabilitar botones visualmente
     if hasattr(player, "last_view") and player.last_view:

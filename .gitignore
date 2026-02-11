@@ -13,6 +13,7 @@ __pycache__/
 .venv/
 venv/
 env/
+services_new/
 
 # --- IDEs y Editores (Opcional pero recomendado) ---
 # Configuraciones locales de VS Code o PyCharm

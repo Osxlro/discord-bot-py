@@ -289,4 +289,13 @@ class RecommendationEngine:
                 logger.info(f"🔄 [Algoritmo] Fallback Histórico: {fallback.title}")
                 return fallback
 
-        return None
+        # --- ÚLTIMO RECURSO: BÚSQUEDA GENÉRICA ---
+        # Si todo falla, buscamos algo popular para no romper el flujo
+        try:
+            provider = settings.LAVALINK_CONFIG.get("SEARCH_PROVIDER", "yt")
+            fallback_queries = ["lofi hip hop radio", "top hits 2024", "chill mix"]
+            gen_recs = await wavelink.Playable.search(f"{provider}search:{random.choice(fallback_queries)}")
+            if gen_recs:
+                return gen_recs[0]
+        except:
+            return None
