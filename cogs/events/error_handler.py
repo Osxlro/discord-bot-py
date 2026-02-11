@@ -5,7 +5,7 @@ from services import embed_service, lang_service
 
 logger = logging.getLogger(__name__)
 
-class ErrorHandler(commands.Cog):
+class GlobalErrorHandler(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
@@ -40,6 +40,6 @@ class ErrorHandler(commands.Cog):
 
 async def setup(bot):
     # Vincular también el error handler de la AppTree (Slash Commands)
-    handler = ErrorHandler(bot)
+    handler = GlobalErrorHandler(bot)
     bot.tree.on_error = handler._handle_error
     await bot.add_cog(handler)
