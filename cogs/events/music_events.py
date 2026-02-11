@@ -59,13 +59,27 @@ class MusicEvents(commands.Cog):
             try: await player.last_msg.delete()
             except: pass
 
-        # --- IMPLEMENTACIÓN DE RICH PRESENCE ---
+        # --- MEJORA DE RICH PRESENCE ---
+        # Calculamos el tiempo de finalización para la barra de progreso en el perfil
+        start_time = datetime.datetime.now(datetime.timezone.utc)
+        end_time = None
+        if not payload.track.is_stream:
+            end_time = start_time + datetime.timedelta(milliseconds=payload.track.length)
+
+        album_obj = getattr(payload.track, "album", None)
+        album_name = getattr(album_obj, "name", "Single") if album_obj else "Single"
+
         activity = discord.Activity(
             type=discord.ActivityType.listening,
-            name=payload.track.title,
-            details=f"🎵 {payload.track.author}",
-            state=f"🔢 Cola: {len(player.queue)} pistas",
-            start=datetime.datetime.now(datetime.timezone.utc)
+            name=f"{payload.track.title}",
+            details=f"👤 {payload.track.author}",
+            state=f"💿 {album_name} | 🔊 {player.volume}%",
+            start=start_time,
+            end=end_time,
+            assets={
+                'large_image': settings.CONFIG["bot_config"]["presence_asset"],
+                'large_text': settings.CONFIG["bot_config"]["description"]
+            }
         )
         await self.bot.change_presence(activity=activity)
 
@@ -88,8 +102,12 @@ class MusicEvents(commands.Cog):
             if rec: await player.play(rec)
         else:
             # Al terminar la música, podemos volver al estado rotativo normal
-            # Esto asume que tienes una función para resetear el estado
-            await self.bot.change_presence(activity=discord.Game(name=settings.CONFIG["bot_config"]["prefix"] + "help"))
+            activity = discord.Activity(
+                type=discord.ActivityType.playing,
+                name=f"{settings.CONFIG['bot_config']['prefix']}help",
+                assets={'large_image': settings.CONFIG["bot_config"]["presence_asset"]}
+            )
+            await self.bot.change_presence(activity=activity)
             await music_service.cleanup_player(self.bot, player)
             if player.connected: await player.disconnect()
 

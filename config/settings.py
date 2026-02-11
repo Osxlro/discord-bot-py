@@ -20,7 +20,8 @@ CONFIG = {
     "bot_config": {
         "prefix": "!",  # Prefijo para comandos de mensaje (Legacy)
         "version": "3.1.0",  # Versión actual del bot
-        "description": "Oscurin Inc"  # Descripción general
+        "description": "Oscurin Inc",  # Descripción general
+        "presence_asset": "seor"  # Nombre del asset en el Developer Portal
     },
     "moderation_config": {
         "max_clear_msg": 50,  # Límite de mensajes para /clear

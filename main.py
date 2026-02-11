@@ -47,7 +47,11 @@ class BotPersonal(commands.AutoShardedBot):
             command_prefix=get_prefix,
             intents=intents,
             help_command=None,
-            activity=discord.Game(name="Iniciando sistemas...")
+            activity=discord.Activity(
+                type=discord.ActivityType.playing, 
+                name="Iniciando sistemas...",
+                assets={'large_image': settings.CONFIG["bot_config"]["presence_asset"]}
+            )
         )
 
     async def setup_hook(self):
