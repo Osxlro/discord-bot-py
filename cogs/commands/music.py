@@ -2,10 +2,9 @@ import discord
 import asyncio
 import wavelink
 import logging
-import random
 import re
 from discord import app_commands
-from discord.ext import commands, tasks
+from discord.ext import commands
 from config import settings
 from services import embed_service, lang_service, pagination_service, algorithm_service, db_service, music_service, voice_service
 

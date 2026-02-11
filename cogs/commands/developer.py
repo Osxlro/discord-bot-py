@@ -1,5 +1,6 @@
 import logging
 import tracemalloc
+import asyncio
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -40,6 +41,8 @@ class BotInfoView(discord.ui.View):
         self.ctx = ctx
         self.bot = bot
         self.lang = lang
+        self.active_tab = 0 # 0: Gen, 1: Sys, 2: Mem, 3: Conf
+        self.message = None # Se asigna al enviar el comando
 
         # Localización de etiquetas y emojis de botones
         self.btn_general.label = lang_service.get_text("botinfo_btn_general", lang)
@@ -52,6 +55,10 @@ class BotInfoView(discord.ui.View):
         self.btn_memory.emoji = settings.BOTINFO_CONFIG["EMOJIS"]["MEMORY"]
         self.btn_config.emoji = settings.BOTINFO_CONFIG["EMOJIS"]["CONFIG"]
 
+        # Configuración del botón de monitoreo (oculto por defecto)
+        self.btn_monitor.label = "Iniciar Monitor"
+        self.remove_item(self.btn_monitor)
+
     async def interaction_check(self, interaction: discord.Interaction):
         if interaction.user.id != self.ctx.author.id:
             lang = await lang_service.get_guild_lang(interaction.guild_id if interaction.guild_id else None)
@@ -59,8 +66,55 @@ class BotInfoView(discord.ui.View):
             return False
         return True
 
+    async def on_timeout(self):
+        """Limpieza al expirar la vista."""
+        if tracemalloc.is_tracing():
+            tracemalloc.stop()
+        for child in self.children:
+            child.disabled = True
+        try: await self.message.edit(view=self)
+        except: pass
+
+    async def _monitor_loop(self):
+        """Bucle de actualización para el monitoreo de memoria en tiempo real."""
+        # Ejecutar durante máximo 2 minutos (24 iteraciones de 5 segundos)
+        for _ in range(24):
+            await asyncio.sleep(5)
+            
+            # Si el usuario cambió de pestaña o detuvo el monitor, salimos del bucle
+            if self.active_tab != 2 or not tracemalloc.is_tracing():
+                break
+            
+            try:
+                embed = await developer_service.get_memory_embed(self.lang)
+                embed.set_footer(text="🔴 Monitoreo en vivo activo (Auto-stop en 2 min)")
+                await self.message.edit(embed=embed)
+            except Exception:
+                break
+        
+        # Al terminar el tiempo o salir, aseguramos limpieza
+        if tracemalloc.is_tracing():
+            tracemalloc.stop()
+        
+        self.btn_monitor.label = "Iniciar Monitor"
+        self.btn_monitor.style = discord.ButtonStyle.success
+        try: await self.message.edit(view=self)
+        except: pass
+
     async def _update(self, interaction, embed, style_idx):
-        for i, child in enumerate(self.children): child.style = discord.ButtonStyle.primary if i == style_idx else discord.ButtonStyle.secondary
+        self.active_tab = style_idx
+        
+        # Gestionar visibilidad del botón de monitor (Solo en pestaña Memoria: idx 2)
+        if style_idx == 2:
+            if self.btn_monitor not in self.children: self.add_item(self.btn_monitor)
+        else:
+            if self.btn_monitor in self.children: self.remove_item(self.btn_monitor)
+
+        # Actualizar estilos de los botones de pestañas
+        tabs = [self.btn_general, self.btn_system, self.btn_memory, self.btn_config]
+        for i, child in enumerate(tabs):
+            child.style = discord.ButtonStyle.primary if i == style_idx else discord.ButtonStyle.secondary
+            
         await interaction.response.edit_message(embed=embed, view=self)
 
     @discord.ui.button(style=discord.ButtonStyle.primary)
@@ -74,6 +128,21 @@ class BotInfoView(discord.ui.View):
 
     @discord.ui.button(style=discord.ButtonStyle.secondary)
     async def btn_config(self, interaction: discord.Interaction, button: discord.ui.Button): await self._update(interaction, await developer_service.get_config_embed(self.lang), 3)
+
+    @discord.ui.button(style=discord.ButtonStyle.success, row=1, emoji="📈")
+    async def btn_monitor(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Activa o desactiva el rastreo de tracemalloc y el bucle de actualización."""
+        if tracemalloc.is_tracing():
+            tracemalloc.stop()
+            button.label = "Iniciar Monitor"
+            button.style = discord.ButtonStyle.success
+        else:
+            tracemalloc.start()
+            button.label = "Detener Monitor"
+            button.style = discord.ButtonStyle.danger
+            self.bot.loop.create_task(self._monitor_loop())
+        
+        await interaction.response.edit_message(view=self)
 
 class Developer(commands.Cog):
     def __init__(self, bot):
@@ -150,38 +219,12 @@ class Developer(commands.Cog):
         except Exception as e:
             await msg.edit(content=lang_service.get_text("dev_sync_error", lang, error=e))
 
-    @commands.hybrid_command(name="memoria", description="Analiza el consumo de RAM del bot.")
-    @commands.is_owner()
-    async def memoria(self, ctx: commands.Context, accion: Literal["ver", "iniciar", "detener"] = "ver"):
-        lang = await lang_service.get_guild_lang(ctx.guild.id if ctx.guild else None)
-
-        if accion == "iniciar":
-            if not tracemalloc.is_tracing():
-                tracemalloc.start()
-                await ctx.send(embed=embed_service.success(lang_service.get_text("dev_mem_title", lang), lang_service.get_text("dev_mem_start", lang)))
-            else:
-                await ctx.send(embed=embed_service.warning(lang_service.get_text("dev_mem_title", lang), lang_service.get_text("dev_mem_active", lang)))
-            return
-
-        if accion == "detener":
-            if tracemalloc.is_tracing():
-                tracemalloc.stop()
-                await ctx.send(embed=embed_service.success(lang_service.get_text("dev_mem_title", lang), lang_service.get_text("dev_mem_stop", lang)))
-            else:
-                await ctx.send(embed=embed_service.warning(lang_service.get_text("dev_mem_title", lang), lang_service.get_text("dev_mem_inactive", lang)))
-            return
-
-        # Accion: VER
-        await ctx.defer()
-        desc = await developer_service.get_memory_analysis(lang)
-        await ctx.send(embed=embed_service.info(lang_service.get_text("botinfo_memory_title", lang), desc))
-
     @commands.hybrid_command(name="botinfo", description="Panel de control e información del sistema.")
     async def botinfo(self, ctx: commands.Context):
         lang = await lang_service.get_guild_lang(ctx.guild.id if ctx.guild else None)
         view = BotInfoView(ctx, self.bot, lang)
         embed = await developer_service.get_general_embed(self.bot, ctx.guild, lang)
-        await ctx.send(embed=embed, view=view)
+        view.message = await ctx.send(embed=embed, view=view)
 
     @commands.hybrid_command(name="db_maintenance", description="Ejecuta mantenimiento (VACUUM) en la base de datos.")
     @commands.is_owner()

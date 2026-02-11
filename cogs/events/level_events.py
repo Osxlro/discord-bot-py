@@ -18,7 +18,11 @@ class LevelEvents(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
-        if message.author.bot or not message.guild: 
+        # 1. Filtros rápidos (Sin coste de CPU/DB)
+        if message.author.bot or not message.guild or not message.content: 
+            return
+            
+        if len(message.content) < 5: # Ignorar mensajes muy cortos (spam de emojis/letras)
             return
         
         # Evitar dar XP por comandos
