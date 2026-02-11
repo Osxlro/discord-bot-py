@@ -11,6 +11,11 @@ from services import db_service
 data_dir = pathlib.Path("./data")
 data_dir.mkdir(exist_ok=True)
 
+# Limpiar logs antiguos al reiniciar
+for log_file in data_dir.glob("discord.log*"):
+    try: log_file.unlink()
+    except: pass
+
 discord.utils.setup_logging(level=logging.INFO)
 file_handler = logging.handlers.RotatingFileHandler(filename=data_dir / 'discord.log', encoding='utf-8', maxBytes=5*1024*1024, backupCount=5)
 logging.getLogger().addHandler(file_handler)
