@@ -49,8 +49,8 @@ async def notify_level_up(guild: discord.Guild, member: discord.Member, nuevo_ni
         
         if dest_channel:
             await dest_channel.send(msg)
-    except Exception as e:
-        logger.error(f"Error notificando nivel: {e}")
+    except Exception:
+        logger.exception("Error notificando nivel")
 
 def get_leaderboard_pages(guild: discord.Guild, rows: list, lang: str) -> list[discord.Embed]:
     """Procesa los datos de la DB y genera los embeds paginados para el ranking."""

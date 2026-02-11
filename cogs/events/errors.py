@@ -4,6 +4,8 @@ from discord.ext import commands
 from discord import app_commands
 from services import embed_service, lang_service
 
+logger = logging.getLogger(__name__)
+
 class ErrorHandler(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
@@ -25,7 +27,7 @@ class ErrorHandler(commands.Cog):
             msg = lang_service.get_text("error_cooldown", lang, seconds=round(error.retry_after, 1))
             await interaction.response.send_message(embed=embed_service.error(error_title, msg), ephemeral=True)
         else:
-            logging.error(f"Error: {error}")
+            logger.error(f"Error en AppCommand: {error}", exc_info=error)
             msg = lang_service.get_text("error_generic", lang)
             if not interaction.response.is_done():
                 await interaction.response.send_message(embed=embed_service.error(error_title, msg), ephemeral=True)

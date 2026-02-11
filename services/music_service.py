@@ -291,8 +291,8 @@ async def connect_best_node(bot, node_configs, max_retries=3):
                         node = wavelink.Pool.nodes.get(identifier)
                         if node: await node.close()
                             
-                except Exception as e:
-                    logger.error(f"❌ [Music Service] Error nodo {identifier}: {e}")
+                except Exception:
+                    logger.exception(f"❌ [Music Service] Error nodo {identifier}")
             
             if i < max_retries - 1:
                 await asyncio.sleep(5)

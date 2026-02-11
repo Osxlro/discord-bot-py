@@ -53,8 +53,8 @@ class RecommendationEngine:
                         self.sp_token = data["access_token"]
                         self.sp_token_expiry = time.time() + data["expires_in"] - 60
                         return self.sp_token
-        except Exception as e:
-            logger.warning(f"⚠️ Error obteniendo token Spotify: {e}")
+        except Exception:
+            logger.exception("⚠️ Error obteniendo token Spotify")
         return None
 
     async def _get_spotify_recommendations(self, seed_track: wavelink.Playable) -> list[str]:

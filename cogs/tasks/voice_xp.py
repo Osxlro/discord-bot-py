@@ -37,8 +37,8 @@ class VoiceXP(commands.Cog):
                         if subio:
                             await level_service.notify_level_up(guild, member, nuevo_nivel, fallback_channel=channel)
                             
-                    except Exception as e:
-                        logger.error(f"Error VoiceXP en {guild.name}: {e}")
+                    except Exception:
+                        logger.exception(f"Error VoiceXP en {guild.name}")
 
 async def setup(bot):
     await bot.add_cog(VoiceXP(bot))

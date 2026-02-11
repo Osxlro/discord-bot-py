@@ -1,7 +1,10 @@
 import discord
+import logging
 from discord.ext import commands
 from services import embed_service, db_service, lang_service
 from config import settings
+
+logger = logging.getLogger(__name__)
 
 class Logger(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -15,9 +18,12 @@ class Logger(commands.Cog):
         if not channel_id:
             return
             
-        channel = self.bot.get_channel(channel_id)
-        if channel:
-            await channel.send(embed=embed)
+        try:
+            channel = self.bot.get_channel(channel_id)
+            if channel:
+                await channel.send(embed=embed)
+        except Exception:
+            logger.exception(f"Error enviando log al servidor {guild_id}")
 
     @commands.Cog.listener()
     async def on_message_delete(self, message: discord.Message):

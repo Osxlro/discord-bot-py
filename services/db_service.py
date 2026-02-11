@@ -43,8 +43,8 @@ async def close_db():
             await _connection.close()
             logger.info("💾 Base de datos cerrada correctamente.")
             _connection = None
-    except Exception as e:
-        logger.error(f"❌ Error cerrando base de datos: {e}")
+    except Exception:
+        logger.exception("❌ Error cerrando base de datos")
 
 async def init_db():
     """Inicializa la base de datos, tablas y migraciones."""
@@ -154,8 +154,8 @@ async def _ensure_column(table: str, column: str, definition: str):
             try:
                 await db.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")
                 logger.info(f"🛠️ Columna '{column}' añadida a la tabla '{table}'.")
-            except Exception as e:
-                logger.error(f"❌ Error en migración {table}.{column}: {e}")
+            except Exception:
+                logger.exception(f"❌ Error en migración {table}.{column}")
 
 # =============================================================================
 # 2. HELPERS DE CONSULTA (CORE)
@@ -262,8 +262,8 @@ async def flush_xp_cache():
             
             # Limpieza de memoria para evitar leaks (Memory Leak Fix)
             clear_xp_cache_safe()
-        except Exception as e:
-            logger.error(f"⚠️ Error guardando caché de XP: {e}")
+        except Exception:
+            logger.exception("⚠️ Error guardando caché de XP")
 
 # =============================================================================
 # 4. LÓGICA DE NEGOCIO: CONFIGURACIÓN (GUILD CONFIG)

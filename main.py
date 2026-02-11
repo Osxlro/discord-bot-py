@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import logging.handlers
 import pathlib
 import discord
 from discord.ext import commands
@@ -10,8 +11,9 @@ from services import db_service
 data_dir = pathlib.Path("./data")
 data_dir.mkdir(exist_ok=True)
 
-handler = logging.FileHandler(filename=data_dir / 'discord.log', encoding='utf-8', mode='w')
-discord.utils.setup_logging(handler=handler, level=logging.INFO)
+discord.utils.setup_logging(level=logging.INFO)
+file_handler = logging.handlers.RotatingFileHandler(filename=data_dir / 'discord.log', encoding='utf-8', maxBytes=5*1024*1024, backupCount=5)
+logging.getLogger().addHandler(file_handler)
 
 logger = logging.getLogger("bot")
 
@@ -30,8 +32,8 @@ async def get_prefix(bot, message):
         row = await db_service.fetch_one("SELECT custom_prefix FROM users WHERE user_id = ?", (message.author.id,))
         if row and row['custom_prefix']:
             return row['custom_prefix']
-    except Exception as e:
-        logger.error(f"Error obteniendo prefijo dinámico: {e}")
+    except Exception:
+        logger.exception("Error obteniendo prefijo dinámico")
     return settings.CONFIG["bot_config"]["prefix"]
 
 class BotPersonal(commands.AutoShardedBot):
@@ -69,8 +71,8 @@ class BotPersonal(commands.AutoShardedBot):
             try:
                 await self.load_extension(extension_name)
                 logger.info(f'✅ Extensión cargada: {extension_name}')
-            except Exception as e:
-                logger.error(f'❌ Error cargando {extension_name}: {e}')
+            except Exception:
+                logger.exception(f'❌ Error cargando {extension_name}')
 
     async def _sync_commands(self):
         logger.info("--- 🔄 SINCRONIZANDO COMANDOS ---")

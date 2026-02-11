@@ -87,8 +87,8 @@ class HealthCheck(commands.Cog):
                 color=discord.Color.red()
             )
             await owner.send(embed=embed)
-        except Exception as e:
-            logger.error(f"No se pudo notificar al dueño sobre los errores: {e}")
+        except Exception:
+            logger.exception("No se pudo notificar al dueño sobre los errores")
 
 async def setup(bot):
     await bot.add_cog(HealthCheck(bot))

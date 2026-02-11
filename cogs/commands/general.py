@@ -163,9 +163,9 @@ class General(commands.Cog):
             res = await translator_service.traducir(message.content, settings.GENERAL_CONFIG["DEFAULT_LANG"])
             txt = lang_service.get_text("trans_result", lang, orig=message.content[:limit]+"...", trans=res['traducido'])
             await interaction.followup.send(embed=embed_service.success(lang_service.get_text("title_translate", lang), txt), ephemeral=True)
-        except Exception as e:
-            logger.error(f"Error Traductor: {e}")
-            await interaction.followup.send(embed=embed_service.error(lang_service.get_text("title_error", lang), str(e), lite=True), ephemeral=True)
+        except Exception:
+            logger.exception("Error Traductor")
+            await interaction.followup.send(embed=embed_service.error(lang_service.get_text("title_error", lang), "Error interno en el traductor.", lite=True), ephemeral=True)
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(General(bot))

@@ -166,7 +166,7 @@ class Music(commands.Cog):
                     await ctx.send(embed=embed_service.success(lang_service.get_text("title_queue", lang), msg, lite=True))
         
         except Exception as e:
-            logger.error(f"Error en comando play: {e}")
+            logger.exception("Error en comando play")
             
             err_str = str(e)
             if "NoNodesAvailable" in err_str:

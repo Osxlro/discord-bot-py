@@ -22,8 +22,8 @@ async def join_voice(guild: discord.Guild, channel: discord.VoiceChannel) -> boo
         
         voice_targets[guild.id] = channel.id
         return True
-    except Exception as e:
-        logger.error(f"Error en join_voice service ({guild.name}): {e}")
+    except Exception:
+        logger.exception(f"Error en join_voice service ({guild.name})")
         return False
 
 async def leave_voice(guild: discord.Guild) -> bool:
@@ -62,7 +62,7 @@ async def reconnect_voice(bot, guild: discord.Guild, channel_id: int):
             await channel.connect(self_deaf=True, self_mute=True)
             logger.info(f"✅ [Voice Service] Reconexión exitosa en {guild.name}.")
             return
-        except Exception as e:
-            logger.error(f"❌ [Voice Service] Fallo reconexión ({i+1}): {e}")
+        except Exception:
+            logger.exception(f"❌ [Voice Service] Fallo reconexión ({i+1})")
     
     voice_targets.pop(guild.id, None)

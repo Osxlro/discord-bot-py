@@ -70,7 +70,7 @@ class MusicEvents(commands.Cog):
 
     @commands.Cog.listener()
     async def on_wavelink_track_exception(self, payload: wavelink.TrackExceptionEventPayload):
-        logger.error(f"❌ [Music Event] Error en {payload.track.title}: {payload.exception}")
+        logger.error(f"❌ [Music Event] Error en {payload.track.title}: {payload.exception}", exc_info=payload.exception)
         player = payload.player
         if not player: return
 
@@ -96,8 +96,8 @@ class MusicEvents(commands.Cog):
                         
                         await player.play(fallback_track, start=current_position)
                         return
-                except Exception as e:
-                    logger.error(f"❌ Fallback fallido: {e}")
+                except Exception:
+                    logger.exception("❌ Fallback fallido")
 
         player.last_track_error = True
         await player.stop()

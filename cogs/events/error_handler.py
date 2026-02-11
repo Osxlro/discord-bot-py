@@ -30,7 +30,7 @@ class GlobalErrorHandler(commands.Cog):
             return await ctx.send("🔞 Este comando solo puede usarse en canales NSFW.")
 
         # Errores no controlados
-        logger.error(f"🔥 Error no manejado en /{ctx.command}: {error}")
+        logger.error(f"🔥 Error no manejado en /{ctx.command}: {error}", exc_info=error)
         try:
             await ctx.send(embed=embed_service.error(
                 lang_service.get_text("title_error", lang), 
