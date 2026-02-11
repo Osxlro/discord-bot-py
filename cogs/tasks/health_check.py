@@ -14,6 +14,7 @@ class HealthCheck(commands.Cog):
     Tarea de diagnóstico automático. 
     Simula el uso de comandos y verifica la salud de los servicios en segundo plano.
     """
+
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.integrity_check.start()

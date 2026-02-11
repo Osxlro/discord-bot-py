@@ -9,6 +9,7 @@ from config import settings
 logger = logging.getLogger(__name__)
 
 class MusicEvents(commands.Cog):
+
     """Maneja el ciclo de vida de Lavalink y eventos de reproducción."""
     def __init__(self, bot):
         self.bot = bot

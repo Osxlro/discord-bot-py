@@ -3,6 +3,13 @@ from config import settings
 from services import lang_service
 from discord.ext import commands
 
+def _get_visible_cogs(bot):
+    """Retorna una lista de Cogs que tienen al menos un comando visible."""
+    return [
+        cog for cog in bot.cogs.values() 
+        if any(not c.hidden for c in cog.get_commands())
+    ]
+
 def get_help_options(bot, lang: str) -> list[discord.SelectOption]:
     """Genera la lista de opciones para el menú desplegable de ayuda."""
     options = [
@@ -14,11 +21,8 @@ def get_help_options(bot, lang: str) -> list[discord.SelectOption]:
         )
     ]
 
-    for name, cog in bot.cogs.items():
-        cmds = cog.get_commands()
-        if not cmds: continue
-        if not any(not c.hidden for c in cmds): continue
-
+    for cog in _get_visible_cogs(bot):
+        name = cog.qualified_name
         desc_key = f"help_desc_{name.lower()}"
         description = lang_service.get_text(desc_key, lang)
         if description == desc_key: 
@@ -34,7 +38,8 @@ def get_help_options(bot, lang: str) -> list[discord.SelectOption]:
 
 async def get_home_embed(bot, guild: discord.Guild, user: discord.Member, lang: str) -> discord.Embed:
     """Construye el embed principal de la ayuda."""
-    cogs_count = len(bot.cogs)
+    visible_cogs = _get_visible_cogs(bot)
+    cogs_count = len(visible_cogs)
     total_cmds = len([c for c in bot.commands if not c.hidden])
     
     title = lang_service.get_text("help_title", lang)
@@ -50,7 +55,7 @@ async def get_home_embed(bot, guild: discord.Guild, user: discord.Member, lang: 
         color=guild.me.color if guild else discord.Color.blurple()
     )
     
-    cats = [f"• {name}" for name in bot.cogs.keys() if bot.get_cog(name).get_commands()]
+    cats = [f"• {cog.qualified_name}" for cog in visible_cogs]
     cats_formatted = "\n".join(cats)
     
     embed.add_field(name=f"{lang_service.get_text('help_categories', lang)}", value=f"```\n{cats_formatted}\n```", inline=False)
