@@ -75,6 +75,36 @@ class MusicControls(discord.ui.View):
         except discord.HTTPException:
             pass # El mensaje pudo haber sido borrado
 
+    @discord.ui.button(emoji=settings.MUSIC_CONFIG["BUTTON_EMOJIS"]["PREVIOUS"], style=discord.ButtonStyle.secondary, row=0)
+    async def previous(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if not self.player.playing or not self.player.current:
+             return await interaction.response.send_message(lang_service.get_text("music_error_nothing", self.lang), ephemeral=True)
+
+        # Lógica: Si han pasado más de 10 segundos, reinicia la canción.
+        # Si han pasado menos de 10 segundos, intenta ir a la anterior en el historial.
+        if self.player.position > 10000:
+            await self.player.seek(0)
+            msg = lang_service.get_text("music_restarted", self.lang)
+        else:
+            history = self.player.queue.history
+            if len(history) == 0:
+                await self.player.seek(0)
+                msg = lang_service.get_text("music_restarted", self.lang)
+            else:
+                # Obtener la última canción del historial (la que acaba de sonar antes que esta)
+                prev_track = history[-1]
+                history.remove(prev_track)
+                
+                # Guardar la actual para ponerla al inicio de la cola (para que no se pierda)
+                current_track = self.player.current
+                self.player.queue.put_at(0, current_track)
+                
+                # Reproducir la anterior
+                await self.player.play(prev_track)
+                msg = lang_service.get_text("music_previous", self.lang)
+        
+        await interaction.response.send_message(msg, ephemeral=True)
+
     @discord.ui.button(emoji=settings.MUSIC_CONFIG["BUTTON_EMOJIS"]["PAUSE_RESUME"], style=discord.ButtonStyle.primary, row=0)
     async def pause_resume(self, interaction: discord.Interaction, button: discord.ui.Button):
         new_state = not self.player.paused

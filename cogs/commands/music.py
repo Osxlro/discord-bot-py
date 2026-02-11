@@ -182,6 +182,35 @@ class Music(commands.Cog):
                 
             await ctx.send(embed=embed_service.error(lang_service.get_text("title_error", lang), msg))
 
+    @commands.hybrid_command(name="previous", description="Vuelve a la canción anterior o reinicia la actual.")
+    async def previous(self, ctx: commands.Context):
+        lang = await lang_service.get_guild_lang(ctx.guild.id)
+        if not await music_service.check_voice(ctx): return
+        
+        player: wavelink.Player = ctx.voice_client
+        if not player.playing or not player.current:
+             return await ctx.send(embed=embed_service.error(lang_service.get_text("title_error", lang), lang_service.get_text("music_error_nothing", lang), lite=True), ephemeral=True)
+
+        if player.position > 10000:
+            await player.seek(0)
+            msg = lang_service.get_text("music_restarted", lang)
+        else:
+            history = player.queue.history
+            if len(history) == 0:
+                await player.seek(0)
+                msg = lang_service.get_text("music_restarted", lang)
+            else:
+                prev_track = history[-1]
+                history.remove(prev_track)
+                
+                current_track = player.current
+                player.queue.put_at(0, current_track)
+                
+                await player.play(prev_track)
+                msg = lang_service.get_text("music_previous", lang)
+        
+        await ctx.send(embed=embed_service.success(lang_service.get_text("title_music", lang), msg, lite=True))
+
     @commands.hybrid_command(name="stop", description="Detiene la música y desconecta al bot.")
     async def stop(self, ctx: commands.Context):
         lang = await lang_service.get_guild_lang(ctx.guild.id)

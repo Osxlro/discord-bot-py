@@ -78,7 +78,7 @@ MUSIC_CONFIG = {
     "FADE_IN_STEPS": 15,  # Suavidad de la animación de volumen
     "LOOP_EMOJIS": {"TRACK": "🔂", "QUEUE": "🔁", "OFF": "🔁"},
     "BUTTON_EMOJIS": {
-        "PAUSE_RESUME": "⏯️", "SKIP": "⏭️", "STOP": "⏹️", "SHUFFLE": "🔀",
+        "PREVIOUS": "⏮️", "PAUSE_RESUME": "⏯️", "SKIP": "⏭️", "STOP": "⏹️", "SHUFFLE": "🔀",
         "AUTOPLAY": "♾️", "VOL_DOWN": "🔉", "VOL_UP": "🔊", "LYRICS": "📝"
     },
     "SOURCE_EMOJIS": {
