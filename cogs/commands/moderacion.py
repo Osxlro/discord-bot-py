@@ -2,25 +2,12 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 from config import settings
-from services import embed_service, lang_service, db_service
+from services import embed_service, lang_service, db_service, moderation_service
 import datetime
-import re
 
 class Moderacion(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-
-    def _parse_time(self, time_str: str) -> int:
-        time_regex = re.compile(r"(\d+)([smhd])")
-        match = time_regex.match(time_str.lower())
-        if not match: return 0
-        val, unit = match.groups()
-        val = int(val)
-        if unit == 's': return val
-        if unit == 'm': return val * 60
-        if unit == 'h': return val * 3600
-        if unit == 'd': return val * 86400
-        return 0
 
     @commands.hybrid_command(name="clear", description="Borra mensajes del chat.")
     @app_commands.describe(cantidad="Número de mensajes")
@@ -65,7 +52,7 @@ class Moderacion(commands.Cog):
             await ctx.reply(embed=embed_service.error(lang_service.get_text("title_error", lang), lang_service.get_text("timeout_hierarchy", lang), lite=True), ephemeral=True)
             return
 
-        seconds = self._parse_time(tiempo)
+        seconds = moderation_service.parse_time(tiempo)
         if seconds == 0:
             await ctx.reply(embed=embed_service.error(lang_service.get_text("title_error", lang), lang_service.get_text("timeout_invalid", lang), lite=True), ephemeral=True)
             return
@@ -107,19 +94,11 @@ class Moderacion(commands.Cog):
         try:
             await usuario.kick(reason=razon)
             
-            # --- OPTIMIZACIÓN: USAR CACHÉ EN LUGAR DE SQL DIRECTO ---
-            # Antes: row = await db_service.fetch_one(...)
             config = await db_service.get_guild_config(ctx.guild.id)
-            msg_custom = config.get('server_kick_msg')
-            
-            if msg_custom:
-                desc = msg_custom.replace("{user}", usuario.name).replace("{reason}", razon)
-                title = lang_service.get_text("mod_title_kick", lang)
-            else:
-                title = lang_service.get_text("kick_title", lang)
-                desc = lang_service.get_text("kick_desc", lang, user=usuario.name, reason=razon)
-            
-            await ctx.reply(embed=embed_service.success(title, desc))
+            embed = moderation_service.get_mod_embed(
+                ctx.guild, usuario.name, "kick", razon, lang, config
+            )
+            await ctx.reply(embed=embed)
         except discord.Forbidden:
             await ctx.reply(embed=embed_service.error(lang_service.get_text("title_error", lang), lang_service.get_text("error_hierarchy", lang), lite=True), ephemeral=True)
             
@@ -136,18 +115,11 @@ class Moderacion(commands.Cog):
         try:
             await usuario.ban(reason=razon)
             
-            # --- OPTIMIZACIÓN: USAR CACHÉ EN LUGAR DE SQL DIRECTO ---
             config = await db_service.get_guild_config(ctx.guild.id)
-            msg_custom = config.get('server_ban_msg')
-            
-            if msg_custom:
-                desc = msg_custom.replace("{user}", usuario.name).replace("{reason}", razon)
-                title = lang_service.get_text("mod_title_ban", lang)
-            else:
-                title = lang_service.get_text("ban_title", lang)
-                desc = lang_service.get_text("ban_desc", lang, user=usuario.name, reason=razon)
-
-            await ctx.reply(embed=embed_service.success(title, desc))
+            embed = moderation_service.get_mod_embed(
+                ctx.guild, usuario.name, "ban", razon, lang, config
+            )
+            await ctx.reply(embed=embed)
         except discord.Forbidden:
             await ctx.reply(embed=embed_service.error(lang_service.get_text("title_error", lang), lang_service.get_text("error_hierarchy", lang), lite=True), ephemeral=True)
 

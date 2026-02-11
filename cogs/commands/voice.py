@@ -1,5 +1,4 @@
 import logging
-import asyncio
 from discord.ext import commands
 from services import embed_service, lang_service, voice_service
 

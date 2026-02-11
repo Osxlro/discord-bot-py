@@ -1,7 +1,10 @@
 import discord
 from discord.ext import commands, tasks
-from services import db_service, lang_service
+from services import db_service, level_service
 from config import settings
+import logging
+
+logger = logging.getLogger(__name__)
 
 class VoiceXP(commands.Cog):
     def __init__(self, bot):
@@ -32,44 +35,10 @@ class VoiceXP(commands.Cog):
                         )
                         
                         if subio:
-                            await self._notificar_nivel(guild, channel, member, nuevo_nivel)
+                            await level_service.notify_level_up(guild, member, nuevo_nivel, fallback_channel=channel)
                             
                     except Exception as e:
-                        print(f"Error VoiceXP en {guild.name}: {e}")
-
-    async def _notificar_nivel(self, guild, channel, member, nuevo_nivel):
-        try:
-            lang = await lang_service.get_guild_lang(guild.id)
-            config = await db_service.get_guild_config(guild.id)
-            user_data = await db_service.fetch_one("SELECT personal_level_msg FROM users WHERE user_id = ?", (member.id,))
-            
-            if user_data and user_data['personal_level_msg']:
-                msg_raw = user_data['personal_level_msg']
-            elif config.get('server_level_msg'):
-                msg_raw = config['server_level_msg']
-            else:
-                msg_raw = lang_service.get_text("level_up_default", lang)
-            
-            msg_final = msg_raw.replace("{user}", member.mention)\
-                               .replace("{level}", str(nuevo_nivel))\
-                               .replace("{server}", guild.name)
-
-            dest_channel = None
-            if config.get('logs_channel_id'):
-                dest_channel = guild.get_channel(config['logs_channel_id'])
-            
-            if not dest_channel:
-                for text_channel in guild.text_channels:
-                    perms = text_channel.permissions_for(guild.me)
-                    if perms.send_messages and perms.embed_links:
-                        dest_channel = text_channel
-                        break
-            
-            if dest_channel:
-                await dest_channel.send(msg_final)
-
-        except Exception as e:
-            print(f"Error notificando nivel de voz: {e}")
+                        logger.error(f"Error VoiceXP en {guild.name}: {e}")
 
 async def setup(bot):
     await bot.add_cog(VoiceXP(bot))
