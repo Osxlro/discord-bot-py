@@ -5,7 +5,7 @@ import logging
 import re
 from discord import app_commands
 from config import settings
-from services import lang_service, embed_service, lyrics_service, voice_service
+from services import lang_service, embed_service, lyrics_service, voice_service,db_service
 
 logger = logging.getLogger(__name__)
 
@@ -140,6 +140,7 @@ class MusicControls(discord.ui.View):
 
         # 2. Usar helper de limpieza (evita duplicar lógica)
         await cleanup_player(self.player.client, self.player, skip_message_edit=True)
+        await db_service.delete_persistence(self.player.guild.id)
 
         # 3. Desconectar
         if self.player.connected:
@@ -261,6 +262,67 @@ async def cleanup_player(bot, player: wavelink.Player, skip_message_edit: bool =
     # Resetear estados internos
     player.smart_autoplay = False
     player.last_track_error = False
+
+async def save_player_state(player: wavelink.Player):
+    """Extrae y guarda el estado del player en la base de datos."""
+    if not player or not player.connected or not player.current:
+        return
+
+    queue_uris = ",".join([t.uri for t in player.queue if t.uri])
+    
+    data = {
+        "voice_channel_id": player.channel.id,
+        "text_channel_id": player.home.id if hasattr(player, "home") and player.home else 0,
+        "current_track_uri": player.current.uri,
+        "position": int(player.position),
+        "volume": player.volume,
+        "queue_uris": queue_uris
+    }
+    await db_service.save_persistence(player.guild.id, data)
+
+async def restore_players(bot):
+    """Busca sesiones guardadas y las reanuda."""
+    await bot.wait_until_ready()
+    # Esperar un poco a que los nodos Lavalink conecten
+    await asyncio.sleep(5)
+    
+    records = await db_service.fetch_all("SELECT * FROM player_persistence")
+    if not records:
+        return
+
+    logger.info(f"🔄 [Music Service] Restaurando {len(records)} sesiones de música...")
+
+    for row in records:
+        guild = bot.get_guild(row['guild_id'])
+        if not guild: continue
+
+        v_channel = guild.get_channel(row['voice_channel_id'])
+        t_channel = guild.get_channel(row['text_channel_id'])
+        if not v_channel: continue
+
+        try:
+            player: wavelink.Player = await v_channel.connect(cls=SafePlayer, self_deaf=True)
+            await player.set_volume(row['volume'])
+            player.home = t_channel
+
+            # Restaurar canción actual
+            tracks = await wavelink.Playable.search(row['current_track_uri'])
+            if tracks:
+                current = tracks[0]
+                await player.play(current, start=row['position'])
+
+            # Restaurar cola (en segundo plano para no bloquear)
+            if row['queue_uris']:
+                uris = row['queue_uris'].split(",")
+                for uri in uris:
+                    t = await wavelink.Playable.search(uri)
+                    if t: await player.queue.put_wait(t[0])
+            
+            logger.info(f"✅ Sesión restaurada en {guild.name}")
+        except Exception:
+            logger.exception(f"❌ Error restaurando sesión en {guild.id}")
+        finally:
+            await db_service.delete_persistence(guild.id)
 
 async def connect_nodes(bot):
     """Configura y conecta al primer nodo disponible (Failover)."""

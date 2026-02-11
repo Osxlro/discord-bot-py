@@ -5,7 +5,7 @@ import pathlib
 import discord
 from discord.ext import commands
 from config import settings
-from services import db_service
+from services import db_service, music_service
 
 # --- CONFIGURACIÓN DE LOGS ---
 data_dir = pathlib.Path("./data")
@@ -93,6 +93,9 @@ class BotPersonal(commands.AutoShardedBot):
         logger.info(f'🆔 ID: {self.user.id}')
         logger.info('------------------------------------')
         settings.set_bot_icon(self.user.display_avatar.url)
+        
+        # Intentar restaurar sesiones de música previas
+        self.loop.create_task(music_service.restore_players(self))
 
 async def main():
     bot = BotPersonal()

@@ -15,9 +15,11 @@ class MusicEvents(commands.Cog):
         self.bot = bot
         self.recommender = algorithm_service.RecommendationEngine()
         self.node_monitor.start()
+        self.persistence_scheduler.start()
 
     def cog_unload(self):
         self.node_monitor.cancel()
+        self.persistence_scheduler.cancel()
 
     @tasks.loop(minutes=1)
     async def node_monitor(self):
@@ -27,6 +29,14 @@ class MusicEvents(commands.Cog):
             if music_cog:
                 logger.warning("⚠️ [Music Event] Nodos caídos. Solicitando reconexión al Cog...")
                 await music_cog.connect_best_node(max_retries=1)
+
+    @tasks.loop(seconds=20)
+    async def persistence_scheduler(self):
+        """Guarda periódicamente el estado de todos los reproductores activos."""
+        for node in wavelink.Pool.nodes.values():
+            for player in node.players.values():
+                if player.playing:
+                    await music_service.save_player_state(player)
 
     @commands.Cog.listener()
     async def on_wavelink_node_ready(self, payload: wavelink.NodeReadyEventPayload):
