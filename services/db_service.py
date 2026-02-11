@@ -56,6 +56,9 @@ async def init_db():
     await db.execute("PRAGMA synchronous=NORMAL;")
     await db.execute("PRAGMA temp_store=MEMORY;") # Operaciones temporales en RAM
     await db.execute("PRAGMA foreign_keys=ON;") # Asegurar integridad referencial
+    await db.execute("PRAGMA mmap_size=268435456;")  # 256MB de Memory Mapping
+    await db.execute("PRAGMA cache_size=-64000;")    # 64MB de cache
+    await db.execute("PRAGMA busy_timeout=5000;")    # 5s de espera automática en bloqueos
     
     # --- DEFINICIÓN DE TABLAS ---
     
@@ -133,23 +136,26 @@ async def init_db():
     # Índice para leaderboard rápido
     await db.execute("CREATE INDEX IF NOT EXISTS idx_ranking ON guild_stats(guild_id, rebirths DESC, level DESC, xp DESC)")
     
-    # Migraciones manuales: Se ejecutan al arrancar para asegurar que la estructura sea la correcta.
-    migraciones = [
-        "ALTER TABLE guild_stats ADD COLUMN rebirths INTEGER DEFAULT 0",
-        "ALTER TABLE guild_config ADD COLUMN language TEXT DEFAULT 'es'",
-        "ALTER TABLE guild_config ADD COLUMN server_goodbye_msg TEXT DEFAULT NULL",
-        "ALTER TABLE guild_config ADD COLUMN minecraft_channel_id INTEGER DEFAULT 0"
-    ]
-    for q in migraciones:
-        try: await db.execute(q)
-        except: pass
+    # --- MIGRACIONES ROBUSTAS ---
+    await _ensure_column("guild_stats", "rebirths", "INTEGER DEFAULT 0")
+    await _ensure_column("guild_config", "language", "TEXT DEFAULT 'es'")
+    await _ensure_column("guild_config", "server_goodbye_msg", "TEXT DEFAULT NULL")
+    await _ensure_column("guild_config", "minecraft_channel_id", "INTEGER DEFAULT 0")
 
     await db.commit()
-    
-    # Sugerencia de escalado: 
-    # Si settings.REDIS_URL existe, inicializar cliente de Redis aquí
-    # para mover _xp_cache y _config_cache fuera de la memoria local.
     logger.info("💾 Base de datos inicializada.")
+
+async def _ensure_column(table: str, column: str, definition: str):
+    """Verifica si una columna existe y si no, la crea."""
+    db = await get_db()
+    async with db.execute(f"PRAGMA table_info({table})") as cursor:
+        columns = [row['name'] for row in await cursor.fetchall()]
+        if column not in columns:
+            try:
+                await db.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")
+                logger.info(f"🛠️ Columna '{column}' añadida a la tabla '{table}'.")
+            except Exception as e:
+                logger.error(f"❌ Error en migración {table}.{column}: {e}")
 
 # =============================================================================
 # 2. HELPERS DE CONSULTA (CORE)
@@ -285,18 +291,16 @@ async def get_guild_config(guild_id: int) -> dict:
 
 async def update_guild_config(guild_id: int, updates: dict):
     """Actualiza la configuración en DB y refresca el CACHÉ."""
-    # 1. Actualizar DB
-    exists = await fetch_one("SELECT 1 FROM guild_config WHERE guild_id = ?", (guild_id,))
-    
-    if exists:
-        set_clause = ", ".join([f"{k} = ?" for k in updates.keys()])
-        values = list(updates.values()) + [guild_id]
-        await execute(f"UPDATE guild_config SET {set_clause} WHERE guild_id = ?", values)
-    else:
-        cols = ", ".join(["guild_id"] + list(updates.keys()))
-        placeholders = ", ".join(["?"] * (len(updates) + 1))
-        values = [guild_id] + list(updates.values())
-        await execute(f"INSERT INTO guild_config ({cols}) VALUES ({placeholders})", values)
+    # 1. Actualizar DB usando UPSERT (Sintaxis más eficiente)
+    cols = ", ".join(["guild_id"] + list(updates.keys()))
+    placeholders = ", ".join(["?"] * (len(updates) + 1))
+    set_clause = ", ".join([f"{k} = excluded.{k}" for k in updates.keys()])
+    values = [guild_id] + list(updates.values())
+
+    await execute(f"""
+        INSERT INTO guild_config ({cols}) VALUES ({placeholders})
+        ON CONFLICT(guild_id) DO UPDATE SET {set_clause}
+    """, tuple(values))
 
     # 2. Actualizar Caché
     if guild_id not in _config_cache:
@@ -370,11 +374,12 @@ async def do_rebirth(guild_id: int, user_id: int) -> tuple[bool, any]:
 
 async def record_song_feedback(guild_id: int, identifier: str, is_skip: bool):
     """Registra si una canción fue escuchada o saltada."""
-    col = "skips" if is_skip else "plays"
+    # Validación de columna para evitar SQL Injection aunque el input sea interno
+    column = "skips" if is_skip else "plays"
     await execute(f"""
-        INSERT INTO song_feedback (guild_id, identifier, {col}) 
+        INSERT INTO song_feedback (guild_id, identifier, {column}) 
         VALUES (?, ?, 1)
-        ON CONFLICT(guild_id, identifier) DO UPDATE SET {col} = {col} + 1
+        ON CONFLICT(guild_id, identifier) DO UPDATE SET {column} = {column} + 1
     """, (guild_id, identifier))
 
 async def get_bulk_feedback(guild_id: int, identifiers: list[str]) -> dict:
