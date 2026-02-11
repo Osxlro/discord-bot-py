@@ -2,6 +2,7 @@ import discord
 import asyncio
 import wavelink
 import logging
+import re
 from discord import app_commands
 from config import settings
 from services import lang_service, embed_service, lyrics_service, voice_service
@@ -178,7 +179,16 @@ class MusicControls(discord.ui.View):
         if not track or not track.title or track.is_stream:
             return await interaction.followup.send(lang_service.get_text("music_error_nothing", self.lang), ephemeral=True)
         
-        lyrics = await lyrics_service.get_lyrics(track.title, track.author)
+        # Mejora: Limpiar el título de "Official Video", "Lyrics", etc. para una búsqueda más precisa
+        clean_title = re.sub(r"[\(\[].*?[\)\]]", "", track.title).strip()
+        
+        # Intentar búsqueda con título limpio y autor
+        lyrics = await lyrics_service.get_lyrics(clean_title, track.author)
+        
+        # Fallback: Si falla, intentar solo con el título limpio (útil si el autor en YT es raro)
+        if not lyrics:
+            lyrics = await lyrics_service.get_lyrics(clean_title, "")
+
         if lyrics:
             embed = discord.Embed(title=lang_service.get_text("music_lyrics_title", self.lang, title=track.title), description=lyrics[:4096], color=settings.COLORS["INFO"])
             if len(lyrics) > 4096:
@@ -418,4 +428,16 @@ def create_np_embed(player: wavelink.Player, track: wavelink.Playable, lang: str
         embed.set_footer(text=lang_service.get_text("music_requested_by", lang, user=track.requester.display_name), icon_url=track.requester.display_avatar.url)
         
     embed.add_field(name=lang_service.get_text("music_field_author", lang), value=track.author, inline=True)
+
+    # Álbum y Año (Soporte para metadatos extendidos de Spotify/Plugins)
+    album = getattr(track, "album", None)
+    if album:
+        album_name = getattr(album, "name", str(album))
+        embed.add_field(name=lang_service.get_text("music_field_album", lang), value=album_name, inline=True)
+
+    # Intentar obtener el año desde track.info o atributos dinámicos
+    year = track.info.get('year') or getattr(track, 'year', None)
+    if year:
+        embed.add_field(name=lang_service.get_text("music_field_year", lang), value=str(year), inline=True)
+
     return embed
