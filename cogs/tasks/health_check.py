@@ -2,8 +2,9 @@ import logging
 import asyncio
 import discord
 import wavelink
+import os
 from discord.ext import commands, tasks
-from services import db_service, lang_service, help_service, profile_service
+from services import db_service, lang_service, help_service, profile_service, algorithm_service, developer_service, moderation_service, level_service, voice_service
 from config import settings
 
 logger = logging.getLogger(__name__)
@@ -27,12 +28,36 @@ class HealthCheck(commands.Cog):
         logger.info("🔍 [HealthCheck] Iniciando suite de autodiagnóstico...")
         
         errors = []
+        warnings = []
 
         # 1. Comprobación de Base de Datos
         try:
             await db_service.fetch_one("SELECT 1")
+            # Prueba de integridad física de SQLite
+            res = await db_service.fetch_one("PRAGMA integrity_check")
+            if res and res[0] != "ok":
+                errors.append(f"Database Integrity: {res[0]}")
+            
+            # Verificar existencia de tablas críticas
+            tables = ["users", "guild_stats", "guild_config", "song_feedback", "bot_statuses"]
+            for table in tables:
+                exists = await db_service.fetch_one("SELECT name FROM sqlite_master WHERE type='table' AND name=?", (table,))
+                if not exists:
+                    errors.append(f"Database Schema: Table '{table}' is missing.")
         except Exception as e:
-            errors.append(f"Database: {e}")
+            errors.append(f"Database Connectivity: {e}")
+
+        # 2. Salud del Sistema de Archivos
+        try:
+            if os.path.exists(db_service.DB_PATH):
+                db_size = os.path.getsize(db_service.DB_PATH) / (1024 * 1024)
+                if db_size > 100: warnings.append(f"DB Size: {db_size:.2f}MB")
+            
+            if os.path.exists(settings.LOG_FILE):
+                log_size = os.path.getsize(settings.LOG_FILE) / (1024 * 1024)
+                if log_size > 20: warnings.append(f"Log Size: {log_size:.2f}MB")
+        except Exception as e:
+            errors.append(f"File System Check: {e}")
 
         # 2. Comprobación de Nodos de Música (Lavalink)
         if not wavelink.Pool.nodes:
@@ -41,6 +66,24 @@ class HealthCheck(commands.Cog):
             active_nodes = [n for n in wavelink.Pool.nodes.values() if n.status == wavelink.NodeStatus.CONNECTED]
             if not active_nodes:
                 errors.append("Music: Todos los nodos de Lavalink están desconectados.")
+
+        # 3. APIs Externas (Spotify)
+        if settings.LAVALINK_CONFIG["SPOTIFY"]["CLIENT_ID"]:
+            try:
+                engine = algorithm_service.RecommendationEngine()
+                token = await engine._get_spotify_token()
+                if not token:
+                    errors.append("Spotify API: No se pudo obtener token de acceso.")
+            except Exception as e:
+                errors.append(f"Spotify API Error: {e}")
+
+        # 4. Sistema de Localización
+        try:
+            for l in ["es", "en"]:
+                if lang_service.get_text("error_title", l) == "error_title":
+                    errors.append(f"Lang Service: Fallo al cargar traducciones para '{l}' (Key missing).")
+        except Exception as e:
+            errors.append(f"Lang Service Error: {e}")
 
         # 3. Simulación de Comandos Críticos (Dry Run)
         # Intentamos ejecutar la lógica de los servicios que alimentan a los comandos
@@ -60,13 +103,70 @@ class HealthCheck(commands.Cog):
             except Exception as e:
                 errors.append(f"Command Logic (/perfil): {e}")
 
+            # Prueba lógica de Moderación
+            try:
+                if moderation_service.parse_time("1h") != 3600:
+                    errors.append("Command Logic (Moderation): parse_time failed.")
+                moderation_service.get_mod_embed(test_guild, "TestUser", "kick", "TestReason", lang, {})
+            except Exception as e:
+                errors.append(f"Command Logic (Moderation): {e}")
+
+            # Prueba lógica de Niveles
+            try:
+                await level_service.get_level_up_message(test_guild.me, 5, lang)
+                dummy_rows = [{'user_id': self.bot.user.id, 'xp': 100, 'level': 2, 'rebirths': 0}]
+                level_service.get_leaderboard_pages(test_guild, dummy_rows, lang)
+            except Exception as e:
+                errors.append(f"Command Logic (Levels): {e}")
+
+            # Prueba lógica de Algoritmo de Música
+            try:
+                engine = algorithm_service.RecommendationEngine()
+                class MockTrack:
+                    def __init__(self, t, a, l, i): self.title, self.author, self.length, self.identifier = t, a, l, i
+                seed, cand = MockTrack("A", "A", 100, "1"), MockTrack("B", "B", 100, "2")
+                engine._calculate_score(cand, seed, set(), {})
+            except Exception as e:
+                errors.append(f"Command Logic (Algorithm): {e}")
+
+            # Verificación de permisos en el servidor de prueba
+            perms = test_guild.me.guild_permissions
+            if not perms.embed_links or not perms.send_messages:
+                warnings.append(f"Permissions: Faltan permisos básicos en {test_guild.name}")
+
         # 4. Verificación de Latencia
         if self.bot.latency > 1.0: # Más de 1000ms es crítico
-            logger.warning(f"⚠️ [HealthCheck] Latencia de Gateway inusualmente alta: {round(self.bot.latency * 1000)}ms")
+            warnings.append(f"Latency: {round(self.bot.latency * 1000)}ms")
+
+        # Verificación de consistencia de Voz
+        try:
+            for guild_id in list(voice_service.voice_targets.keys()):
+                guild = self.bot.get_guild(guild_id)
+                if not guild or not guild.voice_client:
+                    warnings.append(f"Voice Consistency: Target set for {guild_id} but no voice client found.")
+        except Exception as e:
+            errors.append(f"Voice Consistency Check: {e}")
+
+        # Verificación de Caché de XP
+        try:
+            cache_size = len(db_service._xp_cache)
+            if cache_size > 500:
+                warnings.append(f"XP Cache: {cache_size} entries pending flush.")
+        except: pass
+
+        # 5. Recursos del Sistema (vía Developer Service)
+        try:
+            info = await developer_service.get_psutil_info()
+            if info.get("available") and info["ram_sys"].percent > 90:
+                warnings.append(f"System RAM: {info['ram_sys'].percent}%")
+        except: pass
 
         # --- REPORTE DE RESULTADOS ---
+        for w in warnings:
+            logger.warning(f"⚠️ [HealthCheck] Advertencia: {w}")
+
         if not errors:
-            logger.info("✅ [HealthCheck] El sistema se encuentra estable. Todas las pruebas pasaron.")
+            logger.info("✅ [HealthCheck] Suite completada. El sistema se encuentra estable.")
         else:
             for error in errors:
                 logger.error(f"❌ [HealthCheck] Bug/Fallo detectado: {error}")
