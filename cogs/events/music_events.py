@@ -1,5 +1,6 @@
 import logging
 import discord
+import datetime
 import wavelink
 import asyncio
 from discord.ext import commands, tasks
@@ -58,6 +59,16 @@ class MusicEvents(commands.Cog):
             try: await player.last_msg.delete()
             except: pass
 
+        # --- IMPLEMENTACIÓN DE RICH PRESENCE ---
+        activity = discord.Activity(
+            type=discord.ActivityType.listening,
+            name=payload.track.title,
+            details=f"🎵 {payload.track.author}",
+            state=f"🔢 Cola: {len(player.queue)} pistas",
+            start=datetime.datetime.now(datetime.timezone.utc)
+        )
+        await self.bot.change_presence(activity=activity)
+
         player.last_msg = await player.home.send(embed=embed, view=view)
 
     @commands.Cog.listener()
@@ -76,6 +87,9 @@ class MusicEvents(commands.Cog):
             rec = await self.recommender.get_recommendation(player)
             if rec: await player.play(rec)
         else:
+            # Al terminar la música, podemos volver al estado rotativo normal
+            # Esto asume que tienes una función para resetear el estado
+            await self.bot.change_presence(activity=discord.Game(name=settings.CONFIG["bot_config"]["prefix"] + "help"))
             await music_service.cleanup_player(self.bot, player)
             if player.connected: await player.disconnect()
 
