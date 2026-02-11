@@ -122,16 +122,13 @@ async def init_db():
     )
     """)
 
-    # 6. Persistencia de Reproductor (Auto-Resume)
+    # 6. Persistencia Genérica del Bot (Binary Store)
     await db.execute("""
-    CREATE TABLE IF NOT EXISTS player_persistence (
-        guild_id INTEGER PRIMARY KEY,
-        voice_channel_id INTEGER,
-        text_channel_id INTEGER,
-        current_track_uri TEXT,
-        position INTEGER,
-        volume INTEGER,
-        queue_uris TEXT
+    CREATE TABLE IF NOT EXISTS bot_persistence (
+        namespace TEXT,
+        key TEXT,
+        data BLOB,
+        PRIMARY KEY (namespace, key)
     )
     """)
 
@@ -281,22 +278,6 @@ async def flush_xp_cache():
 # =============================================================================
 # 4. LÓGICA DE NEGOCIO: CONFIGURACIÓN (GUILD CONFIG)
 # =============================================================================
-
-async def save_persistence(guild_id: int, data: dict):
-    """Guarda el estado actual del reproductor para reanudar tras reinicio."""
-    cols = ", ".join(["guild_id"] + list(data.keys()))
-    placeholders = ", ".join(["?"] * (len(data) + 1))
-    set_clause = ", ".join([f"{k} = excluded.{k}" for k in data.keys()])
-    values = [guild_id] + list(data.values())
-
-    await execute(f"""
-        INSERT INTO player_persistence ({cols}) VALUES ({placeholders})
-        ON CONFLICT(guild_id) DO UPDATE SET {set_clause}
-    """, tuple(values))
-
-async def delete_persistence(guild_id: int):
-    """Elimina el rastro de persistencia una vez reanudado o detenido."""
-    await execute("DELETE FROM player_persistence WHERE guild_id = ?", (guild_id,))
 
 async def get_guild_config(guild_id: int) -> dict:
     """

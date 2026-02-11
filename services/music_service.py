@@ -5,7 +5,7 @@ import logging
 import re
 from discord import app_commands
 from config import settings
-from services import lang_service, embed_service, lyrics_service, voice_service,db_service
+from services import lang_service, embed_service, lyrics_service, voice_service, db_service, persistence_service
 
 logger = logging.getLogger(__name__)
 
@@ -140,7 +140,7 @@ class MusicControls(discord.ui.View):
 
         # 2. Usar helper de limpieza (evita duplicar lógica)
         await cleanup_player(self.player.client, self.player, skip_message_edit=True)
-        await db_service.delete_persistence(self.player.guild.id)
+        await persistence_service.clear("music", self.player.guild.id)
 
         # 3. Desconectar
         if self.player.connected:
@@ -268,17 +268,16 @@ async def save_player_state(player: wavelink.Player):
     if not player or not player.connected or not player.current:
         return
 
-    queue_uris = ",".join([t.uri for t in player.queue if t.uri])
-    
     data = {
         "voice_channel_id": player.channel.id,
         "text_channel_id": player.home.id if hasattr(player, "home") and player.home else 0,
         "current_track_uri": player.current.uri,
         "position": int(player.position),
         "volume": player.volume,
-        "queue_uris": queue_uris
+        "queue_uris": [t.uri for t in player.queue if t.uri],
+        "smart_autoplay": getattr(player, "smart_autoplay", False)
     }
-    await db_service.save_persistence(player.guild.id, data)
+    await persistence_service.store("music", player.guild.id, data)
 
 async def restore_players(bot):
     """Busca sesiones guardadas y las reanuda."""
@@ -286,43 +285,42 @@ async def restore_players(bot):
     # Esperar un poco a que los nodos Lavalink conecten
     await asyncio.sleep(5)
     
-    records = await db_service.fetch_all("SELECT * FROM player_persistence")
+    records = await persistence_service.load_all("music")
     if not records:
         return
 
     logger.info(f"🔄 [Music Service] Restaurando {len(records)} sesiones de música...")
 
-    for row in records:
-        guild = bot.get_guild(row['guild_id'])
+    for guild_id, data in records.items():
+        guild = bot.get_guild(int(guild_id))
         if not guild: continue
 
-        v_channel = guild.get_channel(row['voice_channel_id'])
-        t_channel = guild.get_channel(row['text_channel_id'])
+        v_channel = guild.get_channel(data['voice_channel_id'])
+        t_channel = guild.get_channel(data['text_channel_id'])
         if not v_channel: continue
 
         try:
             player: wavelink.Player = await v_channel.connect(cls=SafePlayer, self_deaf=True)
-            await player.set_volume(row['volume'])
+            await player.set_volume(data['volume'])
             player.home = t_channel
+            player.smart_autoplay = data.get('smart_autoplay', False)
 
             # Restaurar canción actual
-            tracks = await wavelink.Playable.search(row['current_track_uri'])
+            tracks = await wavelink.Playable.search(data['current_track_uri'])
             if tracks:
                 current = tracks[0]
-                await player.play(current, start=row['position'])
+                await player.play(current, start=data['position'])
 
             # Restaurar cola (en segundo plano para no bloquear)
-            if row['queue_uris']:
-                uris = row['queue_uris'].split(",")
-                for uri in uris:
-                    t = await wavelink.Playable.search(uri)
-                    if t: await player.queue.put_wait(t[0])
+            for uri in data.get('queue_uris', []):
+                t = await wavelink.Playable.search(uri)
+                if t: await player.queue.put_wait(t[0])
             
             logger.info(f"✅ Sesión restaurada en {guild.name}")
         except Exception:
             logger.exception(f"❌ Error restaurando sesión en {guild.id}")
         finally:
-            await db_service.delete_persistence(guild.id)
+            await persistence_service.clear("music", guild.id)
 
 async def connect_nodes(bot):
     """Configura y conecta al primer nodo disponible (Failover)."""
