@@ -81,6 +81,12 @@ MUSIC_CONFIG = {
         "PAUSE_RESUME": "⏯️", "SKIP": "⏭️", "STOP": "⏹️", "SHUFFLE": "🔀",
         "AUTOPLAY": "♾️", "VOL_DOWN": "🔉", "VOL_UP": "🔊", "LYRICS": "📝"
     },
+    "SOURCE_EMOJIS": {
+        "youtube": "🔴",
+        "spotify": "🟢",
+        "soundcloud": "🟠",
+        "unknown": "🎵"
+    },
     "PROGRESS_BAR_CHAR": "▬",
     "PROGRESS_BAR_POINTER": "🔘",
     "VOLUME_TOLERANCE": 1,  # Margen para detectar cambios manuales de volumen

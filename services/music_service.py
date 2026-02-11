@@ -426,8 +426,21 @@ def create_np_embed(player: wavelink.Player, track: wavelink.Playable, lang: str
 
     desc = lang_service.get_text("music_np_desc", lang, title=track.title, uri=track.uri or "", pos=pos_str, bar=bar, len=len_str)
 
+    # Detectar la fuente para el icono
+    source = getattr(track, 'source', '').lower()
+    uri = (track.uri or "").lower()
+    
+    if "youtube" in source or "youtube" in uri or "youtu.be" in uri:
+        icon = settings.MUSIC_CONFIG["SOURCE_EMOJIS"]["youtube"]
+    elif "spotify" in source or "spotify" in uri:
+        icon = settings.MUSIC_CONFIG["SOURCE_EMOJIS"]["spotify"]
+    elif "soundcloud" in source or "soundcloud" in uri:
+        icon = settings.MUSIC_CONFIG["SOURCE_EMOJIS"]["soundcloud"]
+    else:
+        icon = settings.MUSIC_CONFIG["SOURCE_EMOJIS"]["unknown"]
+
     embed = discord.Embed(
-        title=lang_service.get_text("music_now_playing_title", lang),
+        title=f"{icon} {lang_service.get_text('music_now_playing_title', lang)}",
         description=desc,
         color=settings.COLORS["INFO"]
     )
