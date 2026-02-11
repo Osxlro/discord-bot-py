@@ -445,8 +445,8 @@ def create_np_embed(player: wavelink.Player, track: wavelink.Playable, lang: str
         album_name = getattr(album, "name", str(album))
         embed.add_field(name=lang_service.get_text("music_field_album", lang), value=album_name, inline=True)
 
-    # Intentar obtener el año desde track.info o atributos dinámicos
-    year = track.info.get('year') or getattr(track, 'year', None)
+    # Intentar obtener el año desde atributos dinámicos (LavaSrc)
+    year = getattr(track, 'year', None)
     if year:
         embed.add_field(name=lang_service.get_text("music_field_year", lang), value=str(year), inline=True)
 
