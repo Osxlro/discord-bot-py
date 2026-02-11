@@ -72,16 +72,34 @@ class MusicEvents(commands.Cog):
     async def on_wavelink_track_exception(self, payload: wavelink.TrackExceptionEventPayload):
         logger.error(f"❌ [Music Event] Error en {payload.track.title}: {payload.exception}")
         player = payload.player
-        
-        # Fallback a SoundCloud si es error de YouTube
-        err_msg = str(payload.exception)
-        if "No supported audio streams" in err_msg and "youtube" in (payload.track.uri or ""):
-            query = f"scsearch:{payload.track.title} {payload.track.author}"
-            tracks = await wavelink.Playable.search(query)
-            if tracks:
-                await player.play(tracks[0])
-                return
+        if not player: return
 
+        current_position = int(player.position)
+        
+        # Sistema de Fallback en cadena: Spotify -> YouTube -> SoundCloud
+        err_msg = str(payload.exception)
+        is_yt_error = "No supported audio streams" in err_msg or "403" in err_msg or "not available" in err_msg
+        uri = (payload.track.uri or "").lower()
+
+        # Si falla algo que no es SoundCloud, intentamos el último recurso (SC)
+        if is_yt_error:
+            # Si falló Spotify (que suele resolver a YT) o YouTube directamente, saltamos a SoundCloud
+            if "spotify" in uri or "youtube" in uri or "youtu.be" in uri:
+                logger.info(f"🔄 [Music Event] Intentando fallback a SoundCloud para: {payload.track.title}")
+                try:
+                    query = f"scsearch:{payload.track.title} {payload.track.author}"
+                    tracks = await wavelink.Playable.search(query)
+                    if tracks:
+                        fallback_track = tracks[0]
+                        if hasattr(payload.track, "requester"):
+                            fallback_track.requester = payload.track.requester
+                        
+                        await player.play(fallback_track, start=current_position)
+                        return
+                except Exception as e:
+                    logger.error(f"❌ Fallback fallido: {e}")
+
+        player.last_track_error = True
         await player.stop()
 
 async def setup(bot):

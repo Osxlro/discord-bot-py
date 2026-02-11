@@ -106,14 +106,10 @@ class Music(commands.Cog):
             if is_url:
                 tracks = await wavelink.Playable.search(busqueda)
             else:
-                # Estrategia de Fallback: YT -> SC
-                default = settings.LAVALINK_CONFIG.get("SEARCH_PROVIDER", "yt")
-                sources = [default]
-                if default == "yt": sources.append("sc")
-                elif default == "sc": sources.append("yt")
-                
+                # Estrategia de Fallback: Spotify -> YouTube -> SoundCloud
+                sources = ["spsearch", "ytsearch", "scsearch"]
                 last_err = None
-                
+
                 for source in sources:
                     try:
                         query = f"{source}search:{busqueda}"

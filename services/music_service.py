@@ -304,8 +304,18 @@ async def get_search_choices(current: str) -> list[app_commands.Choice[str]]:
     if not wavelink.Pool.nodes or not current:
         return []
     try:
-        provider = settings.LAVALINK_CONFIG.get("SEARCH_PROVIDER", "yt")
-        tracks = await wavelink.Playable.search(f"{provider}search:{current}")
+        # Intentar autocompletado siguiendo el orden: Spotify -> YouTube -> SoundCloud
+        sources = ["spsearch", "ytsearch", "scsearch"]
+        tracks = []
+        
+        for source in sources:
+            try:
+                tracks = await wavelink.Playable.search(f"{source}:{current}")
+                if tracks:
+                    break
+            except:
+                continue
+
         if not tracks: return []
         
         choices = []
