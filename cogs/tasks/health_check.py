@@ -4,7 +4,7 @@ import discord
 import wavelink
 import os
 from discord.ext import commands, tasks
-from services import db_service, lang_service, help_service, profile_service, algorithm_service, developer_service, moderation_service, level_service, voice_service
+from services import db_service, lang_service, help_service, profile_service, algorithm_service, developer_service, moderation_service, level_service, voice_service, persistence_service
 from config import settings
 
 logger = logging.getLogger(__name__)
@@ -33,6 +33,29 @@ class HealthCheck(commands.Cog):
         errors = []
         warnings = []
 
+        await self._check_database(errors)
+        await self._check_filesystem(errors, warnings)
+        await self._check_lavalink(errors)
+        await self._check_spotify(errors)
+        await self._check_localization(errors)
+        await self._check_command_logic(errors, warnings)
+        await self._check_system_resources(warnings)
+
+        # --- MANTENIMIENTO PREVENTIVO ---
+        await db_service.prune_old_persistence(days=3)
+
+        # --- REPORTE DE RESULTADOS ---
+        for w in warnings:
+            logger.warning(f"⚠️ [HealthCheck] Advertencia: {w}")
+
+        if not errors:
+            logger.info("✅ [HealthCheck] Suite completada. El sistema se encuentra estable.")
+        else:
+            for error in errors:
+                logger.error(f"❌ [HealthCheck] Bug/Fallo detectado: {error}")
+            await self._notify_owner(errors)
+
+    async def _check_database(self, errors):
         # 1. Comprobación de Base de Datos
         try:
             await db_service.fetch_one("SELECT 1")
@@ -50,6 +73,7 @@ class HealthCheck(commands.Cog):
         except Exception as e:
             errors.append(f"Database Connectivity: {e}")
 
+    async def _check_filesystem(self, errors, warnings):
         # 2. Salud del Sistema de Archivos
         try:
             if os.path.exists(db_service.DB_PATH):
@@ -62,6 +86,7 @@ class HealthCheck(commands.Cog):
         except Exception as e:
             errors.append(f"File System Check: {e}")
 
+    async def _check_lavalink(self, errors):
         # 2. Comprobación de Nodos de Música (Lavalink)
         if not wavelink.Pool.nodes:
             errors.append("Music: No hay nodos configurados en el Pool.")
@@ -70,6 +95,7 @@ class HealthCheck(commands.Cog):
             if not active_nodes:
                 errors.append("Music: Todos los nodos de Lavalink están desconectados.")
 
+    async def _check_spotify(self, errors):
         # 3. APIs Externas (Spotify)
         if settings.LAVALINK_CONFIG["SPOTIFY"]["CLIENT_ID"]:
             try:
@@ -80,6 +106,7 @@ class HealthCheck(commands.Cog):
             except Exception as e:
                 errors.append(f"Spotify API Error: {e}")
 
+    async def _check_localization(self, errors):
         # 4. Sistema de Localización
         try:
             for l in ["es", "en"]:
@@ -88,6 +115,7 @@ class HealthCheck(commands.Cog):
         except Exception as e:
             errors.append(f"Lang Service Error: {e}")
 
+    async def _check_command_logic(self, errors, warnings):
         # 3. Simulación de Comandos Críticos (Dry Run)
         # Intentamos ejecutar la lógica de los servicios que alimentan a los comandos
         test_guild = self.bot.guilds[0] if self.bot.guilds else None
@@ -128,15 +156,24 @@ class HealthCheck(commands.Cog):
                 class MockTrack:
                     def __init__(self, t, a, l, i): self.title, self.author, self.length, self.identifier = t, a, l, i
                 seed, cand = MockTrack("A", "A", 100, "1"), MockTrack("B", "B", 100, "2")
-                engine._calculate_score(cand, seed, set(), {})
+                engine._calculate_score(cand, seed, set(), "day", {})
             except Exception as e:
                 errors.append(f"Command Logic (Algorithm): {e}")
+
+            # Prueba de Persistencia Binaria
+            try:
+                await persistence_service.store("health_test", "ping", {"status": "ok"})
+                if (await persistence_service.load("health_test", "ping"))["status"] != "ok":
+                    errors.append("Persistence Service: Data mismatch.")
+            except Exception as e:
+                errors.append(f"Persistence Service Error: {e}")
 
             # Verificación de permisos en el servidor de prueba
             perms = test_guild.me.guild_permissions
             if not perms.embed_links or not perms.send_messages:
                 warnings.append(f"Permissions: Faltan permisos básicos en {test_guild.name}")
 
+    async def _check_system_resources(self, warnings):
         # 4. Verificación de Latencia
         if self.bot.latency > 1.0: # Más de 1000ms es crítico
             warnings.append(f"Latency: {round(self.bot.latency * 1000)}ms")
@@ -163,19 +200,6 @@ class HealthCheck(commands.Cog):
             if info.get("available") and info["ram_sys"].percent > 90:
                 warnings.append(f"System RAM: {info['ram_sys'].percent}%")
         except: pass
-
-        # --- REPORTE DE RESULTADOS ---
-        for w in warnings:
-            logger.warning(f"⚠️ [HealthCheck] Advertencia: {w}")
-
-        if not errors:
-            logger.info("✅ [HealthCheck] Suite completada. El sistema se encuentra estable.")
-        else:
-            for error in errors:
-                logger.error(f"❌ [HealthCheck] Bug/Fallo detectado: {error}")
-            
-            # Opcional: Notificar al dueño por DM si hay errores críticos
-            await self._notify_owner(errors)
 
     async def _notify_owner(self, errors: list):
         """Envía un reporte de errores al dueño del bot."""

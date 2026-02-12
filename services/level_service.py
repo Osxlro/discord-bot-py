@@ -27,25 +27,15 @@ async def notify_level_up(guild: discord.Guild, member: discord.Member, nuevo_ni
     try:
         lang = await lang_service.get_guild_lang(guild.id)
         config = await db_service.get_guild_config(guild.id)
-        
         msg = await get_level_up_message(member, nuevo_nivel, lang)
         
-        # 1. Intentar canal de logs
-        dest_channel = None
-        if config.get('logs_channel_id'):
-            dest_channel = guild.get_channel(config['logs_channel_id'])
-        
-        # 2. Si no hay logs, usar el fallback (donde escribió el usuario)
-        if not dest_channel:
-            dest_channel = fallback_channel
-            
-        # 3. Si sigue sin haber canal, buscar el primero con permisos
-        if not dest_channel:
-            for text_channel in guild.text_channels:
-                perms = text_channel.permissions_for(guild.me)
-                if perms.send_messages:
-                    dest_channel = text_channel
-                    break
+        # Estrategia de canal: Configurado -> Fallback -> Primer canal disponible
+        log_id = config.get('logs_channel_id')
+        dest_channel = guild.get_channel(log_id) if log_id else fallback_channel
+
+        if not dest_channel or not dest_channel.permissions_for(guild.me).send_messages:
+            # Buscar el primer canal donde el bot pueda hablar si el destino falló
+            dest_channel = next((ch for ch in guild.text_channels if ch.permissions_for(guild.me).send_messages), None)
         
         if dest_channel:
             await dest_channel.send(msg)

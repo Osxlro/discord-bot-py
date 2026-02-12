@@ -3,6 +3,7 @@ import asyncio
 import wavelink
 import logging
 import re
+import datetime
 from discord import app_commands
 from config import settings
 from services import lang_service, embed_service, lyrics_service, voice_service, db_service, persistence_service
@@ -11,17 +12,67 @@ logger = logging.getLogger(__name__)
 
 _is_connecting = False
 
+# =============================================================================
+# 1. UTILIDADES DE FORMATEO Y TEXTO
+# =============================================================================
+
 def clean_track_title(title: str) -> str:
     """Limpia metadatos innecesarios de los títulos para mejorar la precisión de búsqueda."""
     if not title: return ""
-    title = re.sub(r"[\(\[].*?[\)\]]", "", title) # Elimina (Official Video), [HD], etc.
+    title = re.sub(r"[\(\[].*?[\)\]]", "", title)
     noise = ["official video", "official audio", "lyrics", "hd", "4k", "video oficial", "letra", "full hd", "audio"]
     for n in noise:
         title = re.compile(re.escape(n), re.IGNORECASE).sub("", title)
     return title.strip()
 
+def format_duration(milliseconds: int) -> str:
+    """Formatea milisegundos a MM:SS o HH:MM:SS."""
+    seconds = milliseconds // 1000
+    minutes, seconds = divmod(seconds, 60)
+    hours, minutes = divmod(minutes, 60)
+    if hours > 0:
+        return f"{hours}:{minutes:02}:{seconds:02}"
+    return f"{minutes}:{seconds:02}"
+
 # =============================================================================
-# LÓGICA DE INTERFAZ (VISTAS Y BOTONES)
+# 2. GESTIÓN DE PRESENCIA Y ESTADO
+# =============================================================================
+
+async def update_presence(bot: discord.Client, player: wavelink.Player, track: wavelink.Playable):
+    """Actualiza el Rich Presence del bot basado en la canción actual."""
+    start_time = datetime.datetime.now(datetime.timezone.utc)
+    end_time = None
+    if not track.is_stream:
+        end_time = start_time + datetime.timedelta(milliseconds=track.length)
+
+    album_obj = getattr(track, "album", None)
+    album_name = getattr(album_obj, "name", "Single") if album_obj else "Single"
+
+    activity = discord.Activity(
+        type=discord.ActivityType.listening,
+        name=f"{track.title}",
+        details=f"👤 {track.author}",
+        state=f"💿 {album_name} | 🔊 {player.volume}%",
+        start=start_time,
+        end=end_time,
+        assets={
+            'large_image': settings.CONFIG["bot_config"]["presence_asset"],
+            'large_text': settings.CONFIG["bot_config"]["description"]
+        }
+    )
+    await bot.change_presence(activity=activity)
+
+async def reset_presence(bot: discord.Client):
+    """Restaura el estado normal del bot al detener la música."""
+    activity = discord.Activity(
+        type=discord.ActivityType.playing,
+        name=f"{settings.CONFIG['bot_config']['prefix']}help",
+        assets={'large_image': settings.CONFIG["bot_config"]["presence_asset"]}
+    )
+    await bot.change_presence(activity=activity)
+
+# =============================================================================
+# 3. LÓGICA DE INTERFAZ (VISTAS Y BOTONES)
 # =============================================================================
 
 class MusicControls(discord.ui.View):
@@ -31,34 +82,30 @@ class MusicControls(discord.ui.View):
         self.player = player
         self.author_id = author_id
         self.lang = lang
+        self.player.last_view = self # Sincronización inmediata
         self._sync_state()
 
     def _sync_state(self):
         """Sincroniza el estado visual de los botones con el estado interno del player."""
+        loop_map = {
+            wavelink.QueueMode.loop: (settings.MUSIC_CONFIG["LOOP_EMOJIS"]["TRACK"], discord.ButtonStyle.success),
+            wavelink.QueueMode.loop_all: (settings.MUSIC_CONFIG["LOOP_EMOJIS"]["QUEUE"], discord.ButtonStyle.success),
+            wavelink.QueueMode.normal: (settings.MUSIC_CONFIG["LOOP_EMOJIS"]["OFF"], discord.ButtonStyle.secondary)
+        }
+
         for child in self.children:
             if not isinstance(child, discord.ui.Button): continue
             
-            # Sincronizar Pausa
             if str(child.emoji) == settings.MUSIC_CONFIG["BUTTON_EMOJIS"]["PAUSE_RESUME"]:
                 child.style = discord.ButtonStyle.danger if self.player.paused else discord.ButtonStyle.primary
             
-            # Sincronizar Autoplay
             elif str(child.emoji) == settings.MUSIC_CONFIG["BUTTON_EMOJIS"]["AUTOPLAY"]:
-                if getattr(self.player, "smart_autoplay", False):
-                    child.style = discord.ButtonStyle.success
-                else:
-                    child.style = discord.ButtonStyle.secondary
+                is_smart = getattr(self.player, "smart_autoplay", False)
+                child.style = discord.ButtonStyle.success if is_smart else discord.ButtonStyle.secondary
             
-            # Sincronizar Loop
             elif str(child.emoji) in settings.MUSIC_CONFIG["LOOP_EMOJIS"].values():
-                mode = self.player.queue.mode
-                if mode == wavelink.QueueMode.loop:
-                    child.emoji = settings.MUSIC_CONFIG["LOOP_EMOJIS"]["TRACK"]
-                    child.style = discord.ButtonStyle.success
-                elif mode == wavelink.QueueMode.loop_all:
-                    child.emoji = settings.MUSIC_CONFIG["LOOP_EMOJIS"]["QUEUE"]
-                    child.style = discord.ButtonStyle.success
-                # Normal es el default, no hace falta else
+                emoji, style = loop_map.get(self.player.queue.mode, loop_map[wavelink.QueueMode.normal])
+                child.emoji, child.style = emoji, style
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         if not self.player.connected:
@@ -100,9 +147,8 @@ class MusicControls(discord.ui.View):
                 await self.player.seek(0)
                 msg = lang_service.get_text("music_restarted", self.lang)
             else:
-                # Obtener la última canción del historial (la que acaba de sonar antes que esta)
-                prev_track = history[-1]
-                history.remove(prev_track)
+                # Obtener la última canción del historial de forma eficiente
+                prev_track = history.pop()
                 
                 # Guardar la actual para ponerla al inicio de la cola (para que no se pierda)
                 current_track = self.player.current
@@ -148,7 +194,7 @@ class MusicControls(discord.ui.View):
             pass
 
         # 2. Usar helper de limpieza (evita duplicar lógica)
-        await cleanup_player(self.player.client, self.player, skip_message_edit=True)
+        await cleanup_player(self.player, skip_message_edit=True)
         await persistence_service.clear("music", self.player.guild.id)
 
         # 3. Desconectar
@@ -160,6 +206,23 @@ class MusicControls(discord.ui.View):
         self.player.queue.shuffle()
         msg = lang_service.get_text("music_shuffled", self.lang)
         await interaction.response.send_message(msg, ephemeral=True)
+
+    @discord.ui.button(emoji=settings.MUSIC_CONFIG["BUTTON_EMOJIS"]["QUEUE"], style=discord.ButtonStyle.secondary, row=1)
+    async def show_queue(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Muestra una previsualización efímera de la cola."""
+        if self.player.queue.is_empty:
+            return await interaction.response.send_message(lang_service.get_text("music_queue_empty", self.lang), ephemeral=True)
+        
+        queue_list = list(self.player.queue)
+        desc = lang_service.get_text("music_queue_next", self.lang) + "\n"
+        for i, track in enumerate(queue_list[:10], 1):
+            desc += f"`{i}.` {track.title}\n"
+        
+        if len(queue_list) > 10:
+            desc += f"\n*... y {len(queue_list) - 10} más.*"
+            
+        embed = discord.Embed(title=lang_service.get_text("music_queue_title", self.lang), description=desc, color=settings.COLORS["INFO"])
+        await interaction.response.send_message(embed=embed, ephemeral=True)
 
     @discord.ui.button(emoji=settings.MUSIC_CONFIG["LOOP_EMOJIS"]["OFF"], style=discord.ButtonStyle.secondary, row=1)
     async def loop(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -212,35 +275,11 @@ class MusicControls(discord.ui.View):
         await self.player.set_volume(new_vol)
         await interaction.response.send_message(lang_service.get_text("music_vol_changed", self.lang, vol=new_vol), ephemeral=True)
 
-    @discord.ui.button(emoji=settings.MUSIC_CONFIG["BUTTON_EMOJIS"]["LYRICS"], style=discord.ButtonStyle.secondary, row=1)
-    async def lyrics(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.defer(ephemeral=True)
-        track = self.player.current
-        if not track or not track.title or track.is_stream:
-            return await interaction.followup.send(lang_service.get_text("music_error_nothing", self.lang), ephemeral=True)
-        
-        clean_title = clean_track_title(track.title)
-        
-        # Intentar búsqueda con título limpio y autor
-        lyrics = await lyrics_service.get_lyrics(clean_title, track.author)
-        
-        # Fallback: Si falla, intentar solo con el título limpio (útil si el autor en YT es raro)
-        if not lyrics:
-            lyrics = await lyrics_service.get_lyrics(clean_title, "")
-
-        if lyrics:
-            embed = discord.Embed(title=lang_service.get_text("music_lyrics_title", self.lang, title=track.title), description=lyrics[:4096], color=settings.COLORS["INFO"])
-            if len(lyrics) > 4096:
-                embed.set_footer(text="Letra truncada.")
-            await interaction.followup.send(embed=embed, ephemeral=True)
-        else:
-            await interaction.followup.send(lang_service.get_text("music_lyrics_not_found", self.lang), ephemeral=True)
-
 # =============================================================================
-# FUNCIONES AUXILIARES (HELPERS)
+# 4. NÚCLEO DEL REPRODUCTOR Y BÚSQUEDA
 # =============================================================================
 
-async def cleanup_player(bot, player: wavelink.Player, skip_message_edit: bool = False):
+async def cleanup_player(player: wavelink.Player, skip_message_edit: bool = False):
     """Realiza limpieza de interfaz y persistencia al detener el player."""
     if not player: return
 
@@ -248,18 +287,20 @@ async def cleanup_player(bot, player: wavelink.Player, skip_message_edit: bool =
     voice_service.voice_targets.pop(player.guild.id, None)
 
     # 2. Deshabilitar botones visualmente
-    if hasattr(player, "last_view") and player.last_view:
-        for child in player.last_view.children:
+    view = getattr(player, "last_view", None)
+    if view:
+        for child in view.children:
             child.disabled = True
+        
         if not skip_message_edit:
+            msg = getattr(player, "last_msg", None)
             try:
-                if player.last_msg: await player.last_msg.edit(view=player.last_view)
-            except discord.HTTPException: pass
-        player.last_view.stop()
+                if msg: await msg.edit(view=view)
+            except (discord.HTTPException, discord.Forbidden): pass
+        view.stop()
     
     # Limpiar referencias
     player.last_view = None
-    player.last_msg = None
     player.home = None # Liberar referencia al canal de texto
     
     # Limpiar cola
@@ -270,6 +311,172 @@ async def cleanup_player(bot, player: wavelink.Player, skip_message_edit: bool =
     # Resetear estados internos
     player.smart_autoplay = False
     player.last_track_error = False
+    player.last_msg = None
+
+async def ensure_player(ctx, lang: str) -> wavelink.Player | None:
+    """Asegura que el bot esté conectado correctamente y retorna el player."""
+    if not ctx.author.voice:
+        await ctx.send(embed=embed_service.error(lang_service.get_text("title_error", lang), lang_service.get_text("music_error_join", lang)))
+        return None
+
+    permissions = ctx.author.voice.channel.permissions_for(ctx.guild.me)
+    if not permissions.connect or not permissions.speak:
+        await ctx.send(embed=embed_service.error(lang_service.get_text("title_error", lang), lang_service.get_text("voice_error_perms", lang)))
+        return None
+
+    try:
+        if ctx.voice_client and not isinstance(ctx.voice_client, wavelink.Player):
+            await ctx.voice_client.disconnect(force=True)
+            player = await ctx.author.voice.channel.connect(cls=SafePlayer, self_deaf=True)
+        elif not ctx.voice_client:
+            player = await ctx.author.voice.channel.connect(cls=SafePlayer, self_deaf=True)
+        else:
+            player = ctx.voice_client
+            if not player.connected:
+                await player.connect(cls=SafePlayer, self_deaf=True, channel=ctx.author.voice.channel)
+        
+        if player.volume == 0:
+            await player.set_volume(settings.LAVALINK_CONFIG.get("DEFAULT_VOLUME", 50))
+            
+        return player
+    except Exception as e:
+        await ctx.send(embed=embed_service.error(lang_service.get_text("title_error", lang), str(e)))
+        return None
+
+def get_source_icon(track: wavelink.Playable) -> str:
+    """Retorna el emoji correspondiente a la fuente de la canción."""
+    source = getattr(track, 'source', '').lower()
+    uri = (track.uri or "").lower()
+    
+    if "youtube" in source or "youtube" in uri or "youtu.be" in uri:
+        return settings.MUSIC_CONFIG["SOURCE_EMOJIS"]["youtube"]
+    if "spotify" in source or "spotify" in uri:
+        return settings.MUSIC_CONFIG["SOURCE_EMOJIS"]["spotify"]
+    if "soundcloud" in source or "soundcloud" in uri:
+        return settings.MUSIC_CONFIG["SOURCE_EMOJIS"]["soundcloud"]
+    return settings.MUSIC_CONFIG["SOURCE_EMOJIS"]["unknown"]
+
+def get_source_color(track: wavelink.Playable) -> int:
+    """Retorna el color hexadecimal de la marca de la fuente."""
+    uri = (track.uri or "").lower()
+    if "spotify" in uri: return 0x1DB954
+    if "youtube" in uri or "youtu.be" in uri: return 0xFF0000
+    if "soundcloud" in uri: return 0xFF5500
+    return settings.COLORS["INFO"]
+
+async def send_now_playing(bot: discord.Client, player: wavelink.Player, track: wavelink.Playable):
+    """Genera y envía el mensaje de 'Ahora suena' centralizando la lógica de UI."""
+    if not hasattr(player, "home") or not player.home:
+        return
+
+    lang = await lang_service.get_guild_lang(player.guild.id)
+    embed = create_np_embed(player, track, lang)
+    view = MusicControls(player, lang=lang)
+    
+    # Limpieza de mensajes anteriores para evitar spam
+    if hasattr(player, "last_msg") and player.last_msg:
+        try: await player.last_msg.delete()
+        except: pass
+
+    # Actualizar Presencia del bot
+    await update_presence(bot, player, track)
+    
+    # Enviar nuevo mensaje y guardar referencia
+    player.last_msg = await player.home.send(embed=embed, view=view)
+
+async def handle_enqueue(ctx, player: wavelink.Player, tracks: wavelink.Playable | wavelink.Playlist, lang: str):
+    """Maneja la lógica de añadir pistas o playlists a la cola, optimizando el feedback al usuario."""
+    player.autoplay = wavelink.AutoPlayMode.disabled
+    if isinstance(tracks, wavelink.Playlist):
+        await _handle_playlist_enqueue(ctx, player, tracks, lang)
+    else:
+        await _handle_track_enqueue(ctx, player, tracks, lang)
+
+async def _handle_playlist_enqueue(ctx, player, playlist, lang):
+    if not playlist:
+        return await ctx.send(embed=embed_service.warning(lang_service.get_text("title_error", lang), "Playlist is empty."))
+    for track in playlist:
+        track.requester = ctx.author
+        await player.queue.put_wait(track)
+        await asyncio.sleep(0)
+    msg = lang_service.get_text("music_playlist_added", lang, name=playlist.name or "Playlist", count=len(playlist))
+    await ctx.send(embed=embed_service.success(lang_service.get_text("title_queue", lang), msg, lite=True))
+    if not player.playing:
+        await player.play(player.queue.get())
+
+async def _handle_track_enqueue(ctx, player, tracks, lang):
+    track = tracks[0] if isinstance(tracks, (list, tuple)) else tracks
+    track.requester = ctx.author
+    if not player.playing:
+        await player.play(track)
+        msg = lang_service.get_text("music_playing", lang)
+        await ctx.send(embed=embed_service.success(lang_service.get_text("title_music", lang), f"{msg}: **{track.title}**", lite=True), delete_after=15)
+    else:
+        await player.queue.put_wait(track)
+        msg = lang_service.get_text("music_track_enqueued", lang, title=track.title)
+        await ctx.send(embed=embed_service.success(lang_service.get_text("title_queue", lang), msg, lite=True))
+
+async def handle_play_search(busqueda: str) -> wavelink.Playable | wavelink.Playlist | None:
+    """Encapsula la lógica de búsqueda con fallback para el comando play."""
+    # Soporte para URLs envueltas en <>
+    if busqueda.startswith("<") and busqueda.endswith(">"):
+        busqueda = busqueda[1:-1]
+        
+    if re.match(r'https?://(?:www\.)?.+', busqueda):
+        return await wavelink.Playable.search(busqueda)
+
+    # Prioridad de búsqueda flexible basada en settings
+    primary = settings.LAVALINK_CONFIG.get("SEARCH_PROVIDER", "spsearch")
+    sources = list(dict.fromkeys([primary, "ytsearch", "scsearch"]))
+    
+    for source in sources:
+        try:
+            tracks = await wavelink.Playable.search(f"{source}:{busqueda}")
+            if tracks:
+                logger.debug(f"🔍 [Music Service] Búsqueda resuelta vía {source}")
+                return tracks
+        except Exception:
+            continue
+    return None
+
+async def handle_track_fallback(player: wavelink.Player, track: wavelink.Playable) -> bool:
+    """Intenta encontrar una versión alternativa de una canción que falló."""
+    uri = (track.uri or "").lower()
+    # Si falló YouTube o Spotify (que resuelve a YT), probamos SoundCloud
+    fallback_provider = "scsearch" if "youtube" in uri or "spotify" in uri else "ytsearch"
+    
+    logger.info(f"🔄 [Music Service] Fallback automático a {fallback_provider} para: {track.title}")
+    
+    try:
+        clean_name = clean_track_title(track.title)
+        query = f"{fallback_provider}:{clean_name} {track.author}"
+        tracks = await wavelink.Playable.search(query)
+        
+        if tracks:
+            new_track = tracks[0]
+            new_track.requester = getattr(track, "requester", None)
+            await player.play(new_track, start=int(player.position))
+            return True
+    except Exception as e:
+        logger.error(f"❌ Fallback fallido: {e}")
+    
+    return False
+
+def get_music_error_message(error: Exception, lang: str) -> str:
+    """Traduce excepciones técnicas a mensajes amigables para el usuario."""
+    err_str = str(error)
+    if "NoNodesAvailable" in err_str:
+        return lang_service.get_text("music_err_lavalink_nodes", lang)
+    
+    if "FriendlyException" in err_str:
+        if "403" in err_str or "confirm your age" in err_str:
+            return lang_service.get_text("music_err_youtube_block", lang)
+        return lang_service.get_text("music_err_load_failed", lang, error=err_str)
+        
+    if "SSLCertVerificationError" in err_str:
+        return "❌ **Error de SSL:** El nodo de música tiene un certificado inválido."
+
+    return lang_service.get_text("music_err_generic", lang, error=err_str)
 
 async def save_player_state(player: wavelink.Player):
     """Extrae y guarda el estado del player en la base de datos."""
@@ -297,7 +504,7 @@ async def restore_players(bot):
     if not records:
         return
 
-    logger.info(f"🔄 [Music Service] Restaurando {len(records)} sesiones de música...")
+    logger.debug(f"🔄 [Music Service] Restaurando {len(records)} sesiones de música...")
 
     for guild_id, data in records.items():
         guild = bot.get_guild(int(guild_id))
@@ -324,7 +531,7 @@ async def restore_players(bot):
                 t = await wavelink.Playable.search(uri)
                 if t: await player.queue.put_wait(t[0])
             
-            logger.info(f"✅ Sesión restaurada en {guild.name}")
+            logger.debug(f"✅ Sesión restaurada en {guild.name}")
         except Exception:
             logger.exception(f"❌ Error restaurando sesión en {guild.id}")
         finally:
@@ -357,7 +564,7 @@ async def connect_best_node(bot, node_configs, max_retries=3):
                     if node.status == wavelink.NodeStatus.CONNECTED:
                         return
 
-            logger.info(f"🔄 [Music Service] Intento de conexión {i+1}/{max_retries}...")
+            logger.debug(f"🔄 [Music Service] Intento de conexión {i+1}/{max_retries}...")
 
             for config in node_configs:
                 identifier = config.get("IDENTIFIER", config["HOST"])
@@ -397,25 +604,26 @@ async def connect_best_node(bot, node_configs, max_retries=3):
     finally:
         _is_connecting = False
 
-async def get_search_choices(current: str, source_override: str = None) -> list[app_commands.Choice[str]]:
+async def get_search_choices(current: str) -> list[app_commands.Choice[str]]:
     """Genera opciones para el autocompletado de búsqueda."""
     if not wavelink.Pool.nodes or not current:
         return []
     try:
-        # Intentar autocompletado siguiendo el orden: Spotify -> YouTube -> SoundCloud
-        sources = ["spsearch", "ytsearch", "scsearch"]
+        # Prioridad de Autocompletado: Siempre Spotify primero si está configurado
+        primary = settings.LAVALINK_CONFIG.get("SEARCH_PROVIDER", "spsearch")
+        sources = [primary, "ytsearch", "scsearch"]
+        sources = list(dict.fromkeys(sources))
         
-        if source_override:
-            mapping = {"spotify": "spsearch", "youtube": "ytsearch", "soundcloud": "scsearch"}
-            sources = [mapping.get(source_override, "spsearch")]
-
         tracks = []
         
         for source in sources:
             try:
                 tracks = await wavelink.Playable.search(f"{source}:{current}")
                 if tracks:
+                    logger.debug(f"🔎 [Music Service] Autocompletado resuelto vía: {source}")
                     break
+                else:
+                    logger.debug(f"⚠️ [Music Service] {source} no devolvió resultados para '{current}'")
             except Exception as e:
                 logger.debug(f"⚠️ [Music Service] Autocompletado falló para fuente {source}: {e}")
                 continue
@@ -483,6 +691,47 @@ async def fade_in(player: wavelink.Player, duration_ms: int):
     
     await player.set_volume(target_vol)
 
+def get_queue_pages(player: wavelink.Player, lang: str) -> list[discord.Embed]:
+    """Genera las páginas de embeds para la cola de reproducción."""
+    if not player or (not player.current and player.queue.is_empty):
+        return []
+
+    pages = []
+    queue_list = list(player.queue)
+    chunk_size = settings.MUSIC_CONFIG["QUEUE_PAGE_SIZE"]
+    chunks = [queue_list[i:i + chunk_size] for i in range(0, len(queue_list), chunk_size)]
+
+    if not chunks and player.current:
+        chunks = [[]]
+
+    for i, chunk in enumerate(chunks):
+        desc = ""
+        if player.current:
+            desc += lang_service.get_text("music_queue_current", lang, title=player.current.title) + "\n\n"
+        
+        if chunk:
+            desc += lang_service.get_text("music_queue_next", lang) + "\n"
+            for j, track in enumerate(chunk):
+                idx = (i * chunk_size) + j + 1
+                desc += f"`{idx}.` {track.title} - *{track.author}*\n"
+        
+        embed = discord.Embed(title=lang_service.get_text("music_queue_title", lang), description=desc, color=settings.COLORS["INFO"])
+        embed.set_footer(text=lang_service.get_text("music_queue_footer", lang, current=i+1, total=len(chunks), tracks=len(player.queue)))
+        pages.append(embed)
+    
+    return pages
+
+async def sync_ui(player: wavelink.Player):
+    """Sincroniza el estado visual de la última vista activa del reproductor."""
+    view = getattr(player, "last_view", None)
+    msg = getattr(player, "last_msg", None)
+    if view and msg:
+        view._sync_state()
+        try:
+            await msg.edit(view=view)
+        except discord.HTTPException:
+            pass
+
 class SafePlayer(wavelink.Player):
     """
     Player personalizado que captura errores de conexión con el nodo (ej. 500 Internal Server Error)
@@ -496,15 +745,6 @@ class SafePlayer(wavelink.Player):
             # Si el nodo rechaza la conexión, desconectamos localmente para limpiar estado
             try: await self.disconnect()
             except: pass
-
-def format_duration(milliseconds: int) -> str:
-    """Formatea milisegundos a MM:SS o HH:MM:SS."""
-    seconds = milliseconds // 1000
-    minutes, seconds = divmod(seconds, 60)
-    hours, minutes = divmod(minutes, 60)
-    if hours > 0:
-        return f"{hours}:{minutes:02}:{seconds:02}"
-    return f"{minutes}:{seconds:02}"
 
 def create_np_embed(player: wavelink.Player, track: wavelink.Playable, lang: str) -> discord.Embed:
     """Genera el embed de 'Reproduciendo Ahora' con barra de progreso."""
@@ -528,25 +768,13 @@ def create_np_embed(player: wavelink.Player, track: wavelink.Playable, lang: str
         pos_str = format_duration(position)
         len_str = format_duration(length)
 
+    icon = get_source_icon(track)
     desc = lang_service.get_text("music_np_desc", lang, title=track.title, uri=track.uri or "", pos=pos_str, bar=bar, len=len_str)
-
-    # Detectar la fuente para el icono
-    source = getattr(track, 'source', '').lower()
-    uri = (track.uri or "").lower()
-    
-    if "youtube" in source or "youtube" in uri or "youtu.be" in uri:
-        icon = settings.MUSIC_CONFIG["SOURCE_EMOJIS"]["youtube"]
-    elif "spotify" in source or "spotify" in uri:
-        icon = settings.MUSIC_CONFIG["SOURCE_EMOJIS"]["spotify"]
-    elif "soundcloud" in source or "soundcloud" in uri:
-        icon = settings.MUSIC_CONFIG["SOURCE_EMOJIS"]["soundcloud"]
-    else:
-        icon = settings.MUSIC_CONFIG["SOURCE_EMOJIS"]["unknown"]
 
     embed = discord.Embed(
         title=f"{icon} {lang_service.get_text('music_now_playing_title', lang)}",
         description=desc,
-        color=settings.COLORS["INFO"]
+        color=get_source_color(track)
     )
     if track.artwork: embed.set_thumbnail(url=track.artwork)
     
@@ -554,17 +782,15 @@ def create_np_embed(player: wavelink.Player, track: wavelink.Playable, lang: str
     if hasattr(track, "requester") and track.requester:
         embed.set_footer(text=lang_service.get_text("music_requested_by", lang, user=track.requester.display_name), icon_url=track.requester.display_avatar.url)
         
-    embed.add_field(name=lang_service.get_text("music_field_author", lang), value=track.author, inline=True)
+    # Campos de metadatos dinámicos
+    fields = [
+        (lang_service.get_text("music_field_author", lang), track.author, True),
+        (lang_service.get_text("music_field_album", lang), getattr(getattr(track, "album", None), "name", None), True),
+        (lang_service.get_text("music_field_year", lang), getattr(track, "year", None), True)
+    ]
 
-    # Álbum y Año (Soporte para metadatos extendidos de Spotify/Plugins)
-    album = getattr(track, "album", None)
-    if album:
-        album_name = getattr(album, "name", str(album))
-        embed.add_field(name=lang_service.get_text("music_field_album", lang), value=album_name, inline=True)
-
-    # Intentar obtener el año desde atributos dinámicos (LavaSrc)
-    year = getattr(track, 'year', None)
-    if year:
-        embed.add_field(name=lang_service.get_text("music_field_year", lang), value=str(year), inline=True)
+    for name, value, inline in fields:
+        if value:
+            embed.add_field(name=name, value=str(value), inline=inline)
 
     return embed

@@ -3,11 +3,10 @@ import asyncio
 import wavelink
 import logging
 import re
-from typing import Literal
 from discord import app_commands
 from discord.ext import commands
 from config import settings
-from services import embed_service, lang_service, pagination_service, algorithm_service, db_service, music_service, voice_service
+from services import embed_service, lang_service, pagination_service, db_service, music_service, voice_service
 
 logger = logging.getLogger(__name__)
 
@@ -25,16 +24,12 @@ class Music(commands.Cog):
         pass
 
     async def play_autocomplete(self, interaction: discord.Interaction, current: str) -> list[app_commands.Choice[str]]:
-        servicio = interaction.namespace.servicio
-        return await music_service.get_search_choices(current, source_override=servicio)
+        return await music_service.get_search_choices(current)
 
     @commands.hybrid_command(name="play", description="Reproduce música desde YouTube, SoundCloud, etc.")
-    @app_commands.describe(
-        busqueda="Nombre de la canción o URL",
-        servicio="Forzar búsqueda en un servicio específico"
-    )
+    @app_commands.describe(busqueda="Nombre de la canción o URL de Spotify/YouTube")
     @app_commands.autocomplete(busqueda=play_autocomplete)
-    async def play(self, ctx: commands.Context, busqueda: str, servicio: Literal["spotify", "youtube", "soundcloud"] = None):
+    async def play(self, ctx: commands.Context, busqueda: str):
         # Deferimos la interacción al inicio para evitar timeouts si la conexión tarda
         busqueda = busqueda.strip()
         lang = await lang_service.get_guild_lang(ctx.guild.id)
@@ -52,49 +47,9 @@ class Music(commands.Cog):
 
         await ctx.defer()
 
-        
-        # 1. Verificar canal de voz
-        if not ctx.author.voice:
-            return await ctx.send(embed=embed_service.error(lang_service.get_text("title_error", lang), lang_service.get_text("music_error_join", lang)))
-
-        # 1.5 Verificar permisos del bot en el canal
-        permissions = ctx.author.voice.channel.permissions_for(ctx.guild.me)
-        if not permissions.connect or not permissions.speak:
-            return await ctx.send(embed=embed_service.error(lang_service.get_text("title_error", lang), lang_service.get_text("voice_error_perms", lang)))
-
-        # 2. Obtener o crear Player
-        try:
-            # Verificar si existe un cliente de voz y si es del tipo correcto (Wavelink Player)
-            if ctx.voice_client and not isinstance(ctx.voice_client, wavelink.Player):
-                await ctx.voice_client.disconnect(force=True)
-                player: wavelink.Player = await ctx.author.voice.channel.connect(cls=music_service.SafePlayer, self_deaf=True)
-                await player.set_volume(settings.LAVALINK_CONFIG.get("DEFAULT_VOLUME", 50))
-            
-            elif not ctx.voice_client:
-                player: wavelink.Player = await ctx.author.voice.channel.connect(cls=music_service.SafePlayer, self_deaf=True)
-                await player.set_volume(settings.LAVALINK_CONFIG.get("DEFAULT_VOLUME", 50))
-            
-            else:
-                player: wavelink.Player = ctx.voice_client
-                if not player.connected:
-                    await player.connect(cls=music_service.SafePlayer, self_deaf=True, channel=ctx.author.voice.channel)
-                    # No reseteamos volumen aquí si ya existía el player, para mantener preferencia de usuario
-        except Exception as e:
-            return await ctx.send(embed=embed_service.error(lang_service.get_text("title_error", lang), str(e)))
-
-        # 2.5 Ajustes post-conexión
-        if player.connected:
-            # Si el bot está muteado (por ejemplo, por /join de voice.py), lo desmuteamos
-            if ctx.guild.me.voice.self_mute:
-                await ctx.guild.me.edit(mute=False)
-            
-            # Si el usuario está en otro canal, movemos al bot
-            if player.channel and ctx.author.voice.channel.id != player.channel.id:
-                try:
-                    await player.move_to(ctx.author.voice.channel)
-                    voice_service.voice_targets[ctx.guild.id] = ctx.author.voice.channel.id
-                except Exception as e:
-                    return await ctx.send(embed=embed_service.error(lang_service.get_text("title_error", lang), str(e)))
+        # 1. Asegurar Player (Lógica delegada)
+        player = await music_service.ensure_player(ctx, lang)
+        if not player: return
 
         # Guardamos el canal de texto para enviar mensajes de "Now Playing"
         player.home = ctx.channel
@@ -111,19 +66,21 @@ class Music(commands.Cog):
             if is_url:
                 tracks = await wavelink.Playable.search(busqueda)
             else:
-                # Estrategia de Fallback: Spotify -> YouTube -> SoundCloud
-                sources = ["spsearch", "ytsearch", "scsearch"]
+                # Prioridad de búsqueda flexible basada en settings
+                primary = settings.LAVALINK_CONFIG.get("SEARCH_PROVIDER", "spsearch")
+                sources = [primary, "ytsearch", "scsearch"]
+                sources = list(dict.fromkeys(sources)) # Eliminar duplicados
+                
                 last_err = None
-
                 for source in sources:
                     try:
                         query = f"{source}:{busqueda}"
                         tracks = await wavelink.Playable.search(query)
-                        if tracks: 
+                        if tracks:
+                            logger.info(f"🔍 [Music] Búsqueda resuelta vía {source}")
                             break
                     except Exception as e:
-                        last_err = f"[{source.upper()}] {e}"
-                        logger.error(f"⚠️ [Music Command] Fallo búsqueda en {source} ('{busqueda}'): {e}")
+                        last_err = e
                         continue
                 
                 # Si fallaron todos los intentos y hubo error, lo lanzamos
@@ -133,58 +90,12 @@ class Music(commands.Cog):
             if not tracks:
                 return await ctx.send(embed=embed_service.warning(lang_service.get_text("title_music", lang), lang_service.get_text("music_search_empty", lang, query=busqueda or "Unknown")))
 
-            # 4. Reproducir o Encolar (Soporte Playlist)
-            # Asegurar que el modo nativo de autoplay esté desactivado para evitar conflictos
-            player.autoplay = wavelink.AutoPlayMode.disabled
-
-            if isinstance(tracks, wavelink.Playlist):
-                # FIX: Evitar bloqueo si la playlist está vacía
-                if not tracks:
-                    return await ctx.send(embed=embed_service.warning(lang_service.get_text("title_error", lang), "Playlist is empty."))
-
-                for track in tracks:
-                    track.requester = ctx.author
-                    await player.queue.put_wait(track)
-                    # Ceder control al loop para evitar bloqueos en playlists masivas
-                    await asyncio.sleep(0)
-                
-                msg = lang_service.get_text("music_playlist_added", lang, name=tracks.name or "Playlist", count=len(tracks))
-                await ctx.send(embed=embed_service.success(lang_service.get_text("title_queue", lang), msg, lite=True))
-                
-                if not player.playing:
-                    first_track = player.queue.get()
-                    await player.play(first_track)
-                    # Confirmación visual de lo que empieza a sonar (UX)
-                    msg_np = lang_service.get_text("music_playing", lang)
-                    await ctx.send(embed=embed_service.success(lang_service.get_text("title_music", lang), f"{msg_np}: **{first_track.title}**", lite=True), delete_after=15)
-            else:
-                track = tracks[0]
-                track.requester = ctx.author
-                if not player.playing:
-                    await player.play(track)
-                    # Confirmación visual para cerrar la interacción deferred
-                    msg = lang_service.get_text("music_playing", lang)
-                    await ctx.send(embed=embed_service.success(lang_service.get_text("title_music", lang), f"{msg}: **{track.title}**", lite=True), delete_after=15)
-                else:
-                    await player.queue.put_wait(track)
-                    msg = lang_service.get_text("music_track_enqueued", lang, title=track.title)
-                    await ctx.send(embed=embed_service.success(lang_service.get_text("title_queue", lang), msg, lite=True))
+            # 4. Reproducir o Encolar delegada al servicio
+            await music_service.handle_enqueue(ctx, player, tracks, lang)
         
         except Exception as e:
             logger.exception("Error en comando play")
-            
-            err_str = str(e)
-            if "NoNodesAvailable" in err_str:
-                msg = lang_service.get_text("music_err_lavalink_nodes", lang)
-            elif "FriendlyException" in err_str and "Something went wrong" in err_str:
-                msg = lang_service.get_text("music_err_youtube_block", lang)
-            elif "FriendlyException" in err_str:
-                msg = lang_service.get_text("music_err_load_failed", lang, error=err_str)
-            elif "SSLCertVerificationError" in err_str or "CERTIFICATE_VERIFY_FAILED" in err_str:
-                msg = "❌ **Error de Nodo:** El certificado SSL del servidor de música ha expirado. Por favor cambia el nodo en `settings.py` (Usa puerto 2333 o cambia de host)."
-            else:
-                msg = lang_service.get_text("music_err_generic", lang, error=err_str)
-                
+            msg = music_service.get_music_error_message(e, lang)
             await ctx.send(embed=embed_service.error(lang_service.get_text("title_error", lang), msg))
 
     @commands.hybrid_command(name="previous", description="Vuelve a la canción anterior o reinicia la actual.")
@@ -205,8 +116,7 @@ class Music(commands.Cog):
                 await player.seek(0)
                 msg = lang_service.get_text("music_restarted", lang)
             else:
-                prev_track = history[-1]
-                history.remove(prev_track)
+                prev_track = history.pop()
                 
                 current_track = player.current
                 player.queue.put_at(0, current_track)
@@ -223,8 +133,8 @@ class Music(commands.Cog):
 
         player = ctx.voice_client
         if player:
-            # Usar helper de limpieza del servicio
-            await music_service.cleanup_player(self.bot, player)
+            # Limpiar interfaz antes de desconectar
+            await music_service.cleanup_player(player)
 
             if player.connected:
                 await player.disconnect()
@@ -255,34 +165,10 @@ class Music(commands.Cog):
         lang = await lang_service.get_guild_lang(ctx.guild.id)
         player: wavelink.Player = ctx.voice_client
         
-        if not player or (not player.current and player.queue.is_empty):
+        pages = music_service.get_queue_pages(player, lang)
+        if not pages:
             msg = lang_service.get_text("music_error_nothing", lang)
             return await ctx.send(embed=embed_service.warning(lang_service.get_text("title_queue", lang), msg, lite=True))
-
-        # Construcción de páginas para el Paginator
-        pages = []
-        queue_list = list(player.queue)
-        chunk_size = settings.MUSIC_CONFIG["QUEUE_PAGE_SIZE"]
-        chunks = [queue_list[i:i + chunk_size] for i in range(0, len(queue_list), chunk_size)]
-
-        # Si la cola está vacía pero hay canción sonando (caso raro pero posible)
-        if not chunks and player.playing:
-            chunks = [[]]
-
-        for i, chunk in enumerate(chunks):
-            desc = ""
-            if player.playing:
-                desc += lang_service.get_text("music_queue_current", lang, title=player.current.title) + "\n\n"
-            
-            if chunk:
-                desc += lang_service.get_text("music_queue_next", lang) + "\n"
-                for j, track in enumerate(chunk):
-                    idx = (i * chunk_size) + j + 1
-                    desc += f"`{idx}.` {track.title} - *{track.author}*\n"
-            
-            embed = discord.Embed(title=lang_service.get_text("music_queue_title", lang), description=desc, color=settings.COLORS["INFO"])
-            embed.set_footer(text=lang_service.get_text("music_queue_footer", lang, current=i+1, total=len(chunks), tracks=len(player.queue)))
-            pages.append(embed)
 
         if len(pages) == 1:
             await ctx.send(embed=pages[0])
@@ -301,15 +187,7 @@ class Music(commands.Cog):
         new_state = not player.paused
         await player.pause(new_state)
         
-        # Sincronizar estado visual del botón si existe
-        if hasattr(player, "last_view") and player.last_view:
-            for child in player.last_view.children:
-                if isinstance(child, discord.ui.Button) and child.emoji == settings.MUSIC_CONFIG["BUTTON_EMOJIS"]["PAUSE_RESUME"]:
-                    child.style = discord.ButtonStyle.danger if new_state else discord.ButtonStyle.primary
-                    break
-            try:
-                if player.last_msg: await player.last_msg.edit(view=player.last_view)
-            except discord.HTTPException: pass
+        await music_service.sync_ui(player)
 
         msg = lang_service.get_text("music_paused" if new_state else "music_resumed", lang)
         await ctx.send(embed=embed_service.success(lang_service.get_text("title_music", lang), msg, lite=True))
@@ -326,6 +204,7 @@ class Music(commands.Cog):
              return await ctx.send(embed=embed_service.warning(lang_service.get_text("title_shuffle", lang), lang_service.get_text("music_queue_empty", lang), lite=True), ephemeral=True)
 
         player.queue.shuffle()
+        await music_service.sync_ui(player)
         msg = lang_service.get_text("music_shuffled", lang)
         await ctx.send(embed=embed_service.success(lang_service.get_text("title_shuffle", lang), msg, lite=True))
 
@@ -348,6 +227,7 @@ class Music(commands.Cog):
         else:
             msg = lang_service.get_text("music_autoplay_off", lang)
             
+        await music_service.sync_ui(player)
         await ctx.send(embed=embed_service.success(lang_service.get_text("title_autoplay", lang), msg, lite=True))
 
     @commands.hybrid_command(name="loop", description="Cambia el modo de repetición (Pista / Cola / Apagado).")
@@ -369,6 +249,7 @@ class Music(commands.Cog):
             player.queue.mode = wavelink.QueueMode.normal
             msg = lang_service.get_text("music_loop_off", lang)
             
+        await music_service.sync_ui(player)
         await ctx.send(embed=embed_service.success(lang_service.get_text("title_loop", lang), msg, lite=True))
 
     @commands.hybrid_command(name="volume", description="Ajusta el volumen (0-100).")

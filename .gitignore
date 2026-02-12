@@ -23,6 +23,8 @@ services_new/
 # --- Logs y Bases de Datos Locales ---
 *.log
 *.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm
 
 # --- Archivos Temporales ---
 *.zip

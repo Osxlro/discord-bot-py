@@ -9,8 +9,8 @@ async def store(namespace: str, key: str, data: any):
     try:
         binary_data = pickle.dumps(data)
         await db_service.execute(
-            "INSERT INTO bot_persistence (namespace, key, data) VALUES (?, ?, ?) "
-            "ON CONFLICT(namespace, key) DO UPDATE SET data = excluded.data",
+            "INSERT INTO bot_persistence (namespace, key, data, created_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP) "
+            "ON CONFLICT(namespace, key) DO UPDATE SET data = excluded.data, created_at = CURRENT_TIMESTAMP",
             (namespace, str(key), binary_data)
         )
     except Exception:

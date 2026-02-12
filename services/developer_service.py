@@ -113,11 +113,19 @@ async def get_memory_embed(lang):
         embed.description = desc
     return embed
 
-async def get_config_embed(lang):
-    embed = discord.Embed(title=lang_service.get_text("botinfo_config_title", lang), color=settings.COLORS["TEAL"])
+async def get_config_embed(lang: str) -> discord.Embed:
+    p_stats = await db_service.get_persistence_stats()
+    embed = discord.Embed(title=lang_service.get_text("botinfo_config_title", lang), color=0x5865F2)
     embed.add_field(name=lang_service.get_text("botinfo_langs", lang), value=lang_service.get_text("lang_list", lang), inline=False)
     log_size = f"{os.path.getsize(settings.LOG_FILE)/1024:.1f} KB" if os.path.exists(settings.LOG_FILE) else "0 KB"
     embed.add_field(name=lang_service.get_text("botinfo_logfile", lang), value=f"`{log_size}`", inline=True)
+
+    embed.add_field(
+        name="💾 Persistencia Binaria", 
+        value=f"• Registros: `{p_stats['count']}`\n• Tamaño: `{p_stats['size_kb']:.2f} KB`", 
+        inline=False
+    )
+
     rows = await db_service.fetch_all("SELECT type, text FROM bot_statuses")
     status_txt = "\n".join([f"• [{r['type']}] {r['text']}" for r in rows[:5]]) + (f"\n... y {len(rows)-5} más." if len(rows) > 5 else "") if rows else lang_service.get_text("log_none", lang)
     embed.add_field(name=lang_service.get_text("botinfo_statuses", lang), value=status_txt, inline=False)

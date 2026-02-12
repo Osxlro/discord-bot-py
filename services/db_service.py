@@ -122,15 +122,23 @@ async def init_db():
     )
     """)
 
-    # 6. Persistencia Genérica del Bot (Binary Store)
+    # 6. Persistencia Genérica del Bot (Binary Store) - Definición robusta inicial
     await db.execute("""
     CREATE TABLE IF NOT EXISTS bot_persistence (
         namespace TEXT,
         key TEXT,
         data BLOB,
+        created_at DATETIME DEFAULT (datetime('now')),
         PRIMARY KEY (namespace, key)
     )
     """)
+
+    # Migración segura: SQLite no permite CURRENT_TIMESTAMP en ALTER TABLE ADD COLUMN
+    async with db.execute("PRAGMA table_info(bot_persistence)") as cursor:
+        columns = [row['name'] for row in await cursor.fetchall()]
+        if "created_at" not in columns:
+            await db.execute("ALTER TABLE bot_persistence ADD COLUMN created_at DATETIME DEFAULT (datetime('now'))")
+            logger.info("🛠️ Columna 'created_at' añadida a 'bot_persistence'.")
 
     # 4. Estados Rotativos del Bot
     await db.execute("""
@@ -278,6 +286,16 @@ async def flush_xp_cache():
 # =============================================================================
 # 4. LÓGICA DE NEGOCIO: CONFIGURACIÓN (GUILD CONFIG)
 # =============================================================================
+
+async def prune_old_persistence(days: int = 7):
+    """Elimina datos de persistencia más antiguos que X días."""
+    await execute("DELETE FROM bot_persistence WHERE created_at < datetime('now', ?) OR created_at IS NULL", (f'-{days} days',))
+    logger.info(f"🧹 [DB Service] Persistencia antigua eliminada ({days} días).")
+
+async def get_persistence_stats() -> dict:
+    """Obtiene estadísticas de uso de la tabla de persistencia."""
+    row = await fetch_one("SELECT COUNT(*) as count, SUM(LENGTH(data)) as size FROM bot_persistence")
+    return {"count": row['count'] or 0, "size_kb": (row['size'] or 0) / 1024}
 
 async def get_guild_config(guild_id: int) -> dict:
     """

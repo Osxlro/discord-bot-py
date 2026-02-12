@@ -21,16 +21,19 @@ class MusicEvents(commands.Cog):
     def cog_unload(self):
         self.node_monitor.cancel()
         self.persistence_scheduler.cancel()
+        # Cerrar sesión del recomendador
+        if hasattr(self.recommender, "close"):
+            asyncio.create_task(self.recommender.close())
 
     @tasks.loop(minutes=1)
     async def node_monitor(self):
         """Monitoreo de salud de nodos movido a eventos."""
+        if not self.bot.is_ready():
+            return
         await self.bot.wait_until_ready()
+        
         if not wavelink.Pool.nodes or not any(n.status == wavelink.NodeStatus.CONNECTED for n in wavelink.Pool.nodes.values()):
-            logger.warning("⚠️ [Music Event] Nodos caídos o no inicializados. Reintentando conexión...")
-            node_config = settings.LAVALINK_CONFIG
-            node_configs = node_config.get("NODES", [node_config] if "HOST" in node_config else [])
-            await music_service.connect_best_node(self.bot, node_configs, max_retries=1)
+            await music_service.connect_nodes(self.bot)
 
     @tasks.loop(seconds=20)
     async def persistence_scheduler(self):
@@ -50,41 +53,8 @@ class MusicEvents(commands.Cog):
         if not player or not hasattr(player, "home"): return
 
         await db_service.record_song_feedback(player.guild.id, payload.track.identifier, is_skip=False)
-        
-        lang = await lang_service.get_guild_lang(player.guild.id)
-        embed = music_service.create_np_embed(player, payload.track, lang)
-        view = music_service.MusicControls(player, lang=lang)
-        
-        # Limpieza de mensajes anteriores
-        if hasattr(player, "last_msg") and player.last_msg:
-            try: await player.last_msg.delete()
-            except: pass
-
-        # --- MEJORA DE RICH PRESENCE ---
-        # Calculamos el tiempo de finalización para la barra de progreso en el perfil
-        start_time = datetime.datetime.now(datetime.timezone.utc)
-        end_time = None
-        if not payload.track.is_stream:
-            end_time = start_time + datetime.timedelta(milliseconds=payload.track.length)
-
-        album_obj = getattr(payload.track, "album", None)
-        album_name = getattr(album_obj, "name", "Single") if album_obj else "Single"
-
-        activity = discord.Activity(
-            type=discord.ActivityType.listening,
-            name=f"{payload.track.title}",
-            details=f"👤 {payload.track.author}",
-            state=f"💿 {album_name} | 🔊 {player.volume}%",
-            start=start_time,
-            end=end_time,
-            assets={
-                'large_image': settings.CONFIG["bot_config"]["presence_asset"],
-                'large_text': settings.CONFIG["bot_config"]["description"]
-            }
-        )
-        await self.bot.change_presence(activity=activity)
-
-        player.last_msg = await player.home.send(embed=embed, view=view)
+        # Lógica de mensaje NP delegada al servicio
+        await music_service.send_now_playing(self.bot, player, payload.track)
 
     @commands.Cog.listener()
     async def on_wavelink_track_end(self, payload: wavelink.TrackEndEventPayload):
@@ -95,22 +65,31 @@ class MusicEvents(commands.Cog):
         if payload.reason == "replaced": return
         if player.autoplay == wavelink.AutoPlayMode.enabled: return
 
-        if not player.queue.is_empty:
+        # Si la cola no está vacía O si hay un modo de repetición activo (Track/Queue Loop)
+        if not player.queue.is_empty or player.queue.mode != wavelink.QueueMode.normal:
             next_track = player.queue.get()
             await player.play(next_track)
         elif getattr(player, "smart_autoplay", False):
+            # El algoritmo decide la siguiente canción basándose en metadatos
             rec = await self.recommender.get_recommendation(player)
             if rec: await player.play(rec)
         else:
-            # Al terminar la música, podemos volver al estado rotativo normal
-            activity = discord.Activity(
-                type=discord.ActivityType.playing,
-                name=f"{settings.CONFIG['bot_config']['prefix']}help",
-                assets={'large_image': settings.CONFIG["bot_config"]["presence_asset"]}
-            )
-            await self.bot.change_presence(activity=activity)
-            await music_service.cleanup_player(self.bot, player)
+            # Limpieza total al terminar la sesión
+            await music_service.cleanup_player(player)
+            await music_service.reset_presence(self.bot)
             if player.connected: await player.disconnect()
+
+    @commands.Cog.listener()
+    async def on_voice_state_update(self, member: discord.Member, before: discord.VoiceState, after: discord.VoiceState):
+        """Detecta desconexiones manuales para limpiar la interfaz."""
+        if member.id != self.bot.user.id: return
+
+        # Si el bot fue desconectado del canal
+        if before.channel and not after.channel:
+            player: wavelink.Player = member.guild.voice_client
+            if player:
+                logger.info(f"🔌 [Music Event] Desconexión detectada en {member.guild.name}. Limpiando UI...")
+                await music_service.cleanup_player(player)
 
     @commands.Cog.listener()
     async def on_wavelink_track_exception(self, payload: wavelink.TrackExceptionEventPayload):
@@ -118,44 +97,14 @@ class MusicEvents(commands.Cog):
         player = payload.player
         if not player: return
 
-        current_position = int(player.position)
-        
-        # Sistema de Fallback en cadena: Spotify -> YouTube -> SoundCloud
-        err_msg = str(payload.exception)
-        is_yt_error = "No supported audio streams" in err_msg or "403" in err_msg or "not available" in err_msg
-        uri = (payload.track.uri or "").lower()
+        # Intentar recuperar la reproducción con una fuente alternativa
+        success = await music_service.handle_track_fallback(player, payload.track)
+        if success:
+            return
 
-        # Fallback inteligente si la fuente principal falla durante la reproducción
-        if is_yt_error:
-            fallback_provider = "scsearch" if "youtube" in uri or "spotify" in uri else "ytsearch"
-            logger.info(f"🔄 [Music Event] Intentando fallback a {fallback_provider} para: {payload.track.title}")
-            
-            try:
-                clean_name = music_service.clean_track_title(payload.track.title)
-                query = f"{fallback_provider}:{clean_name} {payload.track.author}"
-                tracks = await wavelink.Playable.search(query)
-                if tracks:
-                    fallback_track = tracks[0]
-                    if hasattr(payload.track, "requester"):
-                        fallback_track.requester = payload.track.requester
-                    await player.play(fallback_track, start=current_position)
-                    return
-            except Exception:
-                logger.exception("❌ Fallback fallido")
-                try:
-                    query = f"scsearch:{payload.track.title} {payload.track.author}"
-                    tracks = await wavelink.Playable.search(query)
-                    if tracks:
-                        fallback_track = tracks[0]
-                        if hasattr(payload.track, "requester"):
-                            fallback_track.requester = payload.track.requester
-                        
-                        await player.play(fallback_track, start=current_position)
-                        return
-                except Exception:
-                    logger.exception("❌ Fallback fallido")
-
+        # Si no hay fallback posible, limpiar y detener
         player.last_track_error = True
+        await music_service.cleanup_player(player)
         await player.stop()
 
 async def setup(bot):

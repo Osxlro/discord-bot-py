@@ -79,7 +79,7 @@ MUSIC_CONFIG = {
     "FADE_IN_STEPS": 15,  # Suavidad de la animación de volumen
     "LOOP_EMOJIS": {"TRACK": "🔂", "QUEUE": "🔁", "OFF": "🔁"},
     "BUTTON_EMOJIS": {
-        "PREVIOUS": "⏮️", "PAUSE_RESUME": "⏯️", "SKIP": "⏭️", "STOP": "⏹️", "SHUFFLE": "🔀",
+        "PREVIOUS": "⏮️", "PAUSE_RESUME": "⏯️", "SKIP": "⏭️", "QUEUE": "📜", "STOP": "⏹️", "SHUFFLE": "🔀",
         "AUTOPLAY": "♾️", "VOL_DOWN": "🔉", "VOL_UP": "🔊", "LYRICS": "📝"
     },
     "SOURCE_EMOJIS": {
@@ -97,7 +97,27 @@ MUSIC_CONFIG = {
 ALGORITHM_CONFIG = {
     "HISTORY_LIMIT": 30,  # Canciones a recordar para evitar repeticiones en Autoplay
     "SIMILARITY_THRESHOLD": 0.85,  # % de similitud para detectar duplicados
-    "DEFAULT_METADATA": "Unknown"  # Texto si no se encuentra autor/título
+    "DEFAULT_METADATA": "Unknown",  # Texto si no se encuentra autor/título
+    "STYLE_KEYWORDS": [
+        "nightcore", "daycore", "lo-fi", "lofi", "remix", "acoustic", 
+        "live", "cover", "instrumental", "slowed", "reverb", "bassboost",
+        "speed up", "8d", "mashup"
+    ],
+    "MOODS": {
+        "late_night": {"genres": ["indie", "acoustic", "lofi", "jazz"], "energy_range": (0.0, 0.4)},
+        "morning": {"genres": ["pop", "indie", "acoustic"], "energy_range": (0.3, 0.6)},
+        "day": {"genres": ["pop", "rock", "hiphop", "reggaeton"], "energy_range": (0.6, 1.0)},
+        "evening": {"genres": ["rock", "edm", "hiphop", "metal"], "energy_range": (0.5, 0.9)}
+    },
+    "GENRE_MAP": {
+        "pop": ["Taylor Swift", "The Weeknd", "Dua Lipa", "Ariana Grande", "Justin Bieber", "Bruno Mars", "Ed Sheeran"],
+        "rock": ["Queen", "Arctic Monkeys", "The Rolling Stones", "Nirvana", "Linkin Park", "Imagine Dragons", "Coldplay"],
+        "reggaeton": ["Bad Bunny", "J Balvin", "Karol G", "Rauw Alejandro", "Feid", "Daddy Yankee", "Ozuna"],
+        "hiphop": ["Drake", "Kendrick Lamar", "Kanye West", "Travis Scott", "Eminem", "Post Malone", "Doja Cat"],
+        "edm": ["Avicii", "David Guetta", "Calvin Harris", "Daft Punk", "Skrillex", "Marshmello", "Tiësto"],
+        "indie": ["Tame Impala", "The Killers", "Lana Del Rey", "The 1975", "Florence + The Machine"],
+        "metal": ["Metallica", "AC/DC", "Guns N' Roses", "Slipknot", "System of a Down", "Rammstein"]
+    }
 }
 
 # =============================================================================
