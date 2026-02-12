@@ -3,6 +3,7 @@ import asyncio
 import wavelink
 import logging
 import re
+from typing import Literal
 from discord import app_commands
 from discord.ext import commands
 from config import settings
@@ -24,12 +25,16 @@ class Music(commands.Cog):
         pass
 
     async def play_autocomplete(self, interaction: discord.Interaction, current: str) -> list[app_commands.Choice[str]]:
-        return await music_service.get_search_choices(current)
+        servicio = interaction.namespace.servicio
+        return await music_service.get_search_choices(current, source_override=servicio)
 
     @commands.hybrid_command(name="play", description="Reproduce música desde YouTube, SoundCloud, etc.")
-    @app_commands.describe(busqueda="Nombre de la canción o URL")
+    @app_commands.describe(
+        busqueda="Nombre de la canción o URL",
+        servicio="Forzar búsqueda en un servicio específico"
+    )
     @app_commands.autocomplete(busqueda=play_autocomplete)
-    async def play(self, ctx: commands.Context, busqueda: str):
+    async def play(self, ctx: commands.Context, busqueda: str, servicio: Literal["spotify", "youtube", "soundcloud"] = None):
         # Deferimos la interacción al inicio para evitar timeouts si la conexión tarda
         busqueda = busqueda.strip()
         lang = await lang_service.get_guild_lang(ctx.guild.id)

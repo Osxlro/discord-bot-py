@@ -283,6 +283,7 @@ class RecommendationEngine:
                 
                 valid_candidates = [c for c in candidates if c.identifier not in played_ids]
                 if valid_candidates:
+                    logger.info(f"✅ [Algoritmo] Recomendación resuelta vía: {source}")
                     # Puntuamos para asegurar coherencia musical
                     scored = [(c, self._calculate_score(c, seed_track, seed_styles, spotify_context=spotify_data)) for c in valid_candidates]
                     scored.sort(key=lambda x: x[1], reverse=True)

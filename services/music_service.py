@@ -389,13 +389,18 @@ async def connect_best_node(bot, node_configs, max_retries=3):
     finally:
         _is_connecting = False
 
-async def get_search_choices(current: str) -> list[app_commands.Choice[str]]:
+async def get_search_choices(current: str, source_override: str = None) -> list[app_commands.Choice[str]]:
     """Genera opciones para el autocompletado de búsqueda."""
     if not wavelink.Pool.nodes or not current:
         return []
     try:
         # Intentar autocompletado siguiendo el orden: Spotify -> YouTube -> SoundCloud
         sources = ["spsearch", "ytsearch", "scsearch"]
+        
+        if source_override:
+            mapping = {"spotify": "spsearch", "youtube": "ytsearch", "soundcloud": "scsearch"}
+            sources = [mapping.get(source_override, "spsearch")]
+
         tracks = []
         
         for source in sources:
