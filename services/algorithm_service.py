@@ -290,6 +290,11 @@ class RecommendationEngine:
 
         # --- ESTRATEGIA 2: HEURÍSTICA V2 (FALLBACK) ---
         provider = settings.LAVALINK_CONFIG.get("SEARCH_PROVIDER", "spsearch")
+        
+        # Si Spotify no está disponible (sin token), forzamos el fallback manual a YouTube
+        if not self.sp_token and provider == "spsearch":
+            provider = "ytsearch"
+            
         # Si Spotify falla o no está configurado, usamos el motor lógico.
         
         # Detección de Racha de Artista (¿El usuario quiere escuchar solo a este artista?)
