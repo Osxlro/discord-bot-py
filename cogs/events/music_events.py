@@ -25,11 +25,12 @@ class MusicEvents(commands.Cog):
     @tasks.loop(minutes=1)
     async def node_monitor(self):
         """Monitoreo de salud de nodos movido a eventos."""
+        await self.bot.wait_until_ready()
         if not wavelink.Pool.nodes or not any(n.status == wavelink.NodeStatus.CONNECTED for n in wavelink.Pool.nodes.values()):
-            music_cog = self.bot.get_cog("Music")
-            if music_cog:
-                logger.warning("⚠️ [Music Event] Nodos caídos. Solicitando reconexión al Cog...")
-                await music_cog.connect_best_node(max_retries=1)
+            logger.warning("⚠️ [Music Event] Nodos caídos o no inicializados. Reintentando conexión...")
+            node_config = settings.LAVALINK_CONFIG
+            node_configs = node_config.get("NODES", [node_config] if "HOST" in node_config else [])
+            await music_service.connect_best_node(self.bot, node_configs, max_retries=1)
 
     @tasks.loop(seconds=20)
     async def persistence_scheduler(self):

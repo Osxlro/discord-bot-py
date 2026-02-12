@@ -26,6 +26,8 @@ class HealthCheck(commands.Cog):
     async def integrity_check(self):
         """Ejecuta una suite de pruebas de autodiagnóstico."""
         await self.bot.wait_until_ready()
+        # Esperar 10 segundos adicionales para permitir que Lavalink y Spotify conecten
+        await asyncio.sleep(10)
         logger.info("🔍 [HealthCheck] Iniciando suite de autodiagnóstico...")
         
         errors = []
