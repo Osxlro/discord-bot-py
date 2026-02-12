@@ -112,7 +112,7 @@ class Music(commands.Cog):
 
                 for source in sources:
                     try:
-                        query = f"{source}search:{busqueda}"
+                        query = f"{source}:{busqueda}"
                         tracks = await wavelink.Playable.search(query)
                         if tracks: 
                             break

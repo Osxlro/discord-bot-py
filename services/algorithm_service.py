@@ -266,25 +266,30 @@ class RecommendationEngine:
         # --- ESTRATEGIA 1: SPOTIFY (INTELIGENCIA REAL) ---
         spotify_data = await self._get_spotify_context(seed_track)
         spotify_recs = spotify_data.get("recs", [])
-        provider = settings.LAVALINK_CONFIG.get("SEARCH_PROVIDER", "yt")
+        
+        # Orden de prioridad para resolver recomendaciones
+        search_sources = ["spsearch", "ytsearch", "scsearch"]
         
         if spotify_recs:
             logger.info(f"🧠 [Algoritmo] Usando Spotify Intelligence ({len(spotify_recs)} candidatos)")
-            tasks = [wavelink.Playable.search(f"{provider}search:{rec}") for rec in spotify_recs]
-            results = await asyncio.gather(*tasks, return_exceptions=True)
-            
             candidates = []
-            for res in results:
-                if isinstance(res, list) and res: candidates.append(res[0])
-            
-            valid_spotify = [c for c in candidates if c.identifier not in played_ids]
-            if valid_spotify:
-                # Puntuamos incluso los de Spotify para asegurar que el "vibe" sea el correcto
-                scored_spotify = [(c, self._calculate_score(c, seed_track, seed_styles, spotify_context=spotify_data)) for c in valid_spotify]
-                scored_spotify.sort(key=lambda x: x[1], reverse=True)
-                return scored_spotify[0][0]
+            for source in search_sources:
+                tasks = [wavelink.Playable.search(f"{source}:{rec}") for rec in spotify_recs]
+                results = await asyncio.gather(*tasks, return_exceptions=True)
+                
+                for res in results:
+                    if isinstance(res, list) and res:
+                        candidates.append(res[0])
+                
+                valid_candidates = [c for c in candidates if c.identifier not in played_ids]
+                if valid_candidates:
+                    # Puntuamos para asegurar coherencia musical
+                    scored = [(c, self._calculate_score(c, seed_track, seed_styles, spotify_context=spotify_data)) for c in valid_candidates]
+                    scored.sort(key=lambda x: x[1], reverse=True)
+                    return scored[0][0]
 
         # --- ESTRATEGIA 2: HEURÍSTICA V2 (FALLBACK) ---
+        provider = settings.LAVALINK_CONFIG.get("SEARCH_PROVIDER", "spsearch")
         # Si Spotify falla o no está configurado, usamos el motor lógico.
         
         # Detección de Racha de Artista (¿El usuario quiere escuchar solo a este artista?)
@@ -298,30 +303,30 @@ class RecommendationEngine:
         clean_title = self._clean_title(title)
 
         # A. Estrategia "Radio/Mix" (Base)
-        queries.append(f"{provider}search:{clean_title} {author} mix")
+        queries.append(f"{provider}:{clean_title} {author} mix")
         
         # B. Estrategia "Conocidos del mismo Género" (NUEVO)
         related_peers = self._get_related_known_artists(author)
         if related_peers:
             peer = random.choice(related_peers)
-            queries.append(f"{provider}search:{peer} top hits")
-            queries.append(f"{provider}search:{peer} {self._get_artist_genre(author)}")
+            queries.append(f"{provider}:{peer} top hits")
+            queries.append(f"{provider}:{peer} {self._get_artist_genre(author)}")
 
         # C. Estrategia "Continuidad de Estilo"
         if seed_styles:
             style_str = " ".join(seed_styles)
-            queries.append(f"{provider}search:{clean_title} {style_str} similar")
+            queries.append(f"{provider}:{clean_title} {style_str} similar")
         
         # D. Estrategia "Descubrimiento vs Profundidad"
         if artist_streak >= 3:
             # El usuario está obsesionado con este artista, démosle más
-            queries.append(f"{provider}search:{author} best songs")
+            queries.append(f"{provider}:{author} best songs")
         else:
             # Variedad: Artistas similares (Búsqueda abierta)
-            queries.append(f"{provider}search:{author} similar artist")
+            queries.append(f"{provider}:{author} similar artist")
             
         # D. Fallback (SoundCloud si usamos YT, para evitar bloqueos)
-        if provider == "yt":
+        if "yt" in provider:
             queries.append(f"scsearch:{clean_title} {author} similar")
 
         # 3. Búsqueda Paralela
