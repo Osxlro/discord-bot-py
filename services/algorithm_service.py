@@ -9,7 +9,7 @@ import logging
 import datetime
 from difflib import SequenceMatcher
 from config import settings
-from services import db_service
+from services import db_service, music_service
 
 logger = logging.getLogger(__name__)
 
@@ -89,7 +89,7 @@ class RecommendationEngine:
         token = await self._get_spotify_token()
         if not token: return {}
 
-        clean_title = self._clean_title(seed_track.title)
+        clean_title = music_service.clean_track_title(seed_track.title)
         query = f"{clean_title} {seed_track.author}"
         
         async with aiohttp.ClientSession() as session:
@@ -147,14 +147,6 @@ class RecommendationEngine:
     def _is_similar(self, a: str, b: str) -> bool:
         """Compara dos títulos y devuelve True si son casi idénticos."""
         return SequenceMatcher(None, a.lower(), b.lower()).ratio() > self.similarity_threshold
-
-    def _clean_title(self, title: str) -> str:
-        """Limpia basura del título para mejorar búsquedas."""
-        title = re.sub(r"[\(\[].*?[\)\]]", "", title)
-        noise = ["official video", "official audio", "lyrics", "hd", "4k", "video oficial", "letra", "full hd"]
-        for n in noise:
-            title = re.compile(re.escape(n), re.IGNORECASE).sub("", title)
-        return title.strip()
 
     def _get_artist_genre(self, artist: str) -> str:
         """Intenta determinar el género basado en el artista."""
@@ -264,30 +256,34 @@ class RecommendationEngine:
         seed_styles = self._get_style_tags(title)
         
         # --- ESTRATEGIA 1: SPOTIFY (INTELIGENCIA REAL) ---
+        # Prioridad absoluta: Si Spotify está configurado, lo usamos.
         spotify_data = await self._get_spotify_context(seed_track)
         spotify_recs = spotify_data.get("recs", [])
         
-        # Orden de prioridad para resolver recomendaciones
-        search_sources = ["spsearch", "ytsearch", "scsearch"]
-        
         if spotify_recs:
-            logger.info(f"🧠 [Algoritmo] Usando Spotify Intelligence ({len(spotify_recs)} candidatos)")
+            logger.info(f"🧠 [Algoritmo] Procesando {len(spotify_recs)} recomendaciones de Spotify...")
+            
+            # Intentamos resolver las recomendaciones usando el proveedor preferido (Spotify)
+            # Solo si falla el proveedor principal, permitimos el fallback a YouTube para el audio.
+            primary_provider = settings.LAVALINK_CONFIG.get("SEARCH_PROVIDER", "spsearch")
+            
+            tasks = [wavelink.Playable.search(f"{primary_provider}:{rec}") for rec in spotify_recs]
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+            
             candidates = []
-            for source in search_sources:
-                tasks = [wavelink.Playable.search(f"{source}:{rec}") for rec in spotify_recs]
-                results = await asyncio.gather(*tasks, return_exceptions=True)
-                
-                for res in results:
-                    if isinstance(res, list) and res:
-                        candidates.append(res[0])
-                
-                valid_candidates = [c for c in candidates if c.identifier not in played_ids]
-                if valid_candidates:
-                    logger.info(f"✅ [Algoritmo] Recomendación resuelta vía: {source}")
-                    # Puntuamos para asegurar coherencia musical
-                    scored = [(c, self._calculate_score(c, seed_track, seed_styles, spotify_context=spotify_data)) for c in valid_candidates]
-                    scored.sort(key=lambda x: x[1], reverse=True)
-                    return scored[0][0]
+            for res in results:
+                if isinstance(res, list) and res:
+                    candidates.append(res[0])
+            
+            valid_candidates = [c for c in candidates if c.identifier not in played_ids]
+            
+            if valid_candidates:
+                logger.info(f"✅ [Algoritmo] Recomendación resuelta vía: {primary_provider}")
+                scored = [(c, self._calculate_score(c, seed_track, seed_styles, spotify_context=spotify_data)) for c in valid_candidates]
+                scored.sort(key=lambda x: x[1], reverse=True)
+                return scored[0][0]
+            else:
+                logger.warning("⚠️ Spotify no pudo resolver el audio de sus propias recomendaciones. Saltando a Heurística.")
 
         # --- ESTRATEGIA 2: HEURÍSTICA V2 (FALLBACK) ---
         provider = settings.LAVALINK_CONFIG.get("SEARCH_PROVIDER", "spsearch")
@@ -306,7 +302,7 @@ class RecommendationEngine:
         
         # Generación de Estrategias (Queries)
         queries = []
-        clean_title = self._clean_title(title)
+        clean_title = music_service.clean_track_title(title)
 
         # A. Estrategia "Radio/Mix" (Base)
         queries.append(f"{provider}:{clean_title} {author} mix")

@@ -11,6 +11,15 @@ logger = logging.getLogger(__name__)
 
 _is_connecting = False
 
+def clean_track_title(title: str) -> str:
+    """Limpia metadatos innecesarios de los títulos para mejorar la precisión de búsqueda."""
+    if not title: return ""
+    title = re.sub(r"[\(\[].*?[\)\]]", "", title) # Elimina (Official Video), [HD], etc.
+    noise = ["official video", "official audio", "lyrics", "hd", "4k", "video oficial", "letra", "full hd", "audio"]
+    for n in noise:
+        title = re.compile(re.escape(n), re.IGNORECASE).sub("", title)
+    return title.strip()
+
 # =============================================================================
 # LÓGICA DE INTERFAZ (VISTAS Y BOTONES)
 # =============================================================================
@@ -210,8 +219,7 @@ class MusicControls(discord.ui.View):
         if not track or not track.title or track.is_stream:
             return await interaction.followup.send(lang_service.get_text("music_error_nothing", self.lang), ephemeral=True)
         
-        # Mejora: Limpiar el título de "Official Video", "Lyrics", etc. para una búsqueda más precisa
-        clean_title = re.sub(r"[\(\[].*?[\)\]]", "", track.title).strip()
+        clean_title = clean_track_title(track.title)
         
         # Intentar búsqueda con título limpio y autor
         lyrics = await lyrics_service.get_lyrics(clean_title, track.author)

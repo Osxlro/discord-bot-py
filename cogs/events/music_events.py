@@ -125,11 +125,23 @@ class MusicEvents(commands.Cog):
         is_yt_error = "No supported audio streams" in err_msg or "403" in err_msg or "not available" in err_msg
         uri = (payload.track.uri or "").lower()
 
-        # Si falla algo que no es SoundCloud, intentamos el último recurso (SC)
+        # Fallback inteligente si la fuente principal falla durante la reproducción
         if is_yt_error:
-            # Si falló Spotify (que suele resolver a YT) o YouTube directamente, saltamos a SoundCloud
-            if "spotify" in uri or "youtube" in uri or "youtu.be" in uri:
-                logger.info(f"🔄 [Music Event] Intentando fallback a SoundCloud para: {payload.track.title}")
+            fallback_provider = "scsearch" if "youtube" in uri or "spotify" in uri else "ytsearch"
+            logger.info(f"🔄 [Music Event] Intentando fallback a {fallback_provider} para: {payload.track.title}")
+            
+            try:
+                clean_name = music_service.clean_track_title(payload.track.title)
+                query = f"{fallback_provider}:{clean_name} {payload.track.author}"
+                tracks = await wavelink.Playable.search(query)
+                if tracks:
+                    fallback_track = tracks[0]
+                    if hasattr(payload.track, "requester"):
+                        fallback_track.requester = payload.track.requester
+                    await player.play(fallback_track, start=current_position)
+                    return
+            except Exception:
+                logger.exception("❌ Fallback fallido")
                 try:
                     query = f"scsearch:{payload.track.title} {payload.track.author}"
                     tracks = await wavelink.Playable.search(query)
