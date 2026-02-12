@@ -28,6 +28,21 @@ class RecommendationEngine:
             "live", "cover", "instrumental", "slowed", "reverb", "bassboost",
             "speed up", "8d", "mashup"
         ]
+
+        # --- BIBLIOTECA DE CURACIÓN MUSICAL (Knowledge Base) ---
+        # Mapeo de géneros a artistas "Safe/Known" para asegurar calidad
+        self.GENRE_MAP = {
+            "pop": ["Taylor Swift", "The Weeknd", "Dua Lipa", "Ariana Grande", "Justin Bieber", "Bruno Mars", "Ed Sheeran"],
+            "rock": ["Queen", "Arctic Monkeys", "The Rolling Stones", "Nirvana", "Linkin Park", "Imagine Dragons", "Coldplay"],
+            "reggaeton": ["Bad Bunny", "J Balvin", "Karol G", "Rauw Alejandro", "Feid", "Daddy Yankee", "Ozuna"],
+            "hiphop": ["Drake", "Kendrick Lamar", "Kanye West", "Travis Scott", "Eminem", "Post Malone", "Doja Cat"],
+            "edm": ["Avicii", "David Guetta", "Calvin Harris", "Daft Punk", "Skrillex", "Marshmello", "Tiësto"],
+            "indie": ["Tame Impala", "The Killers", "Lana Del Rey", "The 1975", "Florence + The Machine"],
+            "metal": ["Metallica", "AC/DC", "Guns N' Roses", "Slipknot", "System of a Down", "Rammstein"]
+        }
+        
+        # Lista plana de artistas conocidos para scoring rápido
+        self.KNOWN_ARTISTS = {artist.lower() for artists in self.GENRE_MAP.values() for artist in artists}
         
         # Configuración Spotify (Opcional)
         self.sp_client_id = settings.LAVALINK_CONFIG["SPOTIFY"]["CLIENT_ID"]
@@ -98,6 +113,22 @@ class RecommendationEngine:
         # Elimina contenido entre paréntesis o corchetes como (Official Video), [4K], etc.
         return re.sub(r"[\(\[].*?[\)\]]", "", title).strip()
 
+    def _get_artist_genre(self, artist: str) -> str:
+        """Intenta determinar el género basado en el artista."""
+        artist_low = artist.lower()
+        for genre, artists in self.GENRE_MAP.items():
+            if any(a.lower() in artist_low for a in artists):
+                return genre
+        return "unknown"
+
+    def _get_related_known_artists(self, artist: str) -> list[str]:
+        """Obtiene una lista de artistas conocidos del mismo género."""
+        genre = self._get_artist_genre(artist)
+        if genre != "unknown":
+            # Retornamos artistas del mismo género excluyendo al actual
+            return [a for a in self.GENRE_MAP[genre] if a.lower() not in artist.lower()]
+        return []
+
     def _get_style_tags(self, title: str) -> set[str]:
         """Extrae etiquetas de estilo del título."""
         if not title: return set()
@@ -117,6 +148,11 @@ class RecommendationEngine:
         common_styles = seed_styles & cand_styles
         score += len(common_styles) * 15
         
+        # 2. Bono por Artista Conocido (Crucial para evitar "relleno")
+        cand_author = candidate.author.lower()
+        if any(known in cand_author for known in self.KNOWN_ARTISTS):
+            score += 60
+
         # 2. Análisis de Duración
         # Evitar saltos bruscos (ej: de canción de 3min a mix de 1 hora)
         diff_ms = abs(candidate.length - seed.length)
@@ -133,6 +169,13 @@ class RecommendationEngine:
         # 4. Penalización por "Live" si la original no lo era
         if "live" in candidate.title.lower() and "live" not in seed.title.lower():
             score -= 25
+
+        # 5. Lógica de Covers
+        is_cover_seed = "cover" in seed.title.lower()
+        is_cover_cand = "cover" in candidate.title.lower()
+        
+        if is_cover_seed and is_cover_cand and candidate.author.lower() == seed.author.lower():
+            score -= 80 # No queremos dos covers seguidos del mismo artista de covers
             
         # 5. Inteligencia Local (Feedback del Servidor)
         if feedback:
@@ -157,6 +200,7 @@ class RecommendationEngine:
         # Lista negra de IDs y Títulos para evitar repeticiones
         played_ids = {t.identifier for t in recent_tracks}
         played_titles = [t.title for t in recent_tracks]
+        played_authors = {t.author.lower() for t in recent_tracks}
 
         # Semilla Principal (Última canción)
         seed_track = history[-1]
@@ -201,17 +245,24 @@ class RecommendationEngine:
         # A. Estrategia "Radio/Mix" (Base)
         queries.append(f"{provider}search:{clean_title} {author} mix")
         
-        # B. Estrategia "Continuidad de Estilo"
+        # B. Estrategia "Conocidos del mismo Género" (NUEVO)
+        related_peers = self._get_related_known_artists(author)
+        if related_peers:
+            peer = random.choice(related_peers)
+            queries.append(f"{provider}search:{peer} top hits")
+            queries.append(f"{provider}search:{peer} {self._get_artist_genre(author)}")
+
+        # C. Estrategia "Continuidad de Estilo"
         if seed_styles:
             style_str = " ".join(seed_styles)
             queries.append(f"{provider}search:{clean_title} {style_str} similar")
         
-        # C. Estrategia "Descubrimiento vs Profundidad"
+        # D. Estrategia "Descubrimiento vs Profundidad"
         if artist_streak >= 3:
             # El usuario está obsesionado con este artista, démosle más
             queries.append(f"{provider}search:{author} best songs")
         else:
-            # Variedad: Artistas similares
+            # Variedad: Artistas similares (Búsqueda abierta)
             queries.append(f"{provider}search:{author} similar artist")
             
         # D. Fallback (SoundCloud si usamos YT, para evitar bloqueos)
@@ -250,6 +301,10 @@ class RecommendationEngine:
             if is_duplicate:
                 continue
             
+            # Penalizar si el artista ya sonó hace poco (a menos que sea racha)
+            if track.author.lower() in played_authors and artist_streak < 2:
+                continue
+
             # Calcular Score
             track_feedback = server_feedback.get(track.identifier)
             score = self._calculate_score(track, seed_track, seed_styles, track_feedback)

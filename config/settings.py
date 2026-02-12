@@ -58,7 +58,7 @@ LAVALINK_CONFIG = {
         {"HOST": "lavalink.jirayu.net", "PORT": 443, "PASSWORD": "youshallnotpass", "SECURE": True, "IDENTIFIER": "Jirayu-SSL"},
     ],
     "DEFAULT_VOLUME": 50,  # Volumen por defecto al conectar
-    "SEARCH_PROVIDER": "yt",  # Proveedor de búsqueda: 'yt' (YouTube) o 'sc' (SoundCloud)
+    "SEARCH_PROVIDER": "sp",  # Proveedor de búsqueda: 'yt' (YouTube) o 'sc' (SoundCloud)
     "INACTIVITY_TIMEOUT": 300,  # Tiempo para desconectar si el canal está vacío
     "CACHE_CAPACITY": 100,  # Límite de canciones en el caché de Wavelink
     "SPOTIFY": {  # Credenciales para soporte de links de Spotify
