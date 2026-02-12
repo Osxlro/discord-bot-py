@@ -6,6 +6,7 @@ import time
 import re
 import wavelink
 import logging
+import datetime
 from difflib import SequenceMatcher
 from config import settings
 from services import db_service
@@ -28,6 +29,14 @@ class RecommendationEngine:
             "live", "cover", "instrumental", "slowed", "reverb", "bassboost",
             "speed up", "8d", "mashup"
         ]
+        
+        # --- CONFIGURACIÓN DE MOODS TEMPORALES ---
+        self.MOODS = {
+            "late_night": {"genres": ["indie", "acoustic", "lofi", "jazz"], "energy_range": (0.0, 0.4)},
+            "morning": {"genres": ["pop", "indie", "acoustic"], "energy_range": (0.3, 0.6)},
+            "day": {"genres": ["pop", "rock", "hiphop", "reggaeton"], "energy_range": (0.6, 1.0)},
+            "evening": {"genres": ["rock", "edm", "hiphop", "metal"], "energy_range": (0.5, 0.9)}
+        }
 
         # --- BIBLIOTECA DE CURACIÓN MUSICAL (Knowledge Base) ---
         # Mapeo de géneros a artistas "Safe/Known" para asegurar calidad
@@ -68,41 +77,72 @@ class RecommendationEngine:
                         self.sp_token = data["access_token"]
                         self.sp_token_expiry = time.time() + data["expires_in"] - 60
                         return self.sp_token
+                    else:
+                        error_body = await resp.text()
+                        logger.error(f"❌ [Spotify API] Error de Token ({resp.status}): {error_body}")
         except Exception:
             logger.exception("⚠️ Error obteniendo token Spotify")
         return None
 
-    async def _get_spotify_recommendations(self, seed_track: wavelink.Playable) -> list[str]:
-        """Consulta la API de Spotify para obtener recomendaciones reales."""
+    async def _get_spotify_context(self, seed_track: wavelink.Playable) -> dict:
+        """Obtiene recomendaciones y características de audio de Spotify."""
         token = await self._get_spotify_token()
-        if not token: return []
+        if not token: return {}
 
         clean_title = self._clean_title(seed_track.title)
         query = f"{clean_title} {seed_track.author}"
         
         async with aiohttp.ClientSession() as session:
-            # 1. Buscar la canción semilla en Spotify para obtener su ID
             async with session.get(
                 "https://api.spotify.com/v1/search",
                 headers={"Authorization": f"Bearer {token}"},
                 params={"q": query, "type": "track", "limit": 1}
             ) as resp:
-                if resp.status != 200: return []
+                if resp.status != 200:
+                    error_body = await resp.text()
+                    logger.error(f"❌ [Spotify API] Error en búsqueda ({resp.status}): {error_body}")
+                    return {}
                 data = await resp.json()
-                if not data["tracks"]["items"]: return []
-                spotify_id = data["tracks"]["items"][0]["id"]
+                if not data["tracks"]["items"]: return {}
+                track_data = data["tracks"]["items"][0]
+                spotify_id = track_data["id"]
 
-            # 2. Pedir recomendaciones basadas en esa canción
+            # Obtener Audio Features (Energía, Valencia, etc.)
+            async with session.get(
+                f"https://api.spotify.com/v1/audio-features/{spotify_id}",
+                headers={"Authorization": f"Bearer {token}"}
+            ) as resp:
+                features = await resp.json() if resp.status == 200 else {}
+
+            # Pedir recomendaciones quirúrgicas
+            mood = self._get_current_mood()
+            params = {
+                "seed_tracks": spotify_id,
+                "limit": 8,
+                "target_energy": features.get("energy", self.MOODS[mood]["energy_range"][1]),
+                "target_valence": features.get("valence", 0.5)
+            }
+
             async with session.get(
                 "https://api.spotify.com/v1/recommendations",
                 headers={"Authorization": f"Bearer {token}"},
-                params={"seed_tracks": spotify_id, "limit": 5}
+                params=params
             ) as resp:
-                if resp.status != 200: return []
+                if resp.status != 200:
+                    error_body = await resp.text()
+                    logger.error(f"❌ [Spotify API] Error en recomendaciones ({resp.status}): {error_body}")
+                    return {"features": features, "recs": []}
                 data = await resp.json()
-                
-                # Retornamos lista de "Título - Artista" para buscar en Lavalink
-                return [f"{t['name']} - {t['artists'][0]['name']}" for t in data["tracks"]]
+                recs = [f"{t['name']} - {t['artists'][0]['name']}" for t in data["tracks"]]
+                return {"features": features, "recs": recs}
+
+    def _get_current_mood(self) -> str:
+        """Determina el mood basado en la hora local."""
+        hour = datetime.datetime.now().hour
+        if 0 <= hour < 6: return "late_night"
+        if 6 <= hour < 12: return "morning"
+        if 12 <= hour < 19: return "day"
+        return "evening"
 
     def _is_similar(self, a: str, b: str) -> bool:
         """Compara dos títulos y devuelve True si son casi idénticos."""
@@ -110,8 +150,11 @@ class RecommendationEngine:
 
     def _clean_title(self, title: str) -> str:
         """Limpia basura del título para mejorar búsquedas."""
-        # Elimina contenido entre paréntesis o corchetes como (Official Video), [4K], etc.
-        return re.sub(r"[\(\[].*?[\)\]]", "", title).strip()
+        title = re.sub(r"[\(\[].*?[\)\]]", "", title)
+        noise = ["official video", "official audio", "lyrics", "hd", "4k", "video oficial", "letra", "full hd"]
+        for n in noise:
+            title = re.compile(re.escape(n), re.IGNORECASE).sub("", title)
+        return title.strip()
 
     def _get_artist_genre(self, artist: str) -> str:
         """Intenta determinar el género basado en el artista."""
@@ -134,7 +177,7 @@ class RecommendationEngine:
         if not title: return set()
         return {tag for tag in self.style_keywords if tag in title.lower()}
 
-    def _calculate_score(self, candidate: wavelink.Playable, seed: wavelink.Playable, seed_styles: set[str], feedback: dict = None) -> int:
+    def _calculate_score(self, candidate: wavelink.Playable, seed: wavelink.Playable, seed_styles: set[str], feedback: dict = None, spotify_context: dict = None) -> int:
         """Asigna una puntuación de relevancia al candidato (0-100+)."""
         score = 100
         
@@ -152,6 +195,12 @@ class RecommendationEngine:
         cand_author = candidate.author.lower()
         if any(known in cand_author for known in self.KNOWN_ARTISTS):
             score += 60
+            
+        # 3. Bono por Mood Temporal
+        mood = self._get_current_mood()
+        cand_genre = self._get_artist_genre(candidate.author)
+        if cand_genre in self.MOODS[mood]["genres"]:
+            score += 25
 
         # 2. Análisis de Duración
         # Evitar saltos bruscos (ej: de canción de 3min a mix de 1 hora)
@@ -176,6 +225,12 @@ class RecommendationEngine:
         
         if is_cover_seed and is_cover_cand and candidate.author.lower() == seed.author.lower():
             score -= 80 # No queremos dos covers seguidos del mismo artista de covers
+            
+        # 6. Coherencia Lingüística (Heurística simple)
+        is_spanish_seed = any(w in seed.title.lower() for w in [" de ", " la ", " el ", " con "])
+        is_spanish_cand = any(w in candidate.title.lower() for w in [" de ", " la ", " el ", " con "])
+        if is_spanish_seed != is_spanish_cand:
+            score -= 20 # Penalizar cambio de idioma brusco
             
         # 5. Inteligencia Local (Feedback del Servidor)
         if feedback:
@@ -209,13 +264,12 @@ class RecommendationEngine:
         seed_styles = self._get_style_tags(title)
         
         # --- ESTRATEGIA 1: SPOTIFY (INTELIGENCIA REAL) ---
-        # Si tenemos credenciales, intentamos obtener recomendaciones basadas en datos.
-        spotify_recs = await self._get_spotify_recommendations(seed_track)
+        spotify_data = await self._get_spotify_context(seed_track)
+        spotify_recs = spotify_data.get("recs", [])
         provider = settings.LAVALINK_CONFIG.get("SEARCH_PROVIDER", "yt")
         
         if spotify_recs:
             logger.info(f"🧠 [Algoritmo] Usando Spotify Intelligence ({len(spotify_recs)} candidatos)")
-            # Buscamos las recomendaciones de Spotify en Lavalink
             tasks = [wavelink.Playable.search(f"{provider}search:{rec}") for rec in spotify_recs]
             results = await asyncio.gather(*tasks, return_exceptions=True)
             
@@ -223,11 +277,12 @@ class RecommendationEngine:
             for res in results:
                 if isinstance(res, list) and res: candidates.append(res[0])
             
-            # Si Spotify nos dio candidatos válidos, usamos esos (ya están filtrados por gusto)
-            # Aún así pasamos el filtro de duplicados
             valid_spotify = [c for c in candidates if c.identifier not in played_ids]
             if valid_spotify:
-                return random.choice(valid_spotify)
+                # Puntuamos incluso los de Spotify para asegurar que el "vibe" sea el correcto
+                scored_spotify = [(c, self._calculate_score(c, seed_track, seed_styles, spotify_context=spotify_data)) for c in valid_spotify]
+                scored_spotify.sort(key=lambda x: x[1], reverse=True)
+                return scored_spotify[0][0]
 
         # --- ESTRATEGIA 2: HEURÍSTICA V2 (FALLBACK) ---
         # Si Spotify falla o no está configurado, usamos el motor lógico.
@@ -307,7 +362,7 @@ class RecommendationEngine:
 
             # Calcular Score
             track_feedback = server_feedback.get(track.identifier)
-            score = self._calculate_score(track, seed_track, seed_styles, track_feedback)
+            score = self._calculate_score(track, seed_track, seed_styles, track_feedback, spotify_context=spotify_data)
             scored_candidates.append((track, score))
 
         # 5. Selección Ponderada

@@ -403,7 +403,8 @@ async def get_search_choices(current: str) -> list[app_commands.Choice[str]]:
                 tracks = await wavelink.Playable.search(f"{source}:{current}")
                 if tracks:
                     break
-            except:
+            except Exception as e:
+                logger.debug(f"⚠️ [Music Service] Autocompletado falló para fuente {source}: {e}")
                 continue
 
         if not tracks: return []

@@ -117,8 +117,8 @@ class Music(commands.Cog):
                         if tracks: 
                             break
                     except Exception as e:
-                        last_err = e
-                        logger.debug(f"⚠️ Fallo búsqueda en {source} ('{busqueda}'): {e}")
+                        last_err = f"[{source.upper()}] {e}"
+                        logger.error(f"⚠️ [Music Command] Fallo búsqueda en {source} ('{busqueda}'): {e}")
                         continue
                 
                 # Si fallaron todos los intentos y hubo error, lo lanzamos
