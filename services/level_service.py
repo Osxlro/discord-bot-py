@@ -42,6 +42,41 @@ async def notify_level_up(guild: discord.Guild, member: discord.Member, nuevo_ni
     except Exception:
         logger.exception("Error notificando nivel")
 
+async def get_rank_embed(guild: discord.Guild, target: discord.Member, lang: str) -> discord.Embed:
+    """Genera un embed con el nivel, progreso y rebirths del usuario."""
+    stats = await db_service.fetch_one(
+        "SELECT xp, level, rebirths FROM guild_stats WHERE guild_id = ? AND user_id = ?",
+        (guild.id, target.id)
+    )
+    
+    if not stats:
+        return None
+
+    level = stats['level']
+    xp = stats['xp']
+    rebirths = stats['rebirths']
+    
+    xp_next = db_service.calculate_xp_required(level)
+    progress = min(xp / xp_next, 1.0) if xp_next > 0 else 1.0
+    
+    bar_len = settings.UI_CONFIG["PROFILE_BAR_LENGTH"]
+    filled = int(progress * bar_len)
+    bar = settings.UI_CONFIG["PROGRESS_BAR_FILLED"] * filled + settings.UI_CONFIG["PROGRESS_BAR_EMPTY"] * (bar_len - filled)
+
+    title = lang_service.get_text("rank_title", lang, user=target.display_name)
+    lvl_label = lang_service.get_text("profile_field_lvl", lang)
+    reb_label = lang_service.get_text("profile_field_rebirths", lang)
+    xp_label = lang_service.get_text("profile_field_xp", lang)
+    
+    description = (
+        f"{lvl_label}: **{level}**\n"
+        f"{reb_label}: **{rebirths}**\n"
+        f"{xp_label}: **{xp:,} / {xp_next:,}**\n\n"
+        f"`{bar}` **{int(progress * 100)}%**"
+    )
+    
+    return embed_service.info(title, description, thumbnail=target.display_avatar.url)
+
 def get_leaderboard_pages(guild: discord.Guild, rows: list, lang: str) -> list[discord.Embed]:
     """Procesa los datos de la DB y genera los embeds paginados para el ranking."""
     chunk_size = settings.LEVELS_CONFIG["LEADERBOARD_CHUNK_SIZE"]

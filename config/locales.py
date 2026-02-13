@@ -212,6 +212,7 @@ LOCALES = {
         "dev_mem_title": "Memoria",
         "dev_db_maint_title": "Mantenimiento",
         "dev_db_maint_success": "✅ Base de datos optimizada (VACUUM completado).",
+        "dev_restart_msg": "🔄 Reiniciando sistemas...",
         "dev_servers_format": "**{name}**\n🆔 `{id}` | 👥 **{members}** | 👑 <@{owner}>\n\n",
         
         # --- BOTINFO LABELS ---
@@ -567,6 +568,7 @@ LOCALES = {
         "dev_mem_title": "Memory",
         "dev_db_maint_title": "Maintenance",
         "dev_db_maint_success": "✅ Database optimized (VACUUM completed).",
+        "dev_restart_msg": "🔄 Restarting systems...",
         "dev_servers_format": "**{name}**\n🆔 `{id}` | 👥 **{members}** | 👑 <@{owner}>\n\n",
 
         # --- BOTINFO LABELS ---

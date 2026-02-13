@@ -1,4 +1,6 @@
 import logging
+import discord
+from discord import app_commands
 from discord.ext import commands
 from config import settings
 from services import db_service, embed_service, lang_service, pagination_service, level_service
@@ -8,6 +10,22 @@ logger = logging.getLogger(__name__)
 class Niveles(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
+
+    @commands.hybrid_command(name="rank", description="Muestra el nivel, progreso y rebirths de un usuario.")
+    @app_commands.describe(usuario="El usuario a consultar")
+    async def rank(self, ctx: commands.Context, usuario: discord.Member = None):
+        target = usuario or ctx.author
+        lang = await lang_service.get_guild_lang(ctx.guild.id)
+        
+        embed = await level_service.get_rank_embed(ctx.guild, target, lang)
+        
+        if not embed:
+            msg = lang_service.get_text("rank_no_data", lang)
+            return await ctx.reply(embed=embed_service.warning(
+                lang_service.get_text("title_info", lang), msg, lite=True
+            ))
+
+        await ctx.reply(embed=embed)
 
     @commands.hybrid_command(name="leaderboard", description="Muestra el top de XP del servidor")
     async def leaderboard(self, ctx: commands.Context):

@@ -1,6 +1,8 @@
 import logging
 import tracemalloc
 import asyncio
+import sys
+import os
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -234,6 +236,20 @@ class Developer(commands.Cog):
         # Ejecutamos VACUUM manualmente para compactar la DB
         await db_service.execute("VACUUM;")
         await ctx.send(embed=embed_service.success(lang_service.get_text("dev_db_maint_title", lang), lang_service.get_text("dev_db_maint_success", lang)))
+
+    @commands.command(name="restart", hidden=True)
+    @commands.is_owner()
+    async def restart(self, ctx: commands.Context):
+        lang = await lang_service.get_guild_lang(ctx.guild.id if ctx.guild else None)
+        await ctx.send(lang_service.get_text("dev_restart_msg", lang))
+        
+        logger.info(f"🔄 [Developer] Reinicio solicitado por {ctx.author}")
+        
+        # Limpieza crítica de base de datos antes de matar el proceso
+        await db_service.close_db()
+        
+        # Reemplaza el proceso actual con uno nuevo
+        os.execv(sys.executable, [sys.executable] + sys.argv)
 
 async def setup(bot):
     await bot.add_cog(Developer(bot))
