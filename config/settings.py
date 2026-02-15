@@ -18,8 +18,8 @@ LOG_FILE = os.path.join(BASE_DIR, "data", "discord.log")  # Ruta del archivo de 
 # =============================================================================
 CONFIG = {
     "bot_config": {
-        "prefix": "!",  # Prefijo para comandos de mensaje (Legacy)
-        "version": "3.1.0",  # Versión actual del bot
+        "prefix": "=",  # Prefijo para comandos de mensaje (Legacy)
+        "version": "1.0.10",  # Versión actual del bot
         "description": "Oscurin Inc",  # Descripción general
         "presence_asset": "seor"  # Nombre del asset en el Developer Portal
     },

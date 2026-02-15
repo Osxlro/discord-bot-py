@@ -28,21 +28,29 @@ class GlobalErrorHandler(commands.Cog):
 
         if isinstance(error, commands.CommandNotFound):
             invoked_with = ctx.invoked_with
-            # Obtener nombres de comandos visibles (no ocultos)
-            all_commands = [cmd.name for cmd in self.bot.commands if not cmd.hidden]
+            
+            # Determinar el espacio de búsqueda: Comandos globales o subcomandos de un grupo
+            if ctx.command and isinstance(ctx.command, commands.Group):
+                search_space = [cmd.name for cmd in ctx.command.commands if not cmd.hidden]
+                parent_prefix = f"{ctx.command.qualified_name} "
+            else:
+                search_space = [cmd.name for cmd in self.bot.commands if not cmd.hidden]
+                parent_prefix = ""
             
             best_match = None
             highest_ratio = 0.0
             
-            for cmd_name in all_commands:
+            for cmd_name in search_space:
                 ratio = SequenceMatcher(None, invoked_with, cmd_name).ratio()
                 if ratio > highest_ratio:
                     highest_ratio = ratio
                     best_match = cmd_name
             
             if best_match and highest_ratio >= 0.6:
-                msg = lang_service.get_text("error_did_you_mean", lang, suggestion=best_match)
-                return await ctx.send(embed=embed_service.info(error_title, msg, lite=True))
+                suggestion = f"{parent_prefix}{best_match}"
+                msg = lang_service.get_text("error_did_you_mean", lang, suggestion=suggestion)
+                # En comandos de prefijo no existe 'ephemeral', usamos delete_after para limpiar el chat
+                return await ctx.send(embed=embed_service.info(error_title, msg, lite=True), delete_after=20)
             return
         
         if isinstance(error, commands.MissingRequiredArgument):

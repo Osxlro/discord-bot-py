@@ -112,6 +112,7 @@ python main.py
 * `/cogs`: Contiene todos los módulos de comandos y eventos.
 * `/config`: Archivos de configuración y textos de localización (idiomas).
 * `/services`: Lógica de negocio reutilizable (Base de datos, Embeds, Idiomas).
+* `/ui`: Componentes de interfaz de usuario (Vistas, Botones, Modales).
 * `/data`: Almacenamiento de la base de datos SQLite y logs.
 
 ---
