@@ -67,10 +67,11 @@ class Configuracion(commands.Cog):
         await self._apply_setup(ctx, {"server_goodbye_msg": val}, "Despedida", "✅ Actualizado" if val else "❌ Reseteado")
 
     @setup.command(name="lang", description="Cambia el idioma del bot en este servidor.")
-    @app_commands.describe(opcion="Selecciona el idioma (Español/English)")
-    async def lang(self, ctx: commands.Context, opcion: Literal["es", "en"]):
+    @app_commands.describe(opcion="Selecciona el idioma (Español/English/Português)")
+    async def lang(self, ctx: commands.Context, opcion: Literal["es", "en", "pt"]):
         """Cambia el idioma de respuesta del bot para el servidor actual."""
-        display = "Español 🇪🇸" if opcion == "es" else "English 🇺🇸"
+        display_map = {"es": "Español 🇪🇸", "en": "English 🇺🇸", "pt": "Português 🇵🇹"}
+        display = display_map.get(opcion, "Unknown")
         await self._apply_setup(ctx, {"language": opcion}, "Idioma", display)
 
     @setup.command(name="chaos", description="Configura el sistema Chaos (ruleta rusa).")

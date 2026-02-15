@@ -13,9 +13,10 @@ EN = {
     "error_bad_arg": "❌ One of the provided arguments is invalid.",
     "error_did_you_mean": "❓ Did you mean: `{suggestion}`?",
     "error_max_chars": "❌ Max {max} characters.",
-    "lang_list": "Spanish (`es`), English (`en`)",
+    "lang_list": "Spanish (`es`), English (`en`), Portuguese (`pt`)",
     "lang_name_es": "Spanish 🇪🇸",
     "lang_name_en": "English 🇺🇸",
+    "lang_name_pt": "Portuguese 🇵🇹",
     
     # --- GENERAL ---
     "ping_msg": "🏓 Pong! Latency: **{ms}ms**",
