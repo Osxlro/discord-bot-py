@@ -21,46 +21,44 @@ PHRASES = [
     "Lo que no te mata, te hace más fuerte. - Friedrich Nietzsche"
 ]
 
-async def _translate(text: str, lang_pair: str) -> str:
+async def _translate(session: aiohttp.ClientSession, text: str, lang_pair: str) -> str:
     """Helper interno para traducir texto usando MyMemory API."""
     url = "https://api.mymemory.translated.net/get"
     params = {"q": text, "langpair": lang_pair}
     try:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url, params=params, timeout=5) as resp:
-                if resp.status == 200:
-                    data = await resp.json()
-                    translated = data.get("responseData", {}).get("translatedText", text)
-                    return html.unescape(translated)
+        async with session.get(url, params=params, timeout=5) as resp:
+            if resp.status == 200:
+                data = await resp.json()
+                translated = data.get("responseData", {}).get("translatedText", text)
+                return html.unescape(translated)
     except Exception as e:
         logger.debug(f"Fallo en traducción ({lang_pair}): {e}")
     return text
 
-async def get_daily_phrase():
+async def get_daily_phrase(session: aiohttp.ClientSession):
     """Retorna un diccionario con versiones en inglés y español de la frase del día."""
     url = "https://zenquotes.io/api/random"
     try:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url, timeout=10) as response:
-                if response.status == 200:
-                    data = await response.json()
-                    if data and isinstance(data, list):
-                        quote = data[0].get("q")
-                        author = data[0].get("a")
-                        
-                        # Traducimos la frase al español
-                        translated_quote = await _translate(quote, "en|es")
-                        
-                        return {
-                            "en": f"{quote} - {author}",
-                            "es": f"{translated_quote} - {author}"
-                        }
+        async with session.get(url, timeout=10) as response:
+            if response.status == 200:
+                data = await response.json()
+                if data and isinstance(data, list):
+                    quote = data[0].get("q")
+                    author = data[0].get("a")
+                    
+                    # Traducimos la frase al español usando la misma sesión
+                    translated_quote = await _translate(session, quote, "en|es")
+                    
+                    return {
+                        "en": f"{quote} - {author}",
+                        "es": f"{translated_quote} - {author}"
+                    }
     except Exception as e:
         logger.warning(f"⚠️ No se pudo obtener frase de la API (usando fallback): {e}")
     
     # Fallback: Usamos una frase local (que ya está en español) y la traducimos al inglés
     local_phrase = random.choice(PHRASES)
-    translated_local = await _translate(local_phrase, "es|en")
+    translated_local = await _translate(session, local_phrase, "es|en")
     
     return {
         "es": local_phrase,
@@ -69,7 +67,8 @@ async def get_daily_phrase():
 
 async def post_wordday(bot: discord.Client):
     """Envía la frase del día a todos los servidores configurados."""
-    phrases = await get_daily_phrase()
+    async with aiohttp.ClientSession() as session:
+        phrases = await get_daily_phrase(session)
     
     for guild in bot.guilds:
         try:

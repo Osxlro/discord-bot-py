@@ -161,10 +161,10 @@ async def init_db():
     await _ensure_column("guild_config", "wordday_channel_id", "INTEGER DEFAULT 0")
     await _ensure_column("guild_config", "wordday_role_id", "INTEGER DEFAULT 0")
 
-    # --- EJECUTAR PROTOCOLO DE LIMPIEZA DE TABLAS ---
+    # --- PROTOCOLO DE LIMPIEZA Y OPTIMIZACIÓN ---
     await _cleanup_unused_tables()
-
     await db.commit()
+    
     logger.info("💾 Base de datos inicializada.")
 
 async def _ensure_column(table: str, column: str, definition: str):
