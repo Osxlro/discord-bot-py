@@ -1,4 +1,3 @@
-import discord
 from discord.ext import commands, tasks
 from services import db_service, level_service
 from config import settings

@@ -1,5 +1,4 @@
 import discord
-import asyncio
 import wavelink
 import logging
 import re

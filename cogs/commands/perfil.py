@@ -2,14 +2,14 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 from typing import Literal
-from services import db_service, embed_service, lang_service, profile_service
+from services import embed_service, lang_service, profile_service
 from config import settings
 
 class Perfil(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    @commands.hybrid_group(name="profile", description="Gestión de perfil de usuario.", fallback="ver")
+    @commands.hybrid_group(name="profile", description="Gestión de perfil de usuario.", fallback="check")
     @app_commands.describe(usuario="El usuario del que quieres ver el perfil (vacío para ver el tuyo)")
     async def perfil(self, ctx: commands.Context, usuario: discord.Member = None):
         target = usuario or ctx.author

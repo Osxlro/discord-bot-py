@@ -3,13 +3,12 @@ import asyncio
 import aiohttp
 import base64
 import time
-import re
 import wavelink
 import logging
 import datetime
 from difflib import SequenceMatcher
 from config import settings
-from services import db_service, music_service
+from services import music_service
 
 logger = logging.getLogger(__name__)
 

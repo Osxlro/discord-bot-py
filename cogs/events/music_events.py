@@ -4,8 +4,7 @@ import datetime
 import wavelink
 import asyncio
 from discord.ext import commands, tasks
-from services import music_service, lang_service, embed_service, algorithm_service, db_service
-from config import settings
+from services import music_service, algorithm_service, db_service
 
 logger = logging.getLogger(__name__)
 
