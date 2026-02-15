@@ -1,6 +1,5 @@
 import logging
 import discord
-import datetime
 import wavelink
 import asyncio
 from discord.ext import commands, tasks

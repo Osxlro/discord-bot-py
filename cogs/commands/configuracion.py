@@ -3,8 +3,7 @@ from discord import app_commands
 from discord.ext import commands
 from typing import Literal
 from services.features import setup_service
-from services.core import db_service, lang_service
-from services.utils import embed_service
+from services.core import lang_service
 
 class Configuracion(commands.Cog):
     def __init__(self, bot):
