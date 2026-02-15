@@ -50,7 +50,7 @@ class Roles(commands.Cog):
                     embed=embed_service.error(lang_service.get_text("title_error", lang), str(e), lite=True), ephemeral=True
                 )
 
-    @commands.hybrid_command(name="crearautorol", description="Crea un botón de auto-rol")
+    @commands.hybrid_command(name="rolebutton", description="Crea un botón de auto-rol")
     @app_commands.describe(rol="Rol a entregar", titulo="Título Embed", descripcion="Desc Embed")
     @commands.has_permissions(administrator=True)
     async def create_role_button(self, ctx: commands.Context, rol: discord.Role, titulo: str = None, descripcion: str = None, emoji: str = None, color_boton: Literal["blue", "green", "red", "grey"] = "green"):

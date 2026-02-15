@@ -41,7 +41,7 @@ class Moderacion(commands.Cog):
             # Si falla (generalmente por mensajes viejos), avisamos
             await ctx.send(embed=embed_service.warning(lang_service.get_text("title_info", lang), lang_service.get_text("error_old_messages", lang), lite=True), ephemeral=True)
 
-    @commands.hybrid_command(name="aislar", description="Aísla (Timeout) a un usuario.")
+    @commands.hybrid_command(name="timeout", description="Aísla (Timeout) a un usuario.")
     @app_commands.describe(usuario="Miembro", tiempo="Ej: 10m, 1h", razon="Motivo")
     @app_commands.checks.has_permissions(moderate_members=True)
     async def timeout(self, ctx: commands.Context, usuario: discord.Member, tiempo: str, razon: str = None):
@@ -70,7 +70,7 @@ class Moderacion(commands.Cog):
         except Exception as e:
             await ctx.reply(embed=embed_service.error(lang_service.get_text("title_error", lang), str(e), lite=True), ephemeral=True)
     
-    @commands.hybrid_command(name="quitaraislamiento", description="Retira el aislamiento.")
+    @commands.hybrid_command(name="untimeout", description="Retira el aislamiento.")
     @app_commands.checks.has_permissions(moderate_members=True)
     async def untimeout(self, ctx: commands.Context, usuario: discord.Member):
         lang = await lang_service.get_guild_lang(ctx.guild.id)

@@ -25,17 +25,17 @@ class Configuracion(commands.Cog):
         if ctx.invoked_subcommand is None:
             await ctx.send_help(ctx.command)
 
-    @setup.command(name="bienvenida", description="Establece el canal de bienvenidas.")
+    @setup.command(name="welcome", description="Establece el canal de bienvenidas.")
     @app_commands.describe(canal="Canal donde se enviarán las bienvenidas")
     async def bienvenida(self, ctx: commands.Context, canal: discord.TextChannel):
         await self._update_channel_config(ctx, "welcome_channel_id", canal, "Bienvenida")
 
-    @setup.command(name="confesiones", description="Establece el canal de confesiones anónimas.")
+    @setup.command(name="confess", description="Establece el canal de confesiones anónimas.")
     @app_commands.describe(canal="Canal para las confesiones")
     async def confesiones(self, ctx: commands.Context, canal: discord.TextChannel):
         await self._update_channel_config(ctx, "confessions_channel_id", canal, "Confesiones")
 
-    @setup.command(name="despedida", description="Personaliza el mensaje de despedida.")
+    @setup.command(name="goodbye", description="Personaliza el mensaje de despedida.")
     @app_commands.describe(mensaje="Usa {user} para el nombre y {server} para el servidor. Escribe 'reset' para borrar.")
     async def despedida(self, ctx: commands.Context, mensaje: str):
         await ctx.defer(ephemeral=True)
@@ -51,12 +51,12 @@ class Configuracion(commands.Cog):
     async def logs(self, ctx: commands.Context, canal: discord.TextChannel):
         await self._update_channel_config(ctx, "logs_channel_id", canal, "Logs")
 
-    @setup.command(name="cumpleanos", description="Establece el canal de avisos de cumpleaños.")
+    @setup.command(name="birthday", description="Establece el canal de avisos de cumpleaños.")
     @app_commands.describe(canal="Canal para felicitaciones")
     async def cumpleanos(self, ctx: commands.Context, canal: discord.TextChannel):
         await self._update_channel_config(ctx, "birthday_channel_id", canal, "Cumpleaños")
 
-    @setup.command(name="idioma", description="Cambia el idioma del bot en este servidor.")
+    @setup.command(name="lang", description="Cambia el idioma del bot en este servidor.")
     @app_commands.describe(opcion="Selecciona el idioma (Español/English)")
     async def idioma(self, ctx: commands.Context, opcion: Literal["es", "en"]):
         await ctx.defer(ephemeral=True)

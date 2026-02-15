@@ -34,7 +34,7 @@ class Diversion(commands.Cog):
         
         await ctx.reply(embed=embed_service.info(title, desc, thumbnail=url_gif, lite=True))
 
-    @commands.hybrid_command(name="eleccion", description="Elige entre dos opciones.")
+    @commands.hybrid_command(name="choice", description="Elige entre dos opciones.")
     async def eleccion(self, ctx: commands.Context, opcion_a: str, opcion_b: str):
         lang = await lang_service.get_guild_lang(ctx.guild.id if ctx.guild else None)
         eleccion = random_service.elegir_opcion(opcion_a, opcion_b)
