@@ -4,7 +4,7 @@ import datetime
 import wavelink
 import asyncio
 from discord.ext import commands, tasks
-from services import music_service, algorithm_service, db_service
+from services import music_service, algorithm_service
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +51,6 @@ class MusicEvents(commands.Cog):
         player = payload.player
         if not player or not hasattr(player, "home"): return
 
-        await db_service.record_song_feedback(player.guild.id, payload.track.identifier, is_skip=False)
         # Lógica de mensaje NP delegada al servicio
         await music_service.send_now_playing(self.bot, player, payload.track)
 
