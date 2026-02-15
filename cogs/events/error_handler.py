@@ -28,12 +28,26 @@ class GlobalErrorHandler(commands.Cog):
         if isinstance(error, commands.CommandNotFound):
             return
         
+        if isinstance(error, commands.MissingRequiredArgument):
+            usage = f"{ctx.prefix}{ctx.command.qualified_name} {ctx.command.signature}"
+            msg = f"{lang_service.get_text('error_missing_args', lang)}\n\n{lang_service.get_text('error_usage', lang)}\n`{usage}`"
+            return await ctx.send(embed=embed_service.error(error_title, msg, lite=True))
+
+        if isinstance(error, commands.BadArgument):
+            msg = lang_service.get_text("error_bad_arg", lang)
+            return await ctx.send(embed=embed_service.error(error_title, msg, lite=True))
+
         if isinstance(error, commands.CommandOnCooldown):
             msg = lang_service.get_text("error_cooldown", lang, seconds=round(error.retry_after, 1))
             return await ctx.send(embed=embed_service.error(error_title, msg, lite=True), delete_after=5)
 
-        if isinstance(error, (commands.MissingPermissions, commands.BotMissingPermissions)):
+        if isinstance(error, commands.MissingPermissions):
             msg = lang_service.get_text("error_no_perms", lang)
+            return await ctx.send(embed=embed_service.error(error_title, msg, lite=True))
+            
+        if isinstance(error, commands.BotMissingPermissions):
+            perms = ", ".join(error.missing_permissions)
+            msg = f"{lang_service.get_text('error_bot_no_perms', lang)}\n`{perms}`"
             return await ctx.send(embed=embed_service.error(error_title, msg, lite=True))
 
         if isinstance(error, commands.NSFWChannelRequired):
@@ -57,6 +71,12 @@ class GlobalErrorHandler(commands.Cog):
 
         if isinstance(error, app_commands.MissingPermissions):
             msg = lang_service.get_text("error_no_perms", lang)
+        elif isinstance(error, app_commands.BotMissingPermissions):
+            perms = ", ".join(error.missing_permissions)
+            msg = f"{lang_service.get_text('error_bot_no_perms', lang)}\n`{perms}`"
+        elif isinstance(error, app_commands.TransformerError):
+            # Error al convertir argumentos en Slash Commands
+            msg = lang_service.get_text("error_bad_arg", lang)
         elif isinstance(error, app_commands.CommandOnCooldown):
             msg = lang_service.get_text("error_cooldown", lang, seconds=round(error.retry_after, 1))
         else:
