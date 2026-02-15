@@ -65,7 +65,7 @@ class HealthCheck(commands.Cog):
                 errors.append(f"Database Integrity: {res[0]}")
             
             # Verificar existencia de tablas críticas
-            tables = ["users", "guild_stats", "guild_config", "song_feedback", "bot_statuses"]
+            tables = ["users", "guild_stats", "guild_config", "bot_statuses"]
             for table in tables:
                 exists = await db_service.fetch_one("SELECT name FROM sqlite_master WHERE type='table' AND name=?", (table,))
                 if not exists:

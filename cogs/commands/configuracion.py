@@ -46,7 +46,7 @@ class Configuracion(commands.Cog):
             return role.mention if role else "@everyone"
 
         embed = discord.Embed(
-            title=f"⚙️ {lang_service.get_text('serverinfo_config', lang)}",
+            title=f" {lang_service.get_text('serverinfo_config', lang)}",
             color=settings.COLORS["INFO"]
         )
         embed.set_author(name=ctx.guild.name, icon_url=ctx.guild.icon.url if ctx.guild.icon else None)

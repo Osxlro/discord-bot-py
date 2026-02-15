@@ -150,9 +150,6 @@ class Music(commands.Cog):
         if not await music_service.check_voice(ctx): return
 
         if ctx.voice_client and ctx.voice_client.playing and ctx.voice_client.current:
-            # Registrar feedback negativo para el algoritmo
-            if ctx.voice_client.current:
-                await db_service.record_song_feedback(ctx.guild.id, ctx.voice_client.current.identifier, is_skip=True)
             await ctx.voice_client.skip(force=True)
             msg = lang_service.get_text("music_skipped", lang)
             await ctx.send(embed=embed_service.success(lang_service.get_text("title_music", lang), msg, lite=True))

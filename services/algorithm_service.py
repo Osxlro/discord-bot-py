@@ -173,12 +173,11 @@ class RecommendationEngine:
         if not title: return set()
         return {tag for tag in self.style_keywords if tag in title.lower()}
 
-    def _calculate_score(self, candidate: wavelink.Playable, seed: wavelink.Playable, seed_styles: set[str], mood: str, feedback: dict = None, spotify_context: dict = None) -> int:
+    def _calculate_score(self, candidate: wavelink.Playable, seed: wavelink.Playable, seed_styles: set[str], mood: str, spotify_context: dict = None) -> int:
         """Asigna una puntuación de relevancia al candidato (0-100+)."""
         score = 100
         score += self._score_vibe(candidate, seed_styles, mood)
         score += self._score_metadata(candidate, seed)
-        score += self._score_feedback(feedback)
         score += self._score_session_skips(candidate)
         return max(0, score)
 
@@ -226,14 +225,6 @@ class RecommendationEngine:
         if is_spanish_seed != is_spanish_cand: adjustment -= 20
         return adjustment
 
-    def _score_feedback(self, feedback: dict) -> int:
-        """Ajusta la puntuación según el historial de skips/plays del servidor."""
-        if not feedback: return 0
-        plays, skips = feedback.get('plays', 0), feedback.get('skips', 0)
-        if plays == 0 and skips == 0: return 0
-        success_rate = plays / (plays + skips + 1)
-        return int((success_rate - 0.5) * 100)
-
     async def get_recommendation(self, player: wavelink.Player) -> wavelink.Playable:
         if not player.queue.history: return None
 
@@ -262,12 +253,11 @@ class RecommendationEngine:
         queries = self._get_heuristic_queries(provider, author, title, seed_styles, artist_streak)
         
         candidates = await self._fetch_candidates(queries)
-        server_feedback = await db_service.get_bulk_feedback(player.guild.id, [c.identifier for c in candidates])
 
         scored = []
         for track in candidates:
             if self._is_valid_candidate(track, played_ids, played_titles, played_authors, artist_streak):
-                score = self._calculate_score(track, seed, seed_styles, mood, server_feedback.get(track.identifier), spotify_data)
+                score = self._calculate_score(track, seed, seed_styles, mood, spotify_data)
                 scored.append((track, score))
 
         if scored:

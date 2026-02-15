@@ -31,7 +31,7 @@ async def get_profile_embed(bot: discord.Client, guild: discord.Guild, target: d
     embed.set_thumbnail(url=target.display_avatar.url)
     
     embed.add_field(name=lang_service.get_text("profile_field_desc", lang), value=f"*{desc}*", inline=False)
-    embed.add_field(name=lang_service.get_text("profile_field_bday", lang), value=f"📅 {cumple}", inline=True)
+    embed.add_field(name=lang_service.get_text("profile_field_bday", lang), value=f"{cumple}", inline=True)
     embed.add_field(name=lang_service.get_text("profile_field_prefix", lang), value=f"`{prefix}`", inline=True)
     
     stats_title = lang_service.get_text("profile_server_stats", lang)

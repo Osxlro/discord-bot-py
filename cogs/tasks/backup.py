@@ -21,13 +21,24 @@ class Backup(commands.Cog):
         self.flush_xp.cancel()
 
     async def _cleanup_dm(self, channel: discord.DMChannel):
-        """Limpia backups antiguos, manteniendo los 3 más recientes."""
+        """Limpia backups antiguos y otros mensajes basura del bot en DMs."""
         backups_encontrados = []
         async for message in channel.history(limit=settings.BACKUP_CONFIG["HISTORY_LIMIT"]):
-            es_mio = message.author.id == self.bot.user.id
-            tiene_archivo = len(message.attachments) > 0
-            if es_mio and tiene_archivo and settings.BACKUP_CONFIG["KEYWORD"] in message.content:
+            if message.author.id != self.bot.user.id:
+                continue
+            
+            # Identificar si es un backup preestablecido (con archivo y palabra clave)
+            es_backup = len(message.attachments) > 0 and settings.BACKUP_CONFIG["KEYWORD"] in message.content
+            
+            if es_backup:
                 backups_encontrados.append(message)
+            else:
+                # Cualquier otro mensaje del bot se considera basura en el canal de backups
+                try:
+                    await message.delete()
+                    await asyncio.sleep(0.5)
+                except discord.HTTPException:
+                    pass
 
         if len(backups_encontrados) > settings.BACKUP_CONFIG["MAX_BACKUPS_TO_KEEP"]:
             for msg in backups_encontrados[settings.BACKUP_CONFIG["MAX_BACKUPS_TO_KEEP"]:]:
