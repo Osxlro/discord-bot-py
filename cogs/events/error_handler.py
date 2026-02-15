@@ -1,5 +1,6 @@
 import discord
 import logging
+from difflib import SequenceMatcher
 from discord.ext import commands
 from discord import app_commands
 from services import embed_service, lang_service
@@ -26,6 +27,22 @@ class GlobalErrorHandler(commands.Cog):
         error_title = lang_service.get_text("error_title", lang)
 
         if isinstance(error, commands.CommandNotFound):
+            invoked_with = ctx.invoked_with
+            # Obtener nombres de comandos visibles (no ocultos)
+            all_commands = [cmd.name for cmd in self.bot.commands if not cmd.hidden]
+            
+            best_match = None
+            highest_ratio = 0.0
+            
+            for cmd_name in all_commands:
+                ratio = SequenceMatcher(None, invoked_with, cmd_name).ratio()
+                if ratio > highest_ratio:
+                    highest_ratio = ratio
+                    best_match = cmd_name
+            
+            if best_match and highest_ratio >= 0.6:
+                msg = lang_service.get_text("error_did_you_mean", lang, suggestion=best_match)
+                return await ctx.send(embed=embed_service.info(error_title, msg, lite=True))
             return
         
         if isinstance(error, commands.MissingRequiredArgument):
