@@ -107,6 +107,8 @@ async def init_db():
         server_ban_msg TEXT DEFAULT NULL,
         server_goodbye_msg TEXT DEFAULT NULL,
         minecraft_channel_id INTEGER DEFAULT 0,
+        wordday_channel_id INTEGER DEFAULT 0,
+        wordday_role_id INTEGER DEFAULT 0,
         language TEXT DEFAULT 'es'
     )
     """)
@@ -159,6 +161,8 @@ async def init_db():
     await _ensure_column("guild_config", "language", "TEXT DEFAULT 'es'")
     await _ensure_column("guild_config", "server_goodbye_msg", "TEXT DEFAULT NULL")
     await _ensure_column("guild_config", "minecraft_channel_id", "INTEGER DEFAULT 0")
+    await _ensure_column("guild_config", "wordday_channel_id", "INTEGER DEFAULT 0")
+    await _ensure_column("guild_config", "wordday_role_id", "INTEGER DEFAULT 0")
 
     await db.commit()
     logger.info("💾 Base de datos inicializada.")

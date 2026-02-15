@@ -262,6 +262,10 @@ LOCALES = {
         "setup_autorol_off": "⚪ Auto-Rol desactivado.",
         "setup_chaos_desc": "{status}\n🔫 Probabilidad: **{prob}%**",
         "chaos_title": "🔫 ¡Bang!",
+        "setup_info_channels": "📂 Canales",
+        "setup_info_settings": "🛠️ Ajustes",
+        "wordday_title": "📖 Frase del Día",
+        "wordday_footer": "Inspiración diaria para el servidor.",
         "mod_reason_default": "Sin motivo especificado",
         "lang_success": "Idioma cambiado a **Español** 🇪🇸",
 
@@ -613,6 +617,10 @@ LOCALES = {
         "setup_autorol_off": "⚪ Auto-Role disabled.",
         "setup_chaos_desc": "{status}\n🔫 Probability: **{prob}%**",
         "chaos_title": "🔫 Bang!",
+        "setup_info_channels": "📂 Channels",
+        "setup_info_settings": "🛠️ Settings",
+        "wordday_title": "📖 Phrase of the Day",
+        "wordday_footer": "Daily inspiration for the server.",
         "mod_reason_default": "No reason provided",
         "lang_success": "Language changed to **English** 🇺🇸",
 
