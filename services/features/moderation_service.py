@@ -1,6 +1,7 @@
 import re
 import discord
-from services import lang_service, embed_service
+from services.utils import embed_service
+from services.core import lang_service
 
 def parse_time(time_str: str) -> int:
     """Convierte una cadena de tiempo (1h, 10m) en segundos."""

@@ -1,8 +1,11 @@
 import discord
 from discord.ext import commands
 from typing import Literal
-from services import db_service, embed_service, lang_service, birthday_service
+from services.features import birthday_service
 import datetime
+
+from services.core import db_service, lang_service
+from services.utils import embed_service
 
 class Cumpleanos(commands.Cog):
     def __init__(self, bot: commands.Bot):

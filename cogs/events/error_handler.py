@@ -3,7 +3,8 @@ import logging
 from difflib import SequenceMatcher
 from discord.ext import commands
 from discord import app_commands
-from services import embed_service, lang_service
+from services.utils import embed_service
+from services.core import lang_service
 
 logger = logging.getLogger(__name__)
 

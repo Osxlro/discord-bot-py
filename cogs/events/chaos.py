@@ -3,7 +3,9 @@ import logging
 import discord
 from discord.ext import commands
 from config import settings
-from services import random_service, embed_service, db_service, lang_service
+from services.utils import embed_service
+from services.core import db_service, lang_service
+from services.utils import random_service
 
 logger = logging.getLogger(__name__)
 

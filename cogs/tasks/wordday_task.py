@@ -1,7 +1,7 @@
 import datetime
 from zoneinfo import ZoneInfo
 from discord.ext import commands, tasks
-from services import wordday_service
+from services.features import wordday_service
 
 class WordDayTask(commands.Cog):
     def __init__(self, bot):

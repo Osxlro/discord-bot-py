@@ -1,8 +1,9 @@
 import discord
 import logging
 from discord.ext import commands
-from services import embed_service, db_service, lang_service
+from services.utils import embed_service
 from config import settings
+from services.core import db_service, lang_service
 
 logger = logging.getLogger(__name__)
 

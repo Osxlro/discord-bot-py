@@ -1,6 +1,7 @@
 import discord
 from config import settings
-from services import db_service, lang_service
+from services.core import lang_service
+from services.core import db_service
 
 async def get_profile_embed(bot: discord.Client, guild: discord.Guild, target: discord.Member, lang: str) -> discord.Embed:
     """Recupera datos y construye el embed del perfil del usuario."""

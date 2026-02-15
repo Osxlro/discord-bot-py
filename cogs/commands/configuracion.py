@@ -2,7 +2,9 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 from typing import Literal
-from services import db_service, embed_service, lang_service, setup_service
+from services.features import setup_service
+from services.core import db_service, lang_service
+from services.utils import embed_service
 
 class Configuracion(commands.Cog):
     def __init__(self, bot):

@@ -1,6 +1,6 @@
 import discord
 import logging
-from services import lang_service
+from services.core import lang_service
 from config import settings
 
 logger = logging.getLogger(__name__)

@@ -6,7 +6,9 @@ import re
 import datetime
 from discord import app_commands
 from config import settings
-from services import lang_service, embed_service, voice_service, persistence_service
+from services.utils import embed_service
+from services.core import lang_service, persistence_service
+from services.utils import voice_service
 
 logger = logging.getLogger(__name__)
 

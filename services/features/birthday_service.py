@@ -1,8 +1,9 @@
 import datetime
 import discord
 import logging
-from services import db_service, lang_service, embed_service
+from services.utils import embed_service
 from config import settings
+from services.core import db_service, lang_service
 
 logger = logging.getLogger(__name__)
 

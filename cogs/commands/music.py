@@ -5,7 +5,9 @@ import re
 from discord import app_commands
 from discord.ext import commands
 from config import settings
-from services import embed_service, lang_service, pagination_service, music_service, voice_service
+from services.features import music_service
+from services.core import lang_service
+from services.utils import embed_service, pagination_service, voice_service
 
 logger = logging.getLogger(__name__)
 

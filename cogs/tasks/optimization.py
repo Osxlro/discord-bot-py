@@ -2,7 +2,7 @@ import gc
 import asyncio
 import logging
 from discord.ext import commands, tasks
-from services import db_service
+from services.core import db_service
 from config import settings
 
 logger = logging.getLogger(__name__)

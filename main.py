@@ -5,7 +5,8 @@ import pathlib
 import discord
 from discord.ext import commands
 from config import settings
-from services import db_service, music_service
+from services.features import music_service
+from services.core import db_service
 
 # --- CONFIGURACIÓN DE LOGS ---
 data_dir = pathlib.Path("./data")

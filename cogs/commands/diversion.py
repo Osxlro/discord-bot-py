@@ -2,7 +2,9 @@ import discord
 import random
 from discord.ext import commands
 from discord import app_commands
-from services import embed_service, emojimixer_service, random_service, db_service, lang_service
+from services.integrations import emojimixer_service
+from services.core import db_service, lang_service
+from services.utils import embed_service, random_service
 
 class Diversion(commands.Cog):
     def __init__(self, bot: commands.Bot):

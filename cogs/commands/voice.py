@@ -1,6 +1,8 @@
 import logging
 from discord.ext import commands
-from services import embed_service, lang_service, voice_service
+from services.utils import embed_service
+from services.core import lang_service
+from services.utils import voice_service
 
 logger = logging.getLogger(__name__)
 

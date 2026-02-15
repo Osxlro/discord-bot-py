@@ -1,6 +1,7 @@
 import datetime
 from discord.ext import commands
-from services import db_service, birthday_service
+from services.features import birthday_service
+from services.core import db_service
 
 class BirthdayEvents(commands.Cog):
     """Eventos relacionados con cumpleaños."""

@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands
-from services import embed_service, db_service, lang_service
+from services.utils import embed_service
+from services.core import db_service, lang_service
 
 class Bienvenidas(commands.Cog):
     def __init__(self, bot: commands.Bot):

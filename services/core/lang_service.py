@@ -1,5 +1,5 @@
 from config import locales
-from services import db_service
+from services.core import db_service
 
 DEFAULT_LANG = "es"
 

@@ -1,5 +1,5 @@
 from discord.ext import commands, tasks
-from services import birthday_service
+from services.features import birthday_service
 from config import settings
 
 class BirthdayTask(commands.Cog):

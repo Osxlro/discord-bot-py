@@ -4,8 +4,11 @@ import discord
 import wavelink
 import os
 from discord.ext import commands, tasks
-from services import db_service, lang_service, help_service, profile_service, algorithm_service, developer_service, moderation_service, level_service, voice_service, persistence_service
+from services.features import help_service
 from config import settings
+from services.core import db_service, lang_service, persistence_service
+from services.features import developer_service, level_service, moderation_service, profile_service
+from services.utils import algorithm_service, voice_service
 
 logger = logging.getLogger(__name__)
 

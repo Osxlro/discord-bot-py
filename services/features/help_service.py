@@ -1,6 +1,6 @@
 import discord
 from config import settings
-from services import lang_service
+from services.core import lang_service
 from discord.ext import commands
 
 def _get_visible_cogs(bot):

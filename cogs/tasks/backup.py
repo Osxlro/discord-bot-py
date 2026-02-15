@@ -6,7 +6,8 @@ import shutil
 import discord
 from discord.ext import commands, tasks
 from config import settings
-from services import db_service, lang_service
+from services.core import lang_service
+from services.core import db_service
 
 logger = logging.getLogger(__name__)
 

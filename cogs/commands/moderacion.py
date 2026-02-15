@@ -2,8 +2,11 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 from config import settings
-from services import embed_service, lang_service, db_service, moderation_service
+from services.features import moderation_service
 import datetime
+
+from services.core import db_service, lang_service
+from services.utils import embed_service
 
 class Moderacion(commands.Cog):
     def __init__(self, bot: commands.Bot):

@@ -1,6 +1,6 @@
 import pickle
 import logging
-from services import db_service
+from services.core import db_service
 
 logger = logging.getLogger(__name__)
 

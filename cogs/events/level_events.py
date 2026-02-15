@@ -3,7 +3,8 @@ import random
 import discord
 from discord.ext import commands
 from config import settings
-from services import db_service, level_service
+from services.features import level_service
+from services.core import db_service
 
 logger = logging.getLogger(__name__)
 

@@ -3,8 +3,11 @@ import logging
 from discord import app_commands
 from discord.ext import commands
 from config.locales import LOCALES
-from services import embed_service, translator_service, lang_service, db_service, help_service
+from services.features import help_service
 from config import settings
+from services.core import db_service, lang_service
+from services.integrations import translator_service
+from services.utils import embed_service
 
 logger = logging.getLogger(__name__)
 

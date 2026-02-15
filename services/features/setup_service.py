@@ -1,6 +1,7 @@
 import discord
-from services import db_service, lang_service, embed_service
+from services.utils import embed_service
 from config import settings
+from services.core import db_service, lang_service
 
 async def get_setup_info_embed(guild: discord.Guild, lang: str) -> discord.Embed:
     """Genera un embed detallado con la configuración actual del servidor."""

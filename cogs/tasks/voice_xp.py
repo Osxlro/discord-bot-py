@@ -1,7 +1,9 @@
 from discord.ext import commands, tasks
-from services import db_service, level_service
+from services.features import level_service
 from config import settings
 import logging
+
+from services.core import db_service
 
 logger = logging.getLogger(__name__)
 

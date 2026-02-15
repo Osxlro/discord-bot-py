@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands, tasks
-from services import db_service
+from services.core import db_service
 
 class Status(commands.Cog):
     def __init__(self, bot: commands.Bot):

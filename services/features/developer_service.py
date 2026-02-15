@@ -6,8 +6,9 @@ import platform
 import sys
 import time
 import discord
-from services import db_service, lang_service
+from services.core import lang_service
 from config import settings
+from services.core import db_service
 
 logger = logging.getLogger(__name__)
 

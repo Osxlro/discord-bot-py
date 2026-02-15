@@ -1,6 +1,7 @@
 import discord
-from services import db_service, lang_service
+from services.core import lang_service
 from config import settings
+from services.core import db_service
 
 class ProfileView(discord.ui.View):
     def __init__(self, bot, member, lang, user_data, guild_data):

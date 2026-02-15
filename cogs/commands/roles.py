@@ -2,8 +2,9 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 from typing import Literal
-from services import embed_service, lang_service
+from services.utils import embed_service
 from config import settings
+from services.core import lang_service
 
 class Roles(commands.Cog):
     def __init__(self, bot: commands.Bot):

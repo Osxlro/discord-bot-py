@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands
-from services import db_service, lang_service
+from services.core import lang_service
+from services.core import db_service
 
 class AutoRole(commands.Cog):
     def __init__(self, bot: commands.Bot):

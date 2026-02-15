@@ -8,7 +8,7 @@ import logging
 import datetime
 from difflib import SequenceMatcher
 from config import settings
-from services import music_service
+from services.features import music_service
 
 logger = logging.getLogger(__name__)
 
