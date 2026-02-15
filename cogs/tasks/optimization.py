@@ -50,7 +50,7 @@ class OptimizationTasks(commands.Cog):
             
             # 4. Forzamos a Python a liberar memoria no usada
             await asyncio.to_thread(gc.collect)
-            logger.info("🧹 [Sistema] Mantenimiento de memoria completado (RAM liberada).")
+            logger.debug("🧹 [Sistema] Mantenimiento de memoria completado (RAM liberada).")
         except Exception as e:
             logger.error(f"⚠️ Error en limpieza de memoria: {e}")
 

@@ -51,6 +51,10 @@ class GlobalErrorHandler(commands.Cog):
         if isinstance(error, app_commands.CommandInvokeError):
             error = error.original
 
+        # Ignorar errores de interacción desconocida (común en autocompletado rápido)
+        if isinstance(error, discord.NotFound) and error.code == 10062:
+            return
+
         if isinstance(error, app_commands.MissingPermissions):
             msg = lang_service.get_text("error_no_perms", lang)
         elif isinstance(error, app_commands.CommandOnCooldown):

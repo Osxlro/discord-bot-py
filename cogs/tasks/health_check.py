@@ -28,7 +28,7 @@ class HealthCheck(commands.Cog):
         await self.bot.wait_until_ready()
         # Esperar 10 segundos adicionales para permitir que Lavalink y Spotify conecten
         await asyncio.sleep(10)
-        logger.info("🔍 [HealthCheck] Iniciando suite de autodiagnóstico...")
+        logger.debug("🔍 [HealthCheck] Iniciando suite de autodiagnóstico...")
         
         errors = []
         warnings = []
@@ -49,7 +49,7 @@ class HealthCheck(commands.Cog):
             logger.warning(f"⚠️ [HealthCheck] Advertencia: {w}")
 
         if not errors:
-            logger.info("✅ [HealthCheck] Suite completada. El sistema se encuentra estable.")
+            logger.debug("✅ [HealthCheck] Suite completada. El sistema se encuentra estable.")
         else:
             for error in errors:
                 logger.error(f"❌ [HealthCheck] Bug/Fallo detectado: {error}")
