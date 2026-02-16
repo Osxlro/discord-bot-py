@@ -63,8 +63,17 @@ class MusicEvents(commands.Cog):
         if payload.reason == "replaced": return
         if player.autoplay == wavelink.AutoPlayMode.enabled: return
 
-        # Si la cola no está vacía O si hay un modo de repetición activo (Track/Queue Loop)
-        if not player.queue.is_empty or player.queue.mode != wavelink.QueueMode.normal:
+        # Manejo de repetición (Loop)
+        if player.queue.mode == wavelink.QueueMode.loop:
+            # Bucle de Pista: Volver a reproducir la canción que acaba de terminar
+            return await player.play(payload.track)
+
+        if player.queue.mode == wavelink.QueueMode.loop_all:
+            # Bucle de Cola: Añadir la canción al final de la cola para que no se pierda
+            await player.queue.put_wait(payload.track)
+
+        # Si la cola tiene canciones, reproducir la siguiente
+        if not player.queue.is_empty:
             next_track = player.queue.get()
             await player.play(next_track)
         elif getattr(player, "smart_autoplay", False):
