@@ -455,7 +455,7 @@ async def handle_play_search(busqueda: str) -> wavelink.Playable | wavelink.Play
         try:
             tracks = await wavelink.Playable.search(f"{source}:{busqueda}")
             if tracks:
-                logger.debug(f"🔍 [Music Service] Búsqueda resuelta vía {source}")
+               # logger.debug(f"🔍 [Music Service] Búsqueda resuelta vía {source}")
                 return tracks
         except Exception:
             continue

@@ -3,6 +3,7 @@ from discord.ext import commands
 from discord import app_commands
 from typing import Literal
 from services.features import profile_service
+from ui import profile_ui
 from config import settings
 from services.core import lang_service
 from services.utils import embed_service
@@ -17,7 +18,7 @@ class Perfil(commands.Cog):
         target = usuario or ctx.author
         lang = await lang_service.get_guild_lang(ctx.guild.id)
         
-        embed = await profile_service.get_profile_embed(self.bot, ctx.guild, target, lang)
+        embed = await profile_ui.get_profile_embed(self.bot, ctx.guild, target, lang)
         await ctx.reply(embed=embed)
 
     @perfil.command(name="desc", description="Cambia la biografía de tu tarjeta.")
