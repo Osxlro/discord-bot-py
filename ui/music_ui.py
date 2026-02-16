@@ -235,24 +235,7 @@ class MusicControls(discord.ui.View):
             await interaction.followup.send(msg, ephemeral=True)
         except discord.HTTPException: pass
 
-    @discord.ui.button(emoji=settings.MUSIC_CONFIG["BUTTON_EMOJIS"]["LYRICS"], style=discord.ButtonStyle.secondary, row=1)
-    async def lyrics(self, interaction: discord.Interaction, button: discord.ui.Button):
-        from services.integrations import lyrics_service
-        if not self.player.current:
-            return await interaction.response.send_message(lang_service.get_text("music_error_nothing", self.lang), ephemeral=True)
-        
-        await interaction.response.defer(ephemeral=True)
-        track = self.player.current
-        res = await lyrics_service.get_lyrics(track.title, track.author)
-        
-        if not res:
-            return await interaction.followup.send(lang_service.get_text("music_lyrics_not_found", self.lang), ephemeral=True)
-        
-        embed = discord.Embed(title=lang_service.get_text("music_lyrics_title", self.lang, title=track.title), 
-                              description=res[:2000], color=settings.COLORS["INFO"])
-        await interaction.followup.send(embed=embed, ephemeral=True)
-
-    @discord.ui.button(emoji=settings.MUSIC_CONFIG["BUTTON_EMOJIS"]["VOL_DOWN"], style=discord.ButtonStyle.secondary, row=2)
+    @discord.ui.button(emoji=settings.MUSIC_CONFIG["BUTTON_EMOJIS"]["VOL_DOWN"], style=discord.ButtonStyle.secondary, row=1)
     async def vol_down(self, interaction: discord.Interaction, button: discord.ui.Button):
         from services.features import music_service
         new_vol = max(self.player.volume - settings.MUSIC_CONFIG["VOLUME_STEP"], 0)
@@ -261,7 +244,7 @@ class MusicControls(discord.ui.View):
             await music_service.update_presence(interaction.client, self.player, self.player.current, self.lang)
         await interaction.response.send_message(lang_service.get_text("music_vol_changed", self.lang, vol=new_vol), ephemeral=True)
 
-    @discord.ui.button(emoji=settings.MUSIC_CONFIG["BUTTON_EMOJIS"]["VOL_UP"], style=discord.ButtonStyle.secondary, row=2)
+    @discord.ui.button(emoji=settings.MUSIC_CONFIG["BUTTON_EMOJIS"]["VOL_UP"], style=discord.ButtonStyle.secondary, row=1)
     async def vol_up(self, interaction: discord.Interaction, button: discord.ui.Button):
         from services.features import music_service
         new_vol = min(self.player.volume + settings.MUSIC_CONFIG["VOLUME_STEP"], 100)
