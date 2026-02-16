@@ -330,6 +330,7 @@ PT = {
     "music_np_desc": "{title}\n\n`{pos}` [{bar}] `{len}`",
     "music_lyrics_title": "📝 Letra: {title}",
     "music_lyrics_not_found": "❌ Letra não encontrada para esta música.",
+    "music_lyrics_searching": "Procurando letra",
     "music_requested_by": "👤 Pedido por: {user}",
     "music_control_owner_error": "❌ Não podes controlar esta sessão.",
     "music_control_voice_error": "❌ Deves estar no canal de voz para usar os botões.",

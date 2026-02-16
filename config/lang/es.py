@@ -328,6 +328,7 @@ ES = {
     "music_np_desc": "{title}\n\n`{pos}` [{bar}] `{len}`",
     "music_lyrics_title": "📝 Letra: {title}",
     "music_lyrics_not_found": "❌ No encontré la letra de esta canción.",
+    "music_lyrics_searching": "Buscando letra",
     "music_requested_by": "👤 Pedido por: {user}",
     "music_control_owner_error": "❌ No puedes controlar esta sesión.",
     "music_control_voice_error": "❌ Debes estar en el canal de voz para usar los botones.",

@@ -269,12 +269,16 @@ class MusicControls(discord.ui.View):
     async def vol_down(self, interaction: discord.Interaction, button: discord.ui.Button):
         new_vol = max(self.player.volume - settings.MUSIC_CONFIG["VOLUME_STEP"], 0)
         await self.player.set_volume(new_vol)
+        if self.player.current:
+            await update_presence(interaction.client, self.player, self.player.current)
         await interaction.response.send_message(lang_service.get_text("music_vol_changed", self.lang, vol=new_vol), ephemeral=True)
 
     @discord.ui.button(emoji=settings.MUSIC_CONFIG["BUTTON_EMOJIS"]["VOL_UP"], style=discord.ButtonStyle.secondary, row=1)
     async def vol_up(self, interaction: discord.Interaction, button: discord.ui.Button):
         new_vol = min(self.player.volume + settings.MUSIC_CONFIG["VOLUME_STEP"], 100)
         await self.player.set_volume(new_vol)
+        if self.player.current:
+            await update_presence(interaction.client, self.player, self.player.current)
         await interaction.response.send_message(lang_service.get_text("music_vol_changed", self.lang, vol=new_vol), ephemeral=True)
 
 # =============================================================================
@@ -394,16 +398,29 @@ async def handle_enqueue(ctx, player: wavelink.Player, tracks: wavelink.Playable
     else:
         await _handle_track_enqueue(ctx, player, tracks, lang)
 
+def _is_duplicate(player: wavelink.Player, track: wavelink.Playable) -> bool:
+    """Comprueba si una pista ya está en la cola o reproduciéndose."""
+    if player.current and player.current.uri == track.uri:
+        return True
+    return any(t.uri == track.uri for t in player.queue)
+
 async def _handle_playlist_enqueue(ctx, player, playlist, lang):
     if not playlist:
         return await ctx.send(embed=embed_service.warning(lang_service.get_text("title_error", lang), "Playlist is empty."))
+    
+    added_count = 0
     for track in playlist:
+        if _is_duplicate(player, track):
+            continue
         track.requester = ctx.author
         await player.queue.put_wait(track)
+        added_count += 1
         await asyncio.sleep(0)
-    msg = lang_service.get_text("music_playlist_added", lang, name=playlist.name or "Playlist", count=len(playlist))
+        
+    msg = lang_service.get_text("music_playlist_added", lang, name=playlist.name or "Playlist", count=added_count)
     await ctx.send(embed=embed_service.success(lang_service.get_text("title_queue", lang), msg, lite=True))
-    if not player.playing:
+    
+    if not player.playing and not player.queue.is_empty:
         await player.play(player.queue.get())
 
 async def _handle_track_enqueue(ctx, player, tracks, lang):
@@ -414,6 +431,9 @@ async def _handle_track_enqueue(ctx, player, tracks, lang):
         msg = lang_service.get_text("music_playing", lang)
         await ctx.send(embed=embed_service.success(lang_service.get_text("title_music", lang), f"{msg}: **{track.title}**", lite=True), delete_after=15)
     else:
+        if _is_duplicate(player, track):
+            return await ctx.send(embed=embed_service.warning(lang_service.get_text("title_music", lang), "⚠️ Esta canción ya está en la cola."), delete_after=10)
+            
         await player.queue.put_wait(track)
         msg = lang_service.get_text("music_track_enqueued", lang, title=track.title)
         await ctx.send(embed=embed_service.success(lang_service.get_text("title_queue", lang), msg, lite=True))

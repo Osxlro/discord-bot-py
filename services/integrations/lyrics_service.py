@@ -1,20 +1,20 @@
 import aiohttp
 import logging
+import re
 
 logger = logging.getLogger(__name__)
 
 async def get_lyrics(title: str, artist: str) -> str:
     """Busca letras en LRCLIB (Open Source)."""
     try:
-        # Limpieza básica del título para mejorar la búsqueda
-        # Elimina (Official Video), [4K], etc.
-        title_clean = title.split("(")[0].split("[")[0].strip()
+        # Limpieza avanzada del título para maximizar aciertos
+        title_clean = re.sub(r"[\(\[].*?[\)\]]", "", title)
+        noise = ["official video", "official audio", "lyrics", "hd", "4k", "video oficial", "letra", "audio"]
+        for n in noise:
+            title_clean = re.compile(re.escape(n), re.IGNORECASE).sub("", title_clean)
+        title_clean = title_clean.strip()
         
-        params = {
-            "artist_name": artist,
-            "track_name": title_clean
-        }
-        
+        params = {"artist_name": artist, "track_name": title_clean}
         url = "https://lrclib.net/api/get"
         
         async with aiohttp.ClientSession() as session:

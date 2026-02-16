@@ -328,6 +328,7 @@ EN = {
     "music_np_desc": "{title}\n\n`{pos}` [{bar}] `{len}`",
     "music_lyrics_title": "📝 Lyrics: {title}",
     "music_lyrics_not_found": "❌ Lyrics not found for this track.",
+    "music_lyrics_searching": "Searching lyrics",
     "music_requested_by": "👤 Requested by: {user}",
     "music_control_owner_error": "❌ You cannot control this session.",
     "music_control_voice_error": "❌ You must be in the voice channel to use buttons.",

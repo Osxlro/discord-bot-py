@@ -6,6 +6,7 @@ from discord import app_commands
 from discord.ext import commands
 from config import settings
 from services.features import music_service
+from services.integrations import lyrics_service
 from services.core import lang_service
 from services.utils import embed_service, pagination_service
 
@@ -31,9 +32,12 @@ class Music(commands.Cog):
     @app_commands.describe(busqueda="Nombre de la canción o URL de Spotify/YouTube")
     @app_commands.autocomplete(busqueda=play_autocomplete)
     async def play(self, ctx: commands.Context, busqueda: str):
-        # Deferimos la interacción al inicio para evitar timeouts si la conexión tarda
         busqueda = busqueda.strip()
+        await ctx.defer()
         lang = await lang_service.get_guild_lang(ctx.guild.id)
+
+        if not busqueda:
+            return await ctx.send(embed=embed_service.warning(lang_service.get_text("title_error", lang), lang_service.get_text("error_missing_args", lang)))
 
         # Verificación y conexión bajo demanda si los nodos están caídos
         if not wavelink.Pool.nodes or not any(n.status == wavelink.NodeStatus.CONNECTED for n in wavelink.Pool.nodes.values()):
@@ -43,55 +47,17 @@ class Music(commands.Cog):
             if not wavelink.Pool.nodes or not any(n.status == wavelink.NodeStatus.CONNECTED for n in wavelink.Pool.nodes.values()):
                 return await ctx.send(embed=embed_service.error(lang_service.get_text("title_error", lang), lang_service.get_text("music_err_lavalink_nodes", lang)))
 
-        if not busqueda:
-            return await ctx.send(embed=embed_service.warning(lang_service.get_text("title_error", lang), lang_service.get_text("error_missing_args", lang)))
-
-        await ctx.defer()
-
-        # 1. Asegurar Player (Lógica delegada)
         player = await music_service.ensure_player(ctx, lang)
         if not player: return
 
-        # Guardamos el canal de texto para enviar mensajes de "Now Playing"
         player.home = ctx.channel
 
-        # 3. Lógica de Búsqueda (Con Fallback)
-        # Soporte para URLs envueltas en <> (Discord suppress embed)
-        if busqueda.startswith("<") and busqueda.endswith(">"):
-            busqueda = busqueda[1:-1]
-            
-        is_url = URL_RX.match(busqueda)
-        tracks = None
-
         try:
-            if is_url:
-                tracks = await wavelink.Playable.search(busqueda)
-            else:
-                # Prioridad de búsqueda flexible basada en settings
-                primary = settings.LAVALINK_CONFIG.get("SEARCH_PROVIDER", "spsearch")
-                sources = [primary, "ytsearch", "scsearch"]
-                sources = list(dict.fromkeys(sources)) # Eliminar duplicados
-                
-                last_err = None
-                for source in sources:
-                    try:
-                        query = f"{source}:{busqueda}"
-                        tracks = await wavelink.Playable.search(query)
-                        if tracks:
-                            logger.info(f"🔍 [Music] Búsqueda resuelta vía {source}")
-                            break
-                    except Exception as e:
-                        last_err = e
-                        continue
-                
-                # Si fallaron todos los intentos y hubo error, lo lanzamos
-                if not tracks and last_err:
-                    raise last_err
+            tracks = await music_service.handle_play_search(busqueda)
 
             if not tracks:
                 return await ctx.send(embed=embed_service.warning(lang_service.get_text("title_music", lang), lang_service.get_text("music_search_empty", lang, query=busqueda or "Unknown")))
 
-            # 4. Reproducir o Encolar delegada al servicio
             await music_service.handle_enqueue(ctx, player, tracks, lang)
         
         except Exception as e:
@@ -256,13 +222,15 @@ class Music(commands.Cog):
         lang = await lang_service.get_guild_lang(ctx.guild.id)
         if not await music_service.check_voice(ctx): return
         if not ctx.voice_client:
-            return await ctx.send(embed=embed_service.error(lang_service.get_text("title_error", lang), lang_service.get_text("music_error_nothing", lang), lite=True, ephemeral=True))
+            return await ctx.send(embed=embed_service.error(lang_service.get_text("title_error", lang), lang_service.get_text("music_error_nothing", lang), lite=True), ephemeral=True)
             
         nivel = max(0, min(100, nivel))
         
         # Optimización: No hacer nada si el volumen ya es el deseado
         if ctx.voice_client.volume != nivel:
             await ctx.voice_client.set_volume(nivel)
+            if ctx.voice_client.current:
+                await music_service.update_presence(self.bot, ctx.voice_client, ctx.voice_client.current)
         
         msg = lang_service.get_text("music_volume", lang, vol=nivel)
         await ctx.send(embed=embed_service.success(lang_service.get_text("title_volume", lang), msg, lite=True))
@@ -271,7 +239,7 @@ class Music(commands.Cog):
     async def nowlistening(self, ctx: commands.Context):
         lang = await lang_service.get_guild_lang(ctx.guild.id)
         if not ctx.voice_client or not ctx.voice_client.playing or not ctx.voice_client.current:
-            return await ctx.send(embed=embed_service.error(lang_service.get_text("title_error", lang), lang_service.get_text("music_error_nothing", lang), lite=True, ephemeral=True))
+            return await ctx.send(embed=embed_service.error(lang_service.get_text("title_error", lang), lang_service.get_text("music_error_nothing", lang), lite=True), ephemeral=True)
         
         track = ctx.voice_client.current
         player = ctx.voice_client
@@ -280,6 +248,49 @@ class Music(commands.Cog):
         # Añadimos controles también al mensaje de /np para facilitar el uso
         view = music_service.MusicControls(player, author_id=None, lang=lang)
         await ctx.send(embed=embed, view=view)
+
+    @commands.hybrid_command(name="lyrics", description="Busca la letra de la canción actual.")
+    @app_commands.describe(busqueda="Opcional: Nombre de la canción o artista")
+    async def lyrics(self, ctx: commands.Context, busqueda: str = None):
+        lang = await lang_service.get_guild_lang(ctx.guild.id)
+        await ctx.defer()
+
+        title, artist = None, ""
+        if busqueda:
+            title = busqueda
+        elif ctx.voice_client and ctx.voice_client.current:
+            title = ctx.voice_client.current.title
+            artist = ctx.voice_client.current.author
+        else:
+            return await ctx.send(embed=embed_service.error(lang_service.get_text("title_error", lang), lang_service.get_text("music_error_nothing", lang), lite=True), ephemeral=True)
+
+        # Mensaje temporal de búsqueda
+        searching_msg = await ctx.send(embed=embed_service.info(lang_service.get_text("title_info", lang), f"🔍 {lang_service.get_text('music_lyrics_searching', lang)}...", lite=True))
+
+        lyrics = await lyrics_service.get_lyrics(title, artist)
+        await searching_msg.delete()
+
+        if not lyrics:
+            return await ctx.send(embed=embed_service.error(lang_service.get_text("title_error", lang), lang_service.get_text("music_lyrics_not_found", lang), lite=True))
+
+        # Dividir letras largas en páginas (Discord limit: 4096, usamos 2000 para seguridad y estética)
+        pages = []
+        lines = lyrics.split("\n")
+        current_page = ""
+        
+        for line in lines:
+            if len(current_page) + len(line) > 2000:
+                pages.append(embed_service.info(lang_service.get_text("music_lyrics_title", lang, title=title), current_page))
+                current_page = ""
+            current_page += line + "\n"
+        if current_page:
+            pages.append(embed_service.info(lang_service.get_text("music_lyrics_title", lang, title=title), current_page))
+
+        if len(pages) == 1:
+            await ctx.send(embed=pages[0])
+        else:
+            view = pagination_service.Paginator(pages, ctx.author.id)
+            view.message = await ctx.send(embed=pages[0], view=view)
 
 async def setup(bot):
     await bot.add_cog(Music(bot))
