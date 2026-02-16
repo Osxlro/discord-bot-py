@@ -1,5 +1,6 @@
 from config import settings
 from services.core import db_service
+from ui.profile_ui import get_profile_embed
 
 async def update_description(user_id: int, text: str):
     """Actualiza la descripción global del usuario."""

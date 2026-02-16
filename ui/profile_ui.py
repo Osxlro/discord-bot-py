@@ -42,7 +42,8 @@ async def get_profile_embed(bot: discord.Client, guild: discord.Guild, target: d
     embed.add_field(name=lang_service.get_text("profile_field_rebirths", lang), value=f"**{rebirths}**", inline=True)
     embed.add_field(name=lang_service.get_text("profile_field_xp", lang), value=f"{xp}", inline=True)
     
-    embed.add_field(name=f"Progress ({int(progreso*100)}%)", value=f"`{barra}` {xp}/{xp_next}", inline=False)
+    progress_label = lang_service.get_text("profile_progress", lang, percent=int(progreso*100))
+    embed.add_field(name=progress_label, value=f"`{barra}` {xp}/{xp_next}", inline=False)
 
     # Previsualización de mensajes personalizados
     msgs = ""

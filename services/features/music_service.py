@@ -40,15 +40,16 @@ def format_duration(milliseconds: int) -> str:
 # 2. GESTIÓN DE PRESENCIA Y ESTADO
 # =============================================================================
 
-async def update_presence(bot: discord.Client, player: wavelink.Player, track: wavelink.Playable):
+async def update_presence(bot: discord.Client, player: wavelink.Player, track: wavelink.Playable, lang: str):
     """Actualiza el Rich Presence del bot basado en la canción actual."""
     start_time = datetime.datetime.now(datetime.timezone.utc)
     end_time = None
     if not track.is_stream:
         end_time = start_time + datetime.timedelta(milliseconds=track.length)
 
+    single_label = lang_service.get_text("music_album_single", lang)
     album_obj = getattr(track, "album", None)
-    album_name = getattr(album_obj, "name", "Single") if album_obj else "Single"
+    album_name = getattr(album_obj, "name", single_label) if album_obj else single_label
 
     activity = discord.Activity(
         type=discord.ActivityType.listening,
@@ -270,7 +271,7 @@ class MusicControls(discord.ui.View):
         new_vol = max(self.player.volume - settings.MUSIC_CONFIG["VOLUME_STEP"], 0)
         await self.player.set_volume(new_vol)
         if self.player.current:
-            await update_presence(interaction.client, self.player, self.player.current)
+            await update_presence(interaction.client, self.player, self.player.current, self.lang)
         await interaction.response.send_message(lang_service.get_text("music_vol_changed", self.lang, vol=new_vol), ephemeral=True)
 
     @discord.ui.button(emoji=settings.MUSIC_CONFIG["BUTTON_EMOJIS"]["VOL_UP"], style=discord.ButtonStyle.secondary, row=1)
@@ -278,7 +279,7 @@ class MusicControls(discord.ui.View):
         new_vol = min(self.player.volume + settings.MUSIC_CONFIG["VOLUME_STEP"], 100)
         await self.player.set_volume(new_vol)
         if self.player.current:
-            await update_presence(interaction.client, self.player, self.player.current)
+            await update_presence(interaction.client, self.player, self.player.current, self.lang)
         await interaction.response.send_message(lang_service.get_text("music_vol_changed", self.lang, vol=new_vol), ephemeral=True)
 
 # =============================================================================
@@ -408,6 +409,7 @@ async def _handle_playlist_enqueue(ctx, player, playlist, lang):
     if not playlist:
         return await ctx.send(embed=embed_service.warning(lang_service.get_text("title_error", lang), lang_service.get_text("music_playlist_empty", lang)))
     
+    playlist_label = lang_service.get_text("music_playlist_default", lang)
     added_count = 0
     for track in playlist:
         if _is_duplicate(player, track):
@@ -417,7 +419,7 @@ async def _handle_playlist_enqueue(ctx, player, playlist, lang):
         added_count += 1
         await asyncio.sleep(0)
         
-    msg = lang_service.get_text("music_playlist_added", lang, name=playlist.name or "Playlist", count=added_count)
+    msg = lang_service.get_text("music_playlist_added", lang, name=playlist.name or playlist_label, count=added_count)
     await ctx.send(embed=embed_service.success(lang_service.get_text("title_queue", lang), msg, lite=True))
     
     if not player.playing and not player.queue.is_empty:
