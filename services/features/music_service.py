@@ -406,7 +406,7 @@ def _is_duplicate(player: wavelink.Player, track: wavelink.Playable) -> bool:
 
 async def _handle_playlist_enqueue(ctx, player, playlist, lang):
     if not playlist:
-        return await ctx.send(embed=embed_service.warning(lang_service.get_text("title_error", lang), "Playlist is empty."))
+        return await ctx.send(embed=embed_service.warning(lang_service.get_text("title_error", lang), lang_service.get_text("music_playlist_empty", lang)))
     
     added_count = 0
     for track in playlist:
@@ -432,7 +432,7 @@ async def _handle_track_enqueue(ctx, player, tracks, lang):
         await ctx.send(embed=embed_service.success(lang_service.get_text("title_music", lang), f"{msg}: **{track.title}**", lite=True), delete_after=15)
     else:
         if _is_duplicate(player, track):
-            return await ctx.send(embed=embed_service.warning(lang_service.get_text("title_music", lang), "⚠️ Esta canción ya está en la cola."), delete_after=10)
+            return await ctx.send(embed=embed_service.warning(lang_service.get_text("title_music", lang), lang_service.get_text("music_error_duplicate", lang)), delete_after=10)
             
         await player.queue.put_wait(track)
         msg = lang_service.get_text("music_track_enqueued", lang, title=track.title)

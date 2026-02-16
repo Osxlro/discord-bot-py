@@ -9,6 +9,7 @@ import discord
 from services.core import lang_service
 from config import settings
 from services.core import db_service
+from services.utils import embed_service
 
 logger = logging.getLogger(__name__)
 
@@ -122,15 +123,43 @@ async def get_config_embed(lang: str) -> discord.Embed:
     embed.add_field(name=lang_service.get_text("botinfo_logfile", lang), value=f"`{log_size}`", inline=True)
 
     embed.add_field(
-        name="💾 Persistencia Binaria", 
-        value=f"• Registros: `{p_stats['count']}`\n• Tamaño: `{p_stats['size_kb']:.2f} KB`", 
+        name=lang_service.get_text("botinfo_persistence", lang), 
+        value=lang_service.get_text("botinfo_persistence_desc", lang, count=p_stats['count'], size=p_stats['size_kb']), 
         inline=False
     )
 
     rows = await db_service.fetch_all("SELECT type, text FROM bot_statuses")
-    status_txt = "\n".join([f"• [{r['type']}] {r['text']}" for r in rows[:5]]) + (f"\n... y {len(rows)-5} más." if len(rows) > 5 else "") if rows else lang_service.get_text("log_none", lang)
+    status_txt = "\n".join([f"• [{r['type']}] {r['text']}" for r in rows[:5]]) + (lang_service.get_text("dev_status_more", lang, count=len(rows)-5) if len(rows) > 5 else "") if rows else lang_service.get_text("log_none", lang)
     embed.add_field(name=lang_service.get_text("botinfo_statuses", lang), value=status_txt, inline=False)
     return embed
+
+async def get_status_list_embed(lang: str) -> discord.Embed:
+    """Genera un embed con la lista de estados configurados."""
+    rows = await db_service.fetch_all("SELECT type, text FROM bot_statuses")
+    
+    if not rows:
+        return embed_service.warning(lang_service.get_text("title_status", lang), lang_service.get_text("status_empty", lang))
+    
+    desc = lang_service.get_text("status_list_desc", lang) + "\n\n"
+    for i, row in enumerate(rows, 1):
+        desc += f"`{i}.` **[{row['type'].title()}]** {row['text']}\n"
+        
+    title = lang_service.get_text("status_list_title", lang)
+    return embed_service.info(title, desc)
+
+async def add_bot_status(tipo: str, texto: str, author_name: str):
+    """Añade un nuevo estado a la base de datos."""
+    await db_service.execute("INSERT INTO bot_statuses (type, text) VALUES (?, ?)", (tipo, texto))
+    logger.info(f"Status agregado: [{tipo}] {texto} por {author_name}")
+
+async def delete_bot_status(status_id: int, author_name: str):
+    """Elimina un estado de la base de datos."""
+    await db_service.execute("DELETE FROM bot_statuses WHERE id = ?", (status_id,))
+    logger.info(f"Status eliminado (ID: {status_id}) por {author_name}")
+
+async def perform_db_maintenance():
+    """Ejecuta el comando VACUUM en la base de datos."""
+    await db_service.execute("VACUUM;")
 
 async def get_status_delete_options(lang):
     rows = await db_service.fetch_all(f"SELECT id, type, text FROM bot_statuses ORDER BY id DESC LIMIT {settings.DEV_CONFIG['STATUS_LIMIT']}")
@@ -179,10 +208,20 @@ async def get_memory_analysis(lang):
         grouped = {}
         for stat in stats:
             path = stat.traceback[0].filename
-            name = "🧩 " + path.split("cogs")[-1].replace("\\", "/").lstrip("/") if "cogs" in path else ("🛠️ " + path.split("services")[-1].replace("\\", "/").lstrip("/") if "services" in path else ("📚 Librerías" if "site-packages" in path else "📄 Otros"))
+            name = "🧩 " + path.split("cogs")[-1].replace("\\", "/").lstrip("/") if "cogs" in path else ("🛠️ " + path.split("services")[-1].replace("\\", "/").lstrip("/") if "services" in path else (f"📚 {lang_service.get_text('dev_mem_libs', lang)}" if "site-packages" in path else f"📄 {lang_service.get_text('dev_mem_others', lang)}"))
             grouped[name] = grouped.get(name, 0) + stat.size
         
-        desc += "**📊 Top Consumo (Diferencial):**\n"
+        desc += lang_service.get_text("dev_mem_top", lang)
         for name, size in sorted(grouped.items(), key=lambda x: x[1], reverse=True)[:15]:
             desc += f"**{name}**: `{size/1024:.2f} KB`\n"
     return desc
+
+async def sync_commands(bot: discord.Client):
+    """Sincroniza los comandos de aplicación del bot."""
+    return await bot.tree.sync()
+
+async def restart_bot(author_name: str):
+    """Cierra la base de datos y reinicia el proceso del bot."""
+    logger.info(f"🔄 [Developer] Reinicio solicitado por {author_name}")
+    await db_service.close_db()
+    os.execv(sys.executable, [sys.executable] + sys.argv)

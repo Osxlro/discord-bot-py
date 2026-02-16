@@ -91,7 +91,7 @@ class Moderacion(commands.Cog):
         razon = razon or lang_service.get_text("mod_reason_default", lang)
         
         if usuario.id == ctx.author.id:
-            await ctx.reply(embed=embed_service.warning("!", lang_service.get_text("error_self_action", lang), lite=True), ephemeral=True)
+            await ctx.reply(embed=embed_service.warning(lang_service.get_text("title_info", lang), lang_service.get_text("error_self_action", lang), lite=True), ephemeral=True)
             return
 
         try:
@@ -112,7 +112,7 @@ class Moderacion(commands.Cog):
         razon = razon or lang_service.get_text("mod_reason_default", lang)
 
         if usuario.id == ctx.author.id:
-            await ctx.reply(embed=embed_service.warning("!", lang_service.get_text("error_self_action", lang), lite=True), ephemeral=True)
+            await ctx.reply(embed=embed_service.warning(lang_service.get_text("title_info", lang), lang_service.get_text("error_self_action", lang), lite=True), ephemeral=True)
             return
 
         try:

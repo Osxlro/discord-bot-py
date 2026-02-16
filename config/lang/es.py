@@ -22,6 +22,7 @@ ES = {
     "ping_msg": "🏓 Pong! Latencia: **{ms}ms**",
     "calc_result": "Resultado: `{a}` {op} `{b}` = **{res}**",
     "calc_error": "Error matemático: {error}",
+    "calc_error_invalid_op": "❌ Operación no válida.\nUsa: `+`, `-`, `*`, `/`.",
     "trans_result": "**Original:** {orig}\n**Traducido:** {trans}",
     "math_div_zero": "No puedes dividir por cero.",
     "ctx_menu_translate": "Traducir",
@@ -52,8 +53,11 @@ ES = {
     "choice_desc": "Entre **{a}** y **{b}**, elijo:\n\n👉 **{result}**",
     "confess_title": "🤫 Nueva Confesión",
     "confess_sent": "Tu secreto ha sido publicado en {channel}.",
+    "confess_error_no_channel": "❌ Canal de confesiones no establecido.",
+    "confess_error_perms": "❌ No tengo permisos para enviar mensajes en ese canal.",
     "confess_anon": "Anónimo",
     "emojimix_title": "Emoji Mix",
+    "eightball_title": "🎱 8-Ball",
     "8ball_responses": "Sí, definitivamente.|Es cierto.|Sin duda.|Sí.|Probablemente.|Pregunta de nuevo más tarde.|Mejor no decirte ahora.|No cuentes con ello.|Mi respuesta es no.|Mis fuentes dicen que no.|Muy dudoso.",
 
     # --- NIVELES & PERFIL ---
@@ -208,6 +212,7 @@ ES = {
     "serverinfo_conf_desc": "🌐 **Idioma:** {language}\n👋 **Bienvenida:** {welcome}\n🤫 **Confesiones:** {confess}\n📜 **Logs:** {logs}\n🎂 **Cumpleaños:** {bday}\n🎭 **Auto-Rol:** {autorole}",
     "serverinfo_not_set": "❌",
     "serverinfo_na": "N/A",
+    "trans_error": "❌ Error interno en el traductor.",
 
     # --- STATUS ---
     "status_add": "✅ Estado añadido: **{text}** ({type})",
@@ -242,6 +247,7 @@ ES = {
     "dev_mem_others": "📄 Otros",
     "dev_interaction_error": "❌ Solo quien ejecutó el comando puede usar esto.",
     "dev_psutil_error": "⚠️ `psutil` no está instalado.",
+    "dev_status_more": "\n... y {count} más.",
     "dev_mem_title": "Memoria",
     "dev_db_maint_title": "Mantenimiento",
     "dev_db_maint_success": "✅ Base de datos optimizada (VACUUM completado).",
@@ -329,6 +335,11 @@ ES = {
     "music_lyrics_title": "📝 Letra: {title}",
     "music_lyrics_not_found": "❌ No encontré la letra de esta canción.",
     "music_lyrics_searching": "Buscando letra",
+    "music_connecting": "🔄 Conectando a servicios de música...",
+    "music_playlist_empty": "❌ La lista de reproducción está vacía.",
+    "music_error_duplicate": "⚠️ Esta canción ya está en la cola.",
+    "botinfo_persistence": "💾 Persistencia Binaria",
+    "botinfo_persistence_desc": "• Registros: `{count}`\n• Tamaño: `{size:.2f} KB`",
     "music_requested_by": "👤 Pedido por: {user}",
     "music_control_owner_error": "❌ No puedes controlar esta sesión.",
     "music_control_voice_error": "❌ Debes estar en el canal de voz para usar los botones.",

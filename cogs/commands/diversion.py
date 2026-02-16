@@ -61,7 +61,7 @@ class Diversion(commands.Cog):
 
         if not channel_id:
             await ctx.reply(
-                embed=embed_service.error(lang_service.get_text("title_error", lang), "❌ Canal de confesiones no establecido.", lite=True), 
+                embed=embed_service.error(lang_service.get_text("title_error", lang), lang_service.get_text("confess_error_no_channel", lang), lite=True), 
                 ephemeral=True
             )
             return
@@ -78,9 +78,9 @@ class Diversion(commands.Cog):
             msg = lang_service.get_text("confess_sent", lang, channel=canal.mention)
             await ctx.reply(embed=embed_service.success(lang_service.get_text("title_success", lang), msg, lite=True), ephemeral=True)
         except discord.Forbidden:
-            await ctx.reply(embed=embed_service.error(lang_service.get_text("title_error", lang), "❌ No tengo permisos para enviar mensajes en ese canal.", lite=True), ephemeral=True)
+            await ctx.reply(embed=embed_service.error(lang_service.get_text("title_error", lang), lang_service.get_text("confess_error_perms", lang), lite=True), ephemeral=True)
         except Exception as e:
-            await ctx.reply(embed=embed_service.error(lang_service.get_text("title_error", lang), f"Error: {e}", lite=True), ephemeral=True)
+            await ctx.reply(embed=embed_service.error(lang_service.get_text("title_error", lang), f"{lang_service.get_text('error_generic', lang)}: {e}", lite=True), ephemeral=True)
 
     @commands.hybrid_command(name="8ball", description="Pregúntale a la bola mágica.")
     @app_commands.describe(pregunta="Tu pregunta")
@@ -88,7 +88,7 @@ class Diversion(commands.Cog):
         lang = await lang_service.get_guild_lang(ctx.guild.id if ctx.guild else None)
         respuestas = lang_service.get_text("8ball_responses", lang).split("|")
         respuesta = random.choice(respuestas)
-        await ctx.reply(embed=embed_service.info("🎱 8-Ball", f"**P:** {pregunta}\n**R:** {respuesta}", lite=True))
+        await ctx.reply(embed=embed_service.info(lang_service.get_text("eightball_title", lang), f"**P:** {pregunta}\n**R:** {respuesta}", lite=True))
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(Diversion(bot))

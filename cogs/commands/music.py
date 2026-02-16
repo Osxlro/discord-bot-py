@@ -41,7 +41,7 @@ class Music(commands.Cog):
 
         # Verificación y conexión bajo demanda si los nodos están caídos
         if not wavelink.Pool.nodes or not any(n.status == wavelink.NodeStatus.CONNECTED for n in wavelink.Pool.nodes.values()):
-            await ctx.send(embed=embed_service.info(lang_service.get_text("title_info", lang), "🔄 Conectando a servicios de música...", lite=True))
+            await ctx.send(embed=embed_service.info(lang_service.get_text("title_info", lang), lang_service.get_text("music_connecting", lang), lite=True))
             await music_service.connect_nodes(self.bot)
             
             if not wavelink.Pool.nodes or not any(n.status == wavelink.NodeStatus.CONNECTED for n in wavelink.Pool.nodes.values()):

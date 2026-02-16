@@ -79,7 +79,7 @@ class General(commands.Cog):
         op_symbol = settings.MATH_CONFIG["OP_MAP"].get(operacion.lower())
         
         if not op_symbol:
-            await ctx.reply(embed=embed_service.error(lang_service.get_text("title_error", lang), "Operación no válida.\nUsa: `+`, `-`, `*`, `/`", lite=True), ephemeral=True)
+            await ctx.reply(embed=embed_service.error(lang_service.get_text("title_error", lang), lang_service.get_text("calc_error_invalid_op", lang), lite=True), ephemeral=True)
             return
         
         try:
@@ -168,7 +168,7 @@ class General(commands.Cog):
             await interaction.followup.send(embed=embed_service.success(lang_service.get_text("title_translate", lang), txt), ephemeral=True)
         except Exception:
             logger.exception("Error Traductor")
-            await interaction.followup.send(embed=embed_service.error(lang_service.get_text("title_error", lang), "Error interno en el traductor.", lite=True), ephemeral=True)
+            await interaction.followup.send(embed=embed_service.error(lang_service.get_text("title_error", lang), lang_service.get_text("trans_error", lang), lite=True), ephemeral=True)
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(General(bot))

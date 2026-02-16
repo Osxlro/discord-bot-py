@@ -1,15 +1,13 @@
 import logging
 import tracemalloc
 import asyncio
-import sys
-import os
 import discord
 from discord import app_commands
 from discord.ext import commands
 from typing import Literal
 from services.features import developer_service
 from config import settings
-from services.core import db_service, lang_service
+from services.core import lang_service
 from services.utils import embed_service, pagination_service
 
 logger = logging.getLogger(__name__)
@@ -25,8 +23,7 @@ class StatusSelect(discord.ui.Select):
 
     async def callback(self, interaction: discord.Interaction):
         status_id = int(self.values[0])
-        await db_service.execute("DELETE FROM bot_statuses WHERE id = ?", (status_id,))
-        logger.info(f"Status eliminado (ID: {status_id}) por {interaction.user}")
+        await developer_service.delete_bot_status(status_id, str(interaction.user))
         
         lang = await lang_service.get_guild_lang(interaction.guild_id if interaction.guild_id else None)
         await interaction.response.edit_message(
@@ -162,23 +159,13 @@ class Developer(commands.Cog):
     async def listar(self, ctx: commands.Context):
         # Listado solo para el admin (EPHEMERAL)
         lang = await lang_service.get_guild_lang(ctx.guild.id if ctx.guild else None)
-        rows = await db_service.fetch_all("SELECT type, text FROM bot_statuses")
-        
-        if not rows:
-            return await ctx.send(embed=embed_service.warning(lang_service.get_text("title_status", lang), lang_service.get_text("status_empty", lang)), ephemeral=True)
-        
-        desc = lang_service.get_text("status_list_desc", lang) + "\n\n"
-        for i, row in enumerate(rows, 1):
-            desc += f"`{i}.` **[{row['type'].title()}]** {row['text']}\n"
-            
-        title = lang_service.get_text("status_list_title", lang)
-        await ctx.send(embed=embed_service.info(title, desc), ephemeral=True)
+        embed = await developer_service.get_status_list_embed(lang)
+        await ctx.send(embed=embed, ephemeral=True)
 
     @status_group.command(name="agregar", description="Añade un nuevo estado a la rotación.")
     @app_commands.describe(tipo="Actividad", texto="Lo que se mostrará")
     async def agregar(self, ctx: commands.Context, tipo: Literal["playing", "watching", "listening", "competing"], texto: str):
-        await db_service.execute("INSERT INTO bot_statuses (type, text) VALUES (?, ?)", (tipo, texto))
-        logger.info(f"Status agregado: [{tipo}] {texto} por {ctx.author}")
+        await developer_service.add_bot_status(tipo, texto, str(ctx.author))
         lang = await lang_service.get_guild_lang(ctx.guild.id if ctx.guild else None)
         msg = lang_service.get_text("status_add", lang, text=texto, type=tipo)
 
@@ -218,7 +205,7 @@ class Developer(commands.Cog):
         lang = await lang_service.get_guild_lang(ctx.guild.id if ctx.guild else None)
         msg = await ctx.send(lang_service.get_text("dev_sync_start", lang))
         try:
-            synced = await self.bot.tree.sync()
+            synced = await developer_service.sync_commands(self.bot)
             await msg.edit(content=lang_service.get_text("dev_sync_success", lang, count=len(synced)))
         except Exception as e:
             await msg.edit(content=lang_service.get_text("dev_sync_error", lang, error=e))
@@ -235,8 +222,7 @@ class Developer(commands.Cog):
     async def db_maintenance(self, ctx: commands.Context):
         await ctx.defer()
         lang = await lang_service.get_guild_lang(ctx.guild.id if ctx.guild else None)
-        # Ejecutamos VACUUM manualmente para compactar la DB
-        await db_service.execute("VACUUM;")
+        await developer_service.perform_db_maintenance()
         await ctx.send(embed=embed_service.success(lang_service.get_text("dev_db_maint_title", lang), lang_service.get_text("dev_db_maint_success", lang)))
 
     @commands.command(name="restart", hidden=True)
@@ -244,14 +230,7 @@ class Developer(commands.Cog):
     async def restart(self, ctx: commands.Context):
         lang = await lang_service.get_guild_lang(ctx.guild.id if ctx.guild else None)
         await ctx.send(lang_service.get_text("dev_restart_msg", lang))
-        
-        logger.info(f"🔄 [Developer] Reinicio solicitado por {ctx.author}")
-        
-        # Limpieza crítica de base de datos antes de matar el proceso
-        await db_service.close_db()
-        
-        # Reemplaza el proceso actual con uno nuevo
-        os.execv(sys.executable, [sys.executable] + sys.argv)
+        await developer_service.restart_bot(str(ctx.author))
 
 async def setup(bot):
     await bot.add_cog(Developer(bot))

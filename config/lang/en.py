@@ -22,6 +22,7 @@ EN = {
     "ping_msg": "🏓 Pong! Latency: **{ms}ms**",
     "calc_result": "Result: `{a}` {op} `{b}` = **{res}**",
     "calc_error": "Math error: {error}",
+    "calc_error_invalid_op": "❌ Invalid operation.\nUse: `+`, `-`, `*`, `/`.",
     "trans_result": "**Original:** {orig}\n**Translated:** {trans}",
     "math_div_zero": "You cannot divide by zero.",
     "ctx_menu_translate": "Translate",
@@ -52,8 +53,11 @@ EN = {
     "choice_desc": "Between **{a}** and **{b}**, I choose:\n\n👉 **{result}**",
     "confess_title": "🤫 New Confession",
     "confess_sent": "Your secret has been published in {channel}.",
+    "confess_error_no_channel": "❌ Confessions channel not set.",
+    "confess_error_perms": "❌ I don't have permissions to send messages in that channel.",
     "confess_anon": "Anonymous",
     "emojimix_title": "Emoji Mix",
+    "eightball_title": "🎱 8-Ball",
     "8ball_responses": "Yes, definitely.|It is certain.|Without a doubt.|Yes.|Probably.|Ask again later.|Better not tell you now.|Don't count on it.|My reply is no.|My sources say no.|Very doubtful.",
 
     # --- LEVELS & PROFILE ---
@@ -208,6 +212,7 @@ EN = {
     "serverinfo_conf_desc": "🌐 **Language:** {language}\n👋 **Welcome:** {welcome}\n🤫 **Confessions:** {confess}\n📜 **Logs:** {logs}\n🎂 **Birthday:** {bday}\n🎭 **Auto-Role:** {autorole}",
     "serverinfo_not_set": "❌",
     "serverinfo_na": "N/A",
+    "trans_error": "❌ Internal error in the translator.",
 
     # --- STATUS ---
     "status_add": "✅ Status added: **{text}** ({type})",
@@ -242,6 +247,7 @@ EN = {
     "dev_mem_others": "📄 Others",
     "dev_interaction_error": "❌ Only the command executor can use this.",
     "dev_psutil_error": "⚠️ `psutil` is not installed.",
+    "dev_status_more": "\n... and {count} more.",
     "dev_mem_title": "Memory",
     "dev_db_maint_title": "Maintenance",
     "dev_db_maint_success": "✅ Database optimized (VACUUM completed).",
@@ -329,6 +335,11 @@ EN = {
     "music_lyrics_title": "📝 Lyrics: {title}",
     "music_lyrics_not_found": "❌ Lyrics not found for this track.",
     "music_lyrics_searching": "Searching lyrics",
+    "music_connecting": "🔄 Connecting to music services...",
+    "music_playlist_empty": "❌ The playlist is empty.",
+    "music_error_duplicate": "⚠️ This song is already in the queue.",
+    "botinfo_persistence": "💾 Binary Persistence",
+    "botinfo_persistence_desc": "• Records: `{count}`\n• Size: `{size:.2f} KB`",
     "music_requested_by": "👤 Requested by: {user}",
     "music_control_owner_error": "❌ You cannot control this session.",
     "music_control_voice_error": "❌ You must be in the voice channel to use buttons.",
