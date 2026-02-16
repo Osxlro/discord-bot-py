@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 from typing import Literal
-from services.features import birthday_service
+from ui import birthday_ui
 import datetime
 from services.core import db_service, lang_service
 from services.utils import embed_service
@@ -52,7 +52,7 @@ class Cumpleanos(commands.Cog):
     @cumple.command(name="list", description="Revisa la lista de próximos cumpleaños.")
     async def lista(self, ctx: commands.Context):
         lang = await lang_service.get_guild_lang(ctx.guild.id)
-        embed = await birthday_service.get_upcoming_birthdays_embed(ctx.guild, lang)
+        embed = await birthday_ui.get_upcoming_birthdays_embed(ctx.guild, lang)
         await ctx.reply(embed=embed)
 
 async def setup(bot: commands.Bot):
