@@ -195,7 +195,64 @@ class MusicControls(discord.ui.View):
         msg = lang_service.get_text("music_shuffled", self.lang)
         await interaction.response.send_message(msg, ephemeral=True)
 
-    @discord.ui.button(emoji=settings.MUSIC_CONFIG["BUTTON_EMOJIS"]["VOL_DOWN"], style=discord.ButtonStyle.secondary, row=1)
+    @discord.ui.button(emoji=settings.MUSIC_CONFIG["BUTTON_EMOJIS"]["QUEUE"], style=discord.ButtonStyle.secondary, row=1)
+    async def show_queue(self, interaction: discord.Interaction, button: discord.ui.Button):
+        from services.features import music_service
+        if self.player.queue.is_empty:
+            return await interaction.response.send_message(lang_service.get_text("music_queue_empty", self.lang), ephemeral=True)
+        
+        pages = music_service.get_queue_pages(self.player, self.lang)
+        await interaction.response.send_message(embed=pages[0], ephemeral=True)
+
+    @discord.ui.button(emoji=settings.MUSIC_CONFIG["LOOP_EMOJIS"]["OFF"], style=discord.ButtonStyle.secondary, row=1)
+    async def loop(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if self.player.queue.mode == wavelink.QueueMode.normal:
+            self.player.queue.mode = wavelink.QueueMode.loop
+            msg = lang_service.get_text("music_loop_track", self.lang)
+        elif self.player.queue.mode == wavelink.QueueMode.loop:
+            self.player.queue.mode = wavelink.QueueMode.loop_all
+            msg = lang_service.get_text("music_loop_queue", self.lang)
+        else:
+            self.player.queue.mode = wavelink.QueueMode.normal
+            msg = lang_service.get_text("music_loop_off", self.lang)
+        
+        self._sync_state()
+        try:
+            await interaction.response.edit_message(view=self)
+            await interaction.followup.send(msg, ephemeral=True)
+        except discord.HTTPException: pass
+
+    @discord.ui.button(emoji=settings.MUSIC_CONFIG["BUTTON_EMOJIS"]["AUTOPLAY"], style=discord.ButtonStyle.secondary, row=1)
+    async def autoplay(self, interaction: discord.Interaction, button: discord.ui.Button):
+        current = getattr(self.player, "smart_autoplay", False)
+        self.player.smart_autoplay = not current
+        self.player.autoplay = wavelink.AutoPlayMode.disabled
+        
+        msg = lang_service.get_text("music_autoplay_on" if self.player.smart_autoplay else "music_autoplay_off", self.lang)
+        self._sync_state()
+        try:
+            await interaction.response.edit_message(view=self)
+            await interaction.followup.send(msg, ephemeral=True)
+        except discord.HTTPException: pass
+
+    @discord.ui.button(emoji=settings.MUSIC_CONFIG["BUTTON_EMOJIS"]["LYRICS"], style=discord.ButtonStyle.secondary, row=1)
+    async def lyrics(self, interaction: discord.Interaction, button: discord.ui.Button):
+        from services.integrations import lyrics_service
+        if not self.player.current:
+            return await interaction.response.send_message(lang_service.get_text("music_error_nothing", self.lang), ephemeral=True)
+        
+        await interaction.response.defer(ephemeral=True)
+        track = self.player.current
+        res = await lyrics_service.get_lyrics(track.title, track.author)
+        
+        if not res:
+            return await interaction.followup.send(lang_service.get_text("music_lyrics_not_found", self.lang), ephemeral=True)
+        
+        embed = discord.Embed(title=lang_service.get_text("music_lyrics_title", self.lang, title=track.title), 
+                              description=res[:2000], color=settings.COLORS["INFO"])
+        await interaction.followup.send(embed=embed, ephemeral=True)
+
+    @discord.ui.button(emoji=settings.MUSIC_CONFIG["BUTTON_EMOJIS"]["VOL_DOWN"], style=discord.ButtonStyle.secondary, row=2)
     async def vol_down(self, interaction: discord.Interaction, button: discord.ui.Button):
         from services.features import music_service
         new_vol = max(self.player.volume - settings.MUSIC_CONFIG["VOLUME_STEP"], 0)
@@ -204,7 +261,7 @@ class MusicControls(discord.ui.View):
             await music_service.update_presence(interaction.client, self.player, self.player.current, self.lang)
         await interaction.response.send_message(lang_service.get_text("music_vol_changed", self.lang, vol=new_vol), ephemeral=True)
 
-    @discord.ui.button(emoji=settings.MUSIC_CONFIG["BUTTON_EMOJIS"]["VOL_UP"], style=discord.ButtonStyle.secondary, row=1)
+    @discord.ui.button(emoji=settings.MUSIC_CONFIG["BUTTON_EMOJIS"]["VOL_UP"], style=discord.ButtonStyle.secondary, row=2)
     async def vol_up(self, interaction: discord.Interaction, button: discord.ui.Button):
         from services.features import music_service
         new_vol = min(self.player.volume + settings.MUSIC_CONFIG["VOLUME_STEP"], 100)
