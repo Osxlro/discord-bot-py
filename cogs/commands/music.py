@@ -230,7 +230,7 @@ class Music(commands.Cog):
         if ctx.voice_client.volume != nivel:
             await ctx.voice_client.set_volume(nivel)
             if ctx.voice_client.current:
-                await music_service.update_presence(self.bot, ctx.voice_client, ctx.voice_client.current)
+                await music_service.update_presence(self.bot, ctx.voice_client, ctx.voice_client.current, lang)
         
         msg = lang_service.get_text("music_volume", lang, vol=nivel)
         await ctx.send(embed=embed_service.success(lang_service.get_text("title_volume", lang), msg, lite=True))

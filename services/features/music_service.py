@@ -153,7 +153,7 @@ async def send_now_playing(bot: discord.Client, player: wavelink.Player, track: 
         except: pass
 
     # Actualizar Presencia del bot
-    await update_presence(bot, player, track)
+    await update_presence(bot, player, track, lang)
     
     # Enviar nuevo mensaje y guardar referencia
     player.last_msg = await player.home.send(embed=embed, view=view)
