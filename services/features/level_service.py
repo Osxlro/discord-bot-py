@@ -6,8 +6,14 @@ from ui import level_ui
 
 logger = logging.getLogger(__name__)
 
-# Re-exportar para compatibilidad
-get_leaderboard_pages = level_ui.get_leaderboard_pages
+# Re-exportar con envoltura de compatibilidad para HealthCheck/Legacy
+async def get_rank_embed(guild, target, lang):
+    """Wrapper de compatibilidad para la firma antigua."""
+    return await handle_rank(guild, target, lang)
+
+async def get_leaderboard_pages(guild, lang):
+    """Wrapper de compatibilidad para la firma antigua."""
+    return await handle_leaderboard(guild, lang)
 
 async def handle_rank(guild: discord.Guild, target: discord.Member, lang: str):
     """Maneja la lógica para obtener el rango de un usuario."""

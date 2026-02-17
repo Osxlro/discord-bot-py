@@ -2,8 +2,10 @@ from config import settings
 from services.core import db_service, lang_service
 from ui import profile_ui
 
-# Re-exportar para compatibilidad
-get_profile_embed = profile_ui.get_profile_embed
+# Re-exportar con envoltura de compatibilidad para HealthCheck/Legacy
+async def get_profile_embed(bot, guild, target, lang):
+    """Wrapper de compatibilidad para la firma antigua (4 argumentos)."""
+    return await handle_profile(guild, target, lang)
 
 async def handle_profile(guild, target, lang):
     """Orquesta la obtención de datos y generación del embed de perfil."""
