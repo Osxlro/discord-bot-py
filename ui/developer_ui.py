@@ -8,14 +8,16 @@ import asyncio
 from config import settings
 from services.core import lang_service, db_service
 from services.utils import embed_service
-from services.features import developer_service
 
 def _make_bar(percent, length=settings.UI_CONFIG["BAR_LENGTH"]):
     filled = int(length * percent / 100)
     return "█" * filled + "░" * (length - filled)
 
-async def get_general_embed(bot, guild, lang):
-    info = await developer_service.get_psutil_info()
+async def get_general_embed(bot, guild, lang, info=None):
+    if info is None:
+        from services.features import developer_service
+        info = await developer_service.get_psutil_info()
+        
     uptime_str = lang_service.get_text("serverinfo_na", lang)
     if info["available"]:
         uptime_seconds = int(time.time() - info["uptime"])
@@ -34,8 +36,11 @@ async def get_general_embed(bot, guild, lang):
     embed.add_field(name=lang_service.get_text("botinfo_users", lang), value=f"{len(bot.users)}", inline=True)
     return embed
 
-async def get_system_embed(guild, lang):
-    info = await developer_service.get_psutil_info()
+async def get_system_embed(guild, lang, info=None):
+    if info is None:
+        from services.features import developer_service
+        info = await developer_service.get_psutil_info()
+        
     embed = discord.Embed(title=lang_service.get_text("botinfo_system_title", lang), color=settings.COLORS["BLUE"])
     if not info["available"]:
         embed.description = lang_service.get_text("dev_psutil_error", lang)
@@ -50,11 +55,14 @@ async def get_system_embed(guild, lang):
     embed.add_field(name=lang_service.get_text("botinfo_os", lang), value=f"{platform.system()} {platform.release()}", inline=True)
     return embed
 
-async def get_memory_embed(lang):
+async def get_memory_embed(lang, info=None):
     embed = discord.Embed(title=lang_service.get_text("botinfo_memory_title", lang), color=settings.COLORS["GOLD"])
     if not tracemalloc.is_tracing():
         embed.description = lang_service.get_text("dev_mem_nodetail", lang)
-        info = await developer_service.get_psutil_info()
+        if info is None:
+            from services.features import developer_service
+            info = await developer_service.get_psutil_info()
+            
         if info["available"]: embed.add_field(name="Uso RSS", value=f"`{info['mem_proc']:.2f} MB`")
     else:
         snapshot = tracemalloc.take_snapshot()
@@ -150,12 +158,22 @@ def get_server_list_chunks(bot, lang):
         pages.append(embed)
     return pages
 
+def get_status_add_success_embed(lang: str, texto: str, tipo: str) -> discord.Embed:
+    """Genera el embed de éxito al añadir un estado."""
+    msg = lang_service.get_text("status_add", lang, text=texto, type=tipo)
+    return embed_service.success(lang_service.get_text("dev_status_saved", lang), msg)
+
+def get_db_maint_success_embed(lang: str) -> discord.Embed:
+    """Genera el embed de éxito al realizar mantenimiento de DB."""
+    return embed_service.success(lang_service.get_text("dev_db_maint_title", lang), lang_service.get_text("dev_db_maint_success", lang))
+
 class StatusSelect(discord.ui.Select):
     def __init__(self, options, placeholder_text):
         super().__init__(placeholder=placeholder_text, min_values=1, max_values=1, options=options)
 
     async def callback(self, interaction: discord.Interaction):
         status_id = int(self.values[0])
+        from services.features import developer_service
         await developer_service.delete_bot_status(status_id, str(interaction.user))
         lang = await lang_service.get_guild_lang(interaction.guild_id if interaction.guild_id else None)
         await interaction.response.edit_message(embed=embed_service.success(lang_service.get_text("title_status", lang), lang_service.get_text("dev_status_deleted", lang)), view=None)

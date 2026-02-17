@@ -47,3 +47,17 @@ def get_server_birthday_embed(lang: str, mentions: list[str], server_msg: str = 
     msg_final = msg_base.replace("{users}", mentions_str).replace("{user}", mentions_str)
     
     return embed_service.success(title, msg_final, thumbnail=settings.BIRTHDAY_CONFIG["CAKE_ICON"])
+
+def get_birthday_saved_embed(lang: str, date: str) -> discord.Embed:
+    """Genera el embed de éxito al guardar un cumpleaños."""
+    msg = lang_service.get_text("bday_saved", lang, date=date)
+    return embed_service.success(lang_service.get_text("title_success", lang), msg)
+
+def get_birthday_removed_embed(lang: str) -> discord.Embed:
+    """Genera el embed de éxito al eliminar un cumpleaños."""
+    return embed_service.success(lang_service.get_text("title_success", lang), lang_service.get_text("bday_removed", lang))
+
+def get_birthday_privacy_embed(lang: str, val: int) -> discord.Embed:
+    """Genera el embed de éxito al cambiar la privacidad."""
+    msg = lang_service.get_text("bday_visible" if val else "bday_hidden", lang)
+    return embed_service.success(lang_service.get_text("bday_privacy", lang), msg)

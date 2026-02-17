@@ -45,6 +45,36 @@ def get_mod_embed(guild: discord.Guild, user_name: str, action: str, reason: str
 
     return embed_service.success(title, desc)
 
+def get_clear_embed(count: int, lang: str) -> discord.Embed:
+    title = lang_service.get_text("clear_success", lang)
+    desc = lang_service.get_text("clear_desc", lang, count=count)
+    return embed_service.success(title, desc, lite=True)
+
+def get_timeout_embed(user_name: str, time_str: str, reason: str, lang: str) -> discord.Embed:
+    title = lang_service.get_text("title_success", lang)
+    msg = lang_service.get_text("timeout_success", lang, user=user_name, time=time_str, reason=reason)
+    return embed_service.success(title, msg)
+
+def get_untimeout_embed(user_name: str, lang: str) -> discord.Embed:
+    title = lang_service.get_text("title_success", lang)
+    msg = lang_service.get_text("untimeout_success", lang, user=user_name)
+    return embed_service.success(title, msg, lite=True)
+
+def get_warn_success_embed(user_name: str, count: int, reason: str, lang: str) -> discord.Embed:
+    title = lang_service.get_text("title_success", lang)
+    msg = lang_service.get_text("warn_success", lang, user=user_name, count=count, reason=reason)
+    return embed_service.success(title, msg)
+
+def get_clear_warns_embed(user_name: str, lang: str) -> discord.Embed:
+    title = lang_service.get_text("title_success", lang)
+    msg = lang_service.get_text("warn_cleared", lang, user=user_name)
+    return embed_service.success(title, msg, lite=True)
+
+def get_delwarn_success_embed(warn_id: int, lang: str) -> discord.Embed:
+    title = lang_service.get_text("title_success", lang)
+    msg = lang_service.get_text("warn_deleted", lang, id=warn_id)
+    return embed_service.success(title, msg, lite=True)
+
 def get_warns_pages(guild: discord.Guild, user_name: str, warns: list, lang: str) -> list[discord.Embed]:
     """Genera las páginas de embeds para el historial de advertencias."""
     chunk_size = settings.CONFIG.get("moderation_config", {}).get("warns_page_size", 5)

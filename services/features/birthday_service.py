@@ -48,3 +48,31 @@ async def notify_guild_birthdays(guild: discord.Guild, users_rows: list):
     if genericos:
         embed = birthday_ui.get_server_birthday_embed(lang, genericos, config.get('server_birthday_msg'))
         await channel.send(embed=embed)
+
+async def handle_establish_birthday(user_id: int, dia: int, mes: int, lang: str):
+    """Lógica para establecer un cumpleaños."""
+    try:
+        datetime.date(2000, mes, dia)
+        fecha = f"{dia}/{mes}"
+        await db_service.execute(
+            "INSERT INTO users (user_id, birthday, celebrate) VALUES (?, ?, 1) "
+            "ON CONFLICT(user_id) DO UPDATE SET birthday = excluded.birthday, celebrate = 1",
+            (user_id, fecha)
+        )
+        return birthday_ui.get_birthday_saved_embed(lang, fecha), None
+    except ValueError:
+        return None, lang_service.get_text("bday_invalid", lang)
+
+async def handle_delete_birthday(target_id: int, lang: str):
+    """Lógica para eliminar un cumpleaños."""
+    await db_service.execute("UPDATE users SET birthday = NULL WHERE user_id = ?", (target_id,))
+    return birthday_ui.get_birthday_removed_embed(lang)
+
+async def handle_privacy_update(user_id: int, val: int, lang: str):
+    """Lógica para actualizar la privacidad."""
+    await db_service.execute("UPDATE users SET celebrate = ? WHERE user_id = ?", (val, user_id))
+    return birthday_ui.get_birthday_privacy_embed(lang, val)
+
+async def handle_get_upcoming_list(guild: discord.Guild, lang: str):
+    """Lógica para obtener la lista de próximos cumpleaños."""
+    return await birthday_ui.get_upcoming_birthdays_embed(guild, lang)

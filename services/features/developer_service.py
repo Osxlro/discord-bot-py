@@ -4,6 +4,8 @@ import os
 import sys
 import discord
 from services.core import db_service
+from services.core import lang_service
+from ui import developer_ui
 
 logger = logging.getLogger(__name__)
 
@@ -56,3 +58,45 @@ async def restart_bot(author_name: str):
     logger.info(f"🔄 [Developer] Reinicio solicitado por {author_name}")
     await db_service.close_db()
     os.execv(sys.executable, [sys.executable] + sys.argv)
+
+async def handle_list_statuses(lang: str):
+    """Obtiene el embed con la lista de estados."""
+    return await developer_ui.get_status_list_embed(lang)
+
+async def handle_add_status(tipo: str, texto: str, author_name: str, lang: str):
+    """Añade un estado y retorna el embed de éxito."""
+    await add_bot_status(tipo, texto, author_name)
+    return developer_ui.get_status_add_success_embed(lang, texto, tipo)
+
+async def handle_delete_status_prompt(lang: str):
+    """Obtiene la vista y el placeholder para el menú de eliminación."""
+    options = await developer_ui.get_status_delete_options(lang)
+    if not options:
+        return None, None
+    ph = lang_service.get_text("status_placeholder", lang)
+    view = developer_ui.StatusDeleteView(options, ph)
+    return view, ph
+
+async def handle_list_servers(bot, lang: str):
+    """Obtiene las páginas de la lista de servidores."""
+    return developer_ui.get_server_list_chunks(bot, lang)
+
+async def handle_sync(bot, lang: str):
+    """Sincroniza comandos y retorna el mensaje de resultado."""
+    try:
+        synced = await sync_commands(bot)
+        return lang_service.get_text("dev_sync_success", lang, count=len(synced)), None
+    except Exception as e:
+        return None, lang_service.get_text("dev_sync_error", lang, error=e)
+
+async def handle_bot_info(ctx, bot, lang: str):
+    """Obtiene el embed inicial y la vista para el panel de información."""
+    info = await get_psutil_info()
+    embed = await developer_ui.get_general_embed(bot, ctx.guild, lang, info)
+    view = developer_ui.BotInfoView(ctx, bot, lang)
+    return embed, view
+
+async def handle_db_maintenance(lang: str):
+    """Ejecuta mantenimiento y retorna el embed de éxito."""
+    await perform_db_maintenance()
+    return developer_ui.get_db_maint_success_embed(lang)
