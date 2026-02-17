@@ -6,6 +6,9 @@ from ui import level_ui
 
 logger = logging.getLogger(__name__)
 
+# Re-exportar para compatibilidad
+get_leaderboard_pages = level_ui.get_leaderboard_pages
+
 async def handle_rank(guild: discord.Guild, target: discord.Member, lang: str):
     """Maneja la lógica para obtener el rango de un usuario."""
     stats = await db_service.fetch_one(

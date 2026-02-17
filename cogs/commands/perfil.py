@@ -3,10 +3,7 @@ from discord.ext import commands
 from discord import app_commands
 from typing import Literal
 from services.features import profile_service
-from ui import profile_ui
-from config import settings
 from services.core import lang_service
-from services.utils import embed_service
 
 class Perfil(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -18,19 +15,19 @@ class Perfil(commands.Cog):
         target = usuario or ctx.author
         lang = await lang_service.get_guild_lang(ctx.guild.id)
         
-        embed = await profile_ui.get_profile_embed(self.bot, ctx.guild, target, lang)
+        embed = await profile_service.handle_profile(ctx.guild, target, lang)
         await ctx.reply(embed=embed)
 
     @perfil.command(name="desc", description="Cambia la biografía de tu tarjeta.")
     @app_commands.describe(texto="Máximo 200 caracteres.")
     async def set_desc(self, ctx: commands.Context, texto: str):
         lang = await lang_service.get_guild_lang(ctx.guild.id)
-        if len(texto) > settings.UI_CONFIG["MAX_DESC_LENGTH"]: 
-            await ctx.reply(lang_service.get_text("error_max_chars", lang, max=settings.UI_CONFIG["MAX_DESC_LENGTH"]), ephemeral=True)
-            return
+        embed, error = await profile_service.handle_update_description(ctx.author.id, texto, lang)
         
-        await profile_service.update_description(ctx.author.id, texto)
-        await ctx.reply(embed=embed_service.success(lang_service.get_text("profile_update_success", lang), lang_service.get_text("profile_desc_saved", lang), lite=True))
+        if error:
+            return await ctx.reply(error, ephemeral=True)
+        
+        await ctx.reply(embed=embed)
 
     @perfil.command(name="message", description="Personaliza tus mensajes de nivel o cumpleaños.")
     @app_commands.describe(
@@ -39,9 +36,8 @@ class Perfil(commands.Cog):
     )
     async def set_personal_msg(self, ctx: commands.Context, tipo: Literal["Nivel", "Cumpleaños"], texto: str):
         lang = await lang_service.get_guild_lang(ctx.guild.id)
-        
-        await profile_service.update_personal_message(ctx.author.id, tipo, texto)
-        await ctx.reply(embed=embed_service.success(lang_service.get_text("profile_update_success", lang), lang_service.get_text("profile_msg_saved", lang), lite=True))
+        embed = await profile_service.handle_update_personal_message(ctx.author.id, tipo, texto, lang)
+        await ctx.reply(embed=embed)
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(Perfil(bot))
