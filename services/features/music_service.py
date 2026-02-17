@@ -46,8 +46,8 @@ async def update_presence(bot: discord.Client, player: wavelink.Player, track: w
     activity = discord.Activity(
         type=discord.ActivityType.listening,
         name=f"{track.title}",
-        details=f"👤 {track.author}",
-        state=f"💿 {album_name} | 🔊 {player.volume}%",
+        details=f"💿 {album_name}",
+        state=f"👤 {track.author} | 🔊 {player.volume}%",
         start=start_time,
         end=end_time,
         assets={
