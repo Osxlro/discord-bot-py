@@ -17,6 +17,7 @@ ES = {
     "lang_name_es": "Español 🇪🇸",
     "lang_name_en": "English 🇺🇸",
     "lang_name_pt": "Português 🇵🇹",
+    "lang_name_fr": "Français 🇫🇷",
     
     # --- GENERAL ---
     "ping_msg": "🏓 Pong! Latencia: **{ms}ms**",
@@ -373,4 +374,6 @@ ES = {
     "title_error": "Error",
     "title_info": "Info",
     "title_translate": "Traducir",
+    "title_ping": "Ping",
+    "title_math": "Calculadora",
 }

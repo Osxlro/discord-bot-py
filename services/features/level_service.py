@@ -11,9 +11,9 @@ async def get_rank_embed(guild, target, lang):
     """Wrapper de compatibilidad para la firma antigua."""
     return await handle_rank(guild, target, lang)
 
-async def get_leaderboard_pages(guild, lang):
+def get_leaderboard_pages(guild, rows, lang):
     """Wrapper de compatibilidad para la firma antigua."""
-    return await handle_leaderboard(guild, lang)
+    return level_ui.get_leaderboard_pages(guild, rows, lang)
 
 async def handle_rank(guild: discord.Guild, target: discord.Member, lang: str):
     """Maneja la lógica para obtener el rango de un usuario."""

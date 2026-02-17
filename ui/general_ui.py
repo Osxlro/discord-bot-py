@@ -36,7 +36,9 @@ def get_serverinfo_embed(guild: discord.Guild, config: dict, stats: dict, lang: 
         if not val: return lang_service.get_text("serverinfo_not_set", lang)
         return f"<#{val}>" if type_ == "ch" else f"<@&{val}>"
 
-    lang_name = lang_service.get_text("lang_name_es", lang) if config.get("language") == "es" else lang_service.get_text("lang_name_en", lang)
+    lang_key = f"lang_name_{config.get('language', 'es')}"
+    lang_name = lang_service.get_text(lang_key, lang)
+    
     conf_txt = lang_service.get_text("serverinfo_conf_desc", lang,
         language=lang_name,
         welcome=fmt(config.get("welcome_channel_id"), "ch"),
