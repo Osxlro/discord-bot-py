@@ -60,14 +60,11 @@ class MusicEvents(commands.Cog):
         if not player: return
 
         # Lógica de Autoplay / Siguiente canción
-        if payload.reason == "replaced": return
+        if payload.reason in ("replaced", "loadFailed"): return
         if player.autoplay == wavelink.AutoPlayMode.enabled: return
 
-        # 1. Bucle de Pista: Si está activo, repetimos la misma canción inmediatamente
-        if player.queue.mode == wavelink.QueueMode.loop:
-            return await player.play(payload.track)
-
-        # 2. Siguiente canción: Si es loop_all, .get() ya re-encola automáticamente al final
+        # El método .get() de la cola ya maneja internamente QueueMode.loop y QueueMode.loop_all
+        # No es necesario re-implementar la lógica de bucle manualmente aquí.
         if not player.queue.is_empty:
             next_track = player.queue.get()
             await player.play(next_track)

@@ -246,7 +246,11 @@ async def handle_track_fallback(player: wavelink.Player, track: wavelink.Playabl
         if tracks:
             new_track = tracks[0]
             new_track.requester = getattr(track, "requester", None)
-            await player.play(new_track, start=int(player.position))
+            # Si el error ocurrió al final de la canción, empezamos desde el inicio
+            pos = int(player.position)
+            if track.length > 0 and pos > (track.length - 5000): pos = 0
+            
+            await player.play(new_track, start=pos)
             return True
     except Exception as e:
         logger.error(f"❌ Fallback fallido: {e}")
@@ -536,3 +540,9 @@ class SafePlayer(wavelink.Player):
             # Si el nodo rechaza la conexión, desconectamos localmente para limpiar estado
             try: await self.disconnect()
             except: pass
+
+    async def on_track_stuck(self, payload: wavelink.TrackStuckEventPayload):
+        """Maneja el bug de canciones que se quedan reproduciendo infinitamente sin audio."""
+        logger.warning(f"⚠️ [SafePlayer] Pista atascada detectada: {payload.track.title}. Forzando salto...")
+        # Al saltar, se disparará on_track_end y la cola seguirá su curso normal
+        await self.skip(force=True)
