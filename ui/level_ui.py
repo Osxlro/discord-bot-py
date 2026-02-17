@@ -2,42 +2,16 @@ import discord
 import logging
 from config import settings
 from services.utils import embed_service
-from services.core import db_service, lang_service
+from services.core import lang_service
 
 logger = logging.getLogger(__name__)
 
-async def get_level_up_message(member: discord.Member, nuevo_nivel: int, lang: str) -> str:
-    """Obtiene y formatea el mensaje de subida de nivel según prioridades (Usuario > Servidor > Default)."""
-    user_conf = await db_service.fetch_one("SELECT personal_level_msg FROM users WHERE user_id = ?", (member.id,))
-    guild_conf = await db_service.get_guild_config(member.guild.id)
-    
-    msg_raw = None
-    if user_conf and user_conf['personal_level_msg']:
-        msg_raw = user_conf['personal_level_msg']
-    elif guild_conf.get('server_level_msg'):
-        msg_raw = guild_conf['server_level_msg']
-    else:
-        msg_raw = lang_service.get_text("level_up_default", lang)
-    
-    return msg_raw.replace("{user}", member.mention)\
-                  .replace("{level}", str(nuevo_nivel))\
-                  .replace("{server}", member.guild.name)
-
-async def get_rank_embed(guild: discord.Guild, target: discord.Member, lang: str) -> discord.Embed:
+def get_rank_embed(target: discord.Member, stats: dict, xp_next: int, lang: str) -> discord.Embed:
     """Genera un embed con el nivel, progreso y rebirths del usuario."""
-    stats = await db_service.fetch_one(
-        "SELECT xp, level, rebirths FROM guild_stats WHERE guild_id = ? AND user_id = ?",
-        (guild.id, target.id)
-    )
-    
-    if not stats:
-        return None
-
     level = stats['level']
     xp = stats['xp']
     rebirths = stats['rebirths']
     
-    xp_next = db_service.calculate_xp_required(level)
     progress = min(xp / xp_next, 1.0) if xp_next > 0 else 1.0
     
     bar_len = settings.UI_CONFIG["PROFILE_BAR_LENGTH"]
@@ -85,3 +59,21 @@ def get_leaderboard_pages(guild: discord.Guild, rows: list, lang: str) -> list[d
         embed.set_footer(text=lang_service.get_text("leaderboard_footer", lang, current=i+1, total=len(chunks)))
         pages.append(embed)
     return pages
+
+def get_rebirth_success_embed(lang: str, rebirths: int) -> discord.Embed:
+    """Genera el embed de éxito para un renacimiento."""
+    title = lang_service.get_text("rebirth_title_success", lang)
+    msg = lang_service.get_text("rebirth_success", lang, rebirths=rebirths)
+    return embed_service.success(title, msg)
+
+def get_rebirth_fail_embed(lang: str, result: any) -> discord.Embed:
+    """Genera el embed de error para un renacimiento."""
+    title = lang_service.get_text("rebirth_title_fail", lang)
+    if result == "no_data":
+        msg = lang_service.get_text("rank_no_data", lang)
+    elif isinstance(result, int):
+        msg = lang_service.get_text("rebirth_fail_level", lang, level=result)
+    else:
+        msg = lang_service.get_text("rebirth_fail_generic", lang)
+    
+    return embed_service.error(title, msg)

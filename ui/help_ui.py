@@ -90,3 +90,36 @@ def get_module_embed(bot, module_name: str, guild: discord.Guild, lang: str) -> 
     embed.description += "\n".join(cmds_list) if cmds_list else lang_service.get_text("help_no_cmds", lang)
     embed.set_footer(text=lang_service.get_text("help_total_cmds", lang, count=len(cmds_list)), icon_url=bot.user.display_avatar.url)
     return embed
+
+class HelpSelect(discord.ui.Select):
+    def __init__(self, bot, ctx, lang):
+        self.bot = bot
+        self.ctx = ctx
+        self.lang = lang
+        
+        options = get_help_options(bot, lang)
+        
+        super().__init__(
+            placeholder=lang_service.get_text("help_placeholder", lang),
+            min_values=1, 
+            max_values=1, 
+            options=options
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        if interaction.user.id != self.ctx.author.id:
+            return await interaction.response.send_message(
+                lang_service.get_text("error_self_action", self.lang), ephemeral=True
+            )
+
+        value = self.values[0]
+        if value == "home":
+            embed = await get_home_embed(self.bot, self.ctx.guild, self.ctx.author, self.lang)
+        else:
+            embed = get_module_embed(self.bot, value, self.ctx.guild, self.lang)
+        await interaction.response.edit_message(embed=embed)
+
+class HelpView(discord.ui.View):
+    def __init__(self, bot, ctx, lang):
+        super().__init__(timeout=settings.TIMEOUT_CONFIG["HELP"])
+        self.add_item(HelpSelect(bot, ctx, lang))

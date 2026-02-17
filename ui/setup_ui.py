@@ -11,7 +11,7 @@ def get_setup_success_embed(lang: str, label: str, value: str) -> discord.Embed:
 def get_setup_info_embed(guild: discord.Guild, config: dict, lang: str) -> discord.Embed:
     """Genera un embed detallado con toda la configuración del servidor."""
     embed = discord.Embed(
-        title=f"⚙️ {lang_service.get_text('serverinfo_config', lang)} - {guild.name}",
+        title=f"{lang_service.get_text('serverinfo_config', lang)} - {guild.name}",
         color=discord.Color.blue()
     )
     
