@@ -81,20 +81,25 @@ async def cleanup_player(player: wavelink.Player, skip_message_edit: bool = Fals
     # 1. Limpiar persistencia de Voice
     voice_service.voice_targets.pop(player.guild.id, None)
 
-    # 2. Deshabilitar botones visualmente
+    # 2. Manejar mensaje y vista
+    msg = getattr(player, "last_msg", None)
     view = getattr(player, "last_view", None)
+    
     if view:
         for child in view.children:
             child.disabled = True
-        
-        if not skip_message_edit:
-            msg = getattr(player, "last_msg", None)
-            try:
-                if msg: await msg.edit(view=view)
-            except (discord.HTTPException, discord.Forbidden): pass
         view.stop()
+
+    if msg:
+        try:
+            if skip_message_edit:
+                await msg.delete()
+            else:
+                await msg.edit(view=view)
+        except (discord.HTTPException, discord.Forbidden): pass
     
     # Limpiar referencias
+    player.last_msg = None
     player.last_view = None
     player.home = None # Liberar referencia al canal de texto
     
@@ -106,7 +111,6 @@ async def cleanup_player(player: wavelink.Player, skip_message_edit: bool = Fals
     # Resetear estados internos
     player.smart_autoplay = False
     player.last_track_error = False
-    player.last_msg = None
 
 async def ensure_player(ctx, lang: str) -> wavelink.Player | None:
     """Asegura que el bot esté conectado correctamente y retorna el player."""
@@ -143,20 +147,29 @@ async def send_now_playing(bot: discord.Client, player: wavelink.Player, track: 
     if not hasattr(player, "home") or not player.home:
         return
 
-    lang = await lang_service.get_guild_lang(player.guild.id)
-    embed = create_np_embed(player, track, lang)
-    view = MusicControls(player, lang=lang)
-    
-    # Limpieza de mensajes anteriores para evitar spam
-    if hasattr(player, "last_msg") and player.last_msg:
-        try: await player.last_msg.delete()
-        except: pass
+    # Lock para evitar que múltiples eventos on_track_start dupliquen el mensaje
+    if not hasattr(player, "_msg_lock"):
+        player._msg_lock = asyncio.Lock()
 
-    # Actualizar Presencia del bot
-    await update_presence(bot, player, track, lang)
-    
-    # Enviar nuevo mensaje y guardar referencia
-    player.last_msg = await player.home.send(embed=embed, view=view)
+    async with player._msg_lock:
+        lang = await lang_service.get_guild_lang(player.guild.id)
+        
+        # 1. Limpieza rigurosa del mensaje anterior
+        if hasattr(player, "last_msg") and player.last_msg:
+            try:
+                old_msg = player.last_msg
+                player.last_msg = None # Limpiar referencia antes del await
+                await old_msg.delete()
+            except: pass
+
+        # 2. Actualizar Presencia del bot
+        await update_presence(bot, player, track, lang)
+        
+        # 3. Enviar nuevo mensaje y guardar referencia
+        embed = create_np_embed(player, track, lang)
+        view = MusicControls(player, lang=lang)
+        player.last_msg = await player.home.send(embed=embed, view=view)
+        player.last_view = view
 
 async def handle_enqueue(ctx, player: wavelink.Player, tracks: wavelink.Playable | wavelink.Playlist, lang: str):
     """Maneja la lógica de añadir pistas o playlists a la cola, optimizando el feedback al usuario."""
