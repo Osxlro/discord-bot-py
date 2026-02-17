@@ -22,22 +22,17 @@ class Perfil(commands.Cog):
         # Obtener el idioma configurado para el servidor
         lang = await lang_service.get_guild_lang(ctx.guild.id)
         
-        # El servicio orquesta la obtención de datos de múltiples tablas (users, guild_stats)
-        # y solicita a la UI la construcción del embed final.
-        embed = await profile_service.handle_profile(ctx.guild, target, lang)
-        await ctx.reply(embed=embed)
+        embed, view = await profile_service.handle_profile(ctx.guild, target, lang, ctx.author.id)
+        view.message = await ctx.reply(embed=embed, view=view)
 
     @perfil.command(name="desc", description="Cambia la biografía de tu tarjeta.")
     @app_commands.describe(texto="Máximo 200 caracteres.")
     async def set_desc(self, ctx: commands.Context, texto: str):
         """Actualiza la biografía que se muestra en la tarjeta de perfil."""
         lang = await lang_service.get_guild_lang(ctx.guild.id)
-        
-        # El servicio valida la longitud del texto y realiza el UPSERT en la base de datos
         embed, error = await profile_service.handle_update_description(ctx.author.id, texto, lang)
         
         if error:
-            # Si el texto excede el límite definido en settings, se informa al usuario
             return await ctx.reply(error, ephemeral=True)
         
         await ctx.reply(embed=embed)
@@ -48,13 +43,9 @@ class Perfil(commands.Cog):
         texto="Tu mensaje. Usa {user}, {level} (solo nivel). Escribe 'reset' para borrar."
     )
     async def set_personal_msg(self, ctx: commands.Context, tipo: Literal["Nivel", "Cumpleaños"], texto: str):
-        """Configura un mensaje personalizado para cuando el usuario sube de nivel o cumple años."""
         lang = await lang_service.get_guild_lang(ctx.guild.id)
-        
-        # El servicio maneja la lógica de 'reset' y actualiza la columna correspondiente en la DB
         embed = await profile_service.handle_update_personal_message(ctx.author.id, tipo, texto, lang)
         await ctx.reply(embed=embed)
 
 async def setup(bot: commands.Bot):
-    """Función de entrada para cargar el Cog en el bot."""
     await bot.add_cog(Perfil(bot))
