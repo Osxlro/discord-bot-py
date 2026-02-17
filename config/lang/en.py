@@ -17,6 +17,7 @@ EN = {
     "lang_name_es": "Spanish 🇪🇸",
     "lang_name_en": "English 🇺🇸",
     "lang_name_pt": "Portuguese 🇵🇹",
+    "lang_name_fr": "French 🇫🇷",
     
     # --- GENERAL ---
     "ping_msg": "🏓 Pong! Latency: **{ms}ms**",
@@ -24,6 +25,8 @@ EN = {
     "calc_error": "Math error: {error}",
     "calc_error_invalid_op": "❌ Invalid operation.\nUse: `+`, `-`, `*`, `/`.",
     "trans_result": "**Original:** {orig}\n**Translated:** {trans}",
+    "title_ping": "Ping",
+    "title_math": "Calculator",
     "math_div_zero": "You cannot divide by zero.",
     "ctx_menu_translate": "Translate",
     
@@ -42,6 +45,12 @@ EN = {
     "timeout_limit_error": "❌ The maximum timeout duration is 28 days.",
     "mod_title_kick": "Kick",
     "mod_title_ban": "Ban",
+    "warn_success": "⚠️ **{user}** has been warned.\nTotal: **{count}** warnings.\n📝 Reason: {reason}",
+    "warn_list_title": "Warnings for {user}",
+    "warn_list_empty": "**{user}** has no warnings.",
+    "warn_cleared": "Warnings for **{user}** have been cleared.",
+    "warn_deleted": "Warning with ID **{id}** has been deleted.",
+    "warn_not_found": "No warning found with ID **{id}**.",
     
     # --- FUN ---
     "coinflip_title": "Coin Flipped!",

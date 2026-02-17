@@ -17,12 +17,15 @@ PT = {
     "lang_name_es": "Espanhol 🇪🇸",
     "lang_name_en": "Inglês 🇺🇸",
     "lang_name_pt": "Português 🇵🇹",
+    "lang_name_fr": "Francês 🇫🇷",
     
     # --- GERAL ---
     "ping_msg": "🏓 Pong! Latência: **{ms}ms**",
     "calc_result": "Resultado: `{a}` {op} `{b}` = **{res}**",
     "calc_error": "Erro matemático: {error}",
     "trans_result": "**Original:** {orig}\n**Traduzido:** {trans}",
+    "title_ping": "Ping",
+    "title_math": "Calculadora",
     "math_div_zero": "Não podes dividir por zero.",
     "ctx_menu_translate": "Traduzir",
     
@@ -41,6 +44,12 @@ PT = {
     "timeout_limit_error": "❌ O tempo máximo de isolamento é de 28 dias.",
     "mod_title_kick": "Expulsão",
     "mod_title_ban": "Ban",
+    "warn_success": "⚠️ **{user}** foi advertido.\nTotal: **{count}** advertências.\n📝 Razão: {reason}",
+    "warn_list_title": "Advertências de {user}",
+    "warn_list_empty": "**{user}** não tem advertências.",
+    "warn_cleared": "As advertências de **{user}** foram limpas.",
+    "warn_deleted": "A advertência com ID **{id}** foi eliminada.",
+    "warn_not_found": "Não foi encontrada nenhuma advertência com o ID **{id}**.",
     
     # --- DIVERSÃO ---
     "coinflip_title": "Moeda Lançada!",
@@ -50,12 +59,11 @@ PT = {
     "jumbo_invalid": "Isso não parece ser um emoji válido.",
     "choice_title": "Tomei uma decisão",
     "choice_desc": "Entre **{a}** e **{b}**, escolho:\n\n👉 **{result}**",
-    "choice_title": "Tomei uma decisão",
-    "choice_desc": "Entre **{a}** e **{b}**, escolho:\n\n👉 **{result}**",
     "confess_title": "🤫 Nova Confissão",
     "confess_sent": "O teu segredo foi publicado em {channel}.",
     "confess_anon": "Anónimo",
     "emojimix_title": "Emoji Mix",
+    "eightball_title": "🎱 8-Ball",
     "8ball_responses": "Sim, definitivamente.|É verdade.|Sem dúvida.|Sim.|Provavelmente.|Pergunta de novo mais tarde.|Melhor não te dizer agora.|Não contes com isso.|A minha resposta é não.|As minhas fontes dizem que não.|Muito duvidoso.",
 
     # --- NÍVEIS & PERFIL ---
@@ -331,6 +339,7 @@ PT = {
     "music_lyrics_title": "📝 Letra: {title}",
     "music_lyrics_not_found": "❌ Letra não encontrada para esta música.",
     "music_lyrics_searching": "Procurando letra",
+    "music_album_single": "Single",
     "music_requested_by": "👤 Pedido por: {user}",
     "music_control_owner_error": "❌ Não podes controlar esta sessão.",
     "music_control_voice_error": "❌ Deves estar no canal de voz para usar os botões.",

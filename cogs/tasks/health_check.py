@@ -160,7 +160,10 @@ class HealthCheck(commands.Cog):
 
             # Prueba lógica de /help
             try:
-                embed, _ = await help_service.handle_help(self.bot, test_guild, lang)
+                class MockCtx:
+                    def __init__(self, g, a):
+                        self.guild, self.author = g, a
+                embed, _ = await help_service.handle_help(self.bot, MockCtx(test_guild, test_guild.me), lang)
                 check_embed(embed, "/help")
             except Exception as e:
                 errors.append(f"Command Logic (/help): {e}")
