@@ -3,7 +3,7 @@ import logging
 from discord import app_commands
 from discord.ext import commands
 from config.locales import LOCALES
-from services.features import help_service
+from ui import help_ui
 from config import settings
 from services.core import db_service, lang_service
 from services.integrations import translator_service
@@ -17,7 +17,7 @@ class HelpSelect(discord.ui.Select):
         self.ctx = ctx
         self.lang = lang
         
-        options = help_service.get_help_options(bot, lang)
+        options = help_ui.get_help_options(bot, lang)
         
         super().__init__(
             placeholder=lang_service.get_text("help_placeholder", lang),
@@ -35,10 +35,10 @@ class HelpSelect(discord.ui.Select):
         value = self.values[0]
 
         if value == "home":
-            embed = await help_service.get_home_embed(self.bot, self.ctx.guild, self.ctx.author, self.lang)
+            embed = await help_ui.get_home_embed(self.bot, self.ctx.guild, self.ctx.author, self.lang)
             await interaction.response.edit_message(embed=embed)
         else:
-            embed = help_service.get_module_embed(self.bot, value, self.ctx.guild, self.lang)
+            embed = help_ui.get_module_embed(self.bot, value, self.ctx.guild, self.lang)
             await interaction.response.edit_message(embed=embed)
 
 class HelpView(discord.ui.View):
@@ -59,7 +59,7 @@ class General(commands.Cog):
     @commands.hybrid_command(name="help", description="Muestra el panel de ayuda y comandos.")
     async def help(self, ctx: commands.Context):
         lang = await lang_service.get_guild_lang(ctx.guild.id if ctx.guild else None)
-        embed = await help_service.get_home_embed(self.bot, ctx.guild, ctx.author, lang)
+        embed = await help_ui.get_home_embed(self.bot, ctx.guild, ctx.author, lang)
         view = HelpView(self.bot, ctx, lang)
         await ctx.send(embed=embed, view=view)
 

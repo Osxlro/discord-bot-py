@@ -1,7 +1,9 @@
 import re
-import discord
-from services.utils import embed_service
-from services.core import lang_service
+from ui.moderation_ui import get_mod_embed
+from services.core import db_service
+
+# Re-exportar para compatibilidad con otros módulos
+get_mod_embed = get_mod_embed
 
 def parse_time(time_str: str) -> int:
     """Convierte una cadena de tiempo (1h, 10m) en segundos."""
@@ -17,40 +19,34 @@ def parse_time(time_str: str) -> int:
     if unit == 'd': return val * 86400
     return 0
 
-def get_mod_embed(guild: discord.Guild, user_name: str, action: str, reason: str, lang: str, config: dict) -> discord.Embed:
-    """
-    Genera el embed de éxito para acciones de moderación, 
-    soportando mensajes personalizados de la base de datos.
-    """
-    # Mapeo de claves de configuración y textos según la acción
-    action_map = {
-        "kick": {
-            "config_key": "server_kick_msg",
-            "title_key": "mod_title_kick",
-            "default_title": "kick_title",
-            "default_desc": "kick_desc"
-        },
-        "ban": {
-            "config_key": "server_ban_msg",
-            "title_key": "mod_title_ban",
-            "default_title": "ban_title",
-            "default_desc": "ban_desc"
-        }
-    }
+async def add_warn(guild_id: int, user_id: int, mod_id: int, reason: str) -> int:
+    """Añade una advertencia y retorna el total actual."""
+    await db_service.execute(
+        "INSERT INTO warns (guild_id, user_id, mod_id, reason) VALUES (?, ?, ?, ?)",
+        (guild_id, user_id, mod_id, reason)
+    )
+    row = await db_service.fetch_one(
+        "SELECT COUNT(*) as count FROM warns WHERE guild_id = ? AND user_id = ?",
+        (guild_id, user_id)
+    )
+    return row['count'] if row else 0
 
-    data = action_map.get(action)
-    if not data:
-        return embed_service.success("Moderación", f"Acción {action} completada.")
+async def get_warns(guild_id: int, user_id: int):
+    """Obtiene el historial de advertencias."""
+    return await db_service.fetch_all(
+        "SELECT id, mod_id, reason, timestamp FROM warns WHERE guild_id = ? AND user_id = ? ORDER BY timestamp DESC",
+        (guild_id, user_id)
+    )
 
-    msg_custom = config.get(data["config_key"])
+async def clear_warns(guild_id: int, user_id: int):
+    """Elimina todas las advertencias de un usuario."""
+    await db_service.execute("DELETE FROM warns WHERE guild_id = ? AND user_id = ?", (guild_id, user_id))
 
-    if msg_custom:
-        # Reemplazo de placeholders
-        desc = msg_custom.replace("{user}", user_name).replace("{reason}", reason)
-        title = lang_service.get_text(data["title_key"], lang)
-    else:
-        # Mensaje por defecto del sistema de idiomas
-        title = lang_service.get_text(data["default_title"], lang)
-        desc = lang_service.get_text(data["default_desc"], lang, user=user_name, reason=reason)
-
-    return embed_service.success(title, desc)
+async def delete_warn(guild_id: int, warn_id: int) -> bool:
+    """Elimina una advertencia específica por su ID."""
+    row = await db_service.fetch_one("SELECT id FROM warns WHERE id = ? AND guild_id = ?", (warn_id, guild_id))
+    if not row:
+        return False
+    
+    await db_service.execute("DELETE FROM warns WHERE id = ? AND guild_id = ?", (warn_id, guild_id))
+    return True

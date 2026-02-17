@@ -42,6 +42,12 @@ ES = {
     "timeout_limit_error": "❌ El tiempo máximo de aislamiento es de 28 días.",
     "mod_title_kick": "Expulsión",
     "mod_title_ban": "Ban",
+    "warn_success": "⚠️ **{user}** ha sido advertido.\nTotal: **{count}** advertencias.\n📝 Razón: {reason}",
+    "warn_list_title": "Advertencias de {user}",
+    "warn_list_empty": "**{user}** no tiene advertencias.",
+    "warn_cleared": "Se han limpiado las advertencias de **{user}**.",
+    "warn_deleted": "Se ha eliminado la advertencia con ID **{id}**.",
+    "warn_not_found": "No se encontró ninguna advertencia con el ID **{id}**.",
     
     # --- DIVERSIÓN ---
     "coinflip_title": "¡Moneda Lanzada!",

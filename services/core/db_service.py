@@ -27,7 +27,7 @@ _config_cache = {}
 # Cualquier otra tabla encontrada será eliminada para evitar basura.
 REQUIRED_TABLES = {
     "users", "guild_stats", "guild_config", 
-    "bot_persistence", "bot_statuses", "sqlite_sequence"
+    "bot_persistence", "bot_statuses", "sqlite_sequence", "warns"
 }
 
 # =============================================================================
@@ -145,6 +145,18 @@ async def init_db():
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         type TEXT DEFAULT 'playing',
         text TEXT
+    )
+    """)
+    
+    # 7. Advertencias (Warns)
+    await db.execute("""
+    CREATE TABLE IF NOT EXISTS warns (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        guild_id INTEGER,
+        user_id INTEGER,
+        mod_id INTEGER,
+        reason TEXT,
+        timestamp DATETIME DEFAULT (datetime('now'))
     )
     """)
     

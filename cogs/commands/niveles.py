@@ -4,6 +4,7 @@ from discord import app_commands
 from discord.ext import commands
 from config import settings
 from services.features import level_service
+from ui import level_ui
 from services.core import db_service, lang_service
 from services.utils import embed_service, pagination_service
 
@@ -19,7 +20,7 @@ class Niveles(commands.Cog):
         target = usuario or ctx.author
         lang = await lang_service.get_guild_lang(ctx.guild.id)
         
-        embed = await level_service.get_rank_embed(ctx.guild, target, lang)
+        embed = await level_ui.get_rank_embed(ctx.guild, target, lang)
         
         if not embed:
             msg = lang_service.get_text("rank_no_data", lang)
@@ -44,7 +45,7 @@ class Niveles(commands.Cog):
             return
 
         # Delegamos la construcción visual al servicio
-        pages = level_service.get_leaderboard_pages(ctx.guild, rows, lang)
+        pages = level_ui.get_leaderboard_pages(ctx.guild, rows, lang)
 
         if len(pages) == 1:
             await ctx.reply(embed=pages[0])

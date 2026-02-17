@@ -26,7 +26,8 @@ CONFIG = {
     "moderation_config": {
         "max_clear_msg": 50,  # Límite de mensajes para /clear
         "delete_after": 5,  # Segundos antes de borrar confirmaciones de moderación
-        "timeout_limit": 2419200  # Límite máximo de aislamiento (28 días en seg)
+        "timeout_limit": 2419200,  # Límite máximo de aislamiento (28 días en seg)
+        "warns_page_size": 5  # Advertencias por página en /warns
     }
 }
 

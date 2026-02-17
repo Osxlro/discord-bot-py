@@ -3,10 +3,11 @@ from discord.ext import commands
 from discord import app_commands
 from config import settings
 from services.features import moderation_service
+from ui import moderation_ui
 import datetime
 
 from services.core import db_service, lang_service
-from services.utils import embed_service
+from services.utils import embed_service, pagination_service
 
 class Moderacion(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -98,7 +99,7 @@ class Moderacion(commands.Cog):
             await usuario.kick(reason=razon)
             
             config = await db_service.get_guild_config(ctx.guild.id)
-            embed = moderation_service.get_mod_embed(
+            embed = moderation_ui.get_mod_embed(
                 ctx.guild, usuario.name, "kick", razon, lang, config
             )
             await ctx.reply(embed=embed)
@@ -119,12 +120,75 @@ class Moderacion(commands.Cog):
             await usuario.ban(reason=razon)
             
             config = await db_service.get_guild_config(ctx.guild.id)
-            embed = moderation_service.get_mod_embed(
+            embed = moderation_ui.get_mod_embed(
                 ctx.guild, usuario.name, "ban", razon, lang, config
             )
             await ctx.reply(embed=embed)
         except discord.Forbidden:
             await ctx.reply(embed=embed_service.error(lang_service.get_text("title_error", lang), lang_service.get_text("error_hierarchy", lang), lite=True), ephemeral=True)
+
+    @commands.hybrid_command(name="warn", description="Advierte a un miembro.")
+    @app_commands.describe(usuario="Miembro", razon="Motivo")
+    @app_commands.checks.has_permissions(moderate_members=True)
+    async def warn(self, ctx: commands.Context, usuario: discord.Member, razon: str = None):
+        lang = await lang_service.get_guild_lang(ctx.guild.id)
+        razon = razon or lang_service.get_text("mod_reason_default", lang)
+
+        if usuario.id == ctx.author.id:
+            return await ctx.reply(embed=embed_service.warning(lang_service.get_text("title_info", lang), lang_service.get_text("error_self_action", lang), lite=True), ephemeral=True)
+
+        if usuario.top_role >= ctx.author.top_role:
+            return await ctx.reply(embed=embed_service.error(lang_service.get_text("title_error", lang), lang_service.get_text("error_hierarchy", lang), lite=True), ephemeral=True)
+
+        count = await moderation_service.add_warn(ctx.guild.id, usuario.id, ctx.author.id, razon)
+        
+        title = lang_service.get_text("title_success", lang)
+        msg = lang_service.get_text("warn_success", lang, user=usuario.name, count=count, reason=razon)
+        await ctx.reply(embed=embed_service.success(title, msg))
+
+    @commands.hybrid_command(name="warns", description="Muestra las advertencias de un usuario.")
+    @app_commands.describe(usuario="Miembro")
+    @app_commands.checks.has_permissions(moderate_members=True)
+    async def list_warns(self, ctx: commands.Context, usuario: discord.Member):
+        lang = await lang_service.get_guild_lang(ctx.guild.id)
+        warns = await moderation_service.get_warns(ctx.guild.id, usuario.id)
+        
+        if not warns:
+            msg = lang_service.get_text("warn_list_empty", lang, user=usuario.name)
+            return await ctx.reply(embed=embed_service.info(lang_service.get_text("title_info", lang), msg, lite=True))
+
+        # Delegamos la construcción visual a moderation_ui
+        pages = moderation_ui.get_warns_pages(ctx.guild, usuario.name, warns, lang)
+
+        if len(pages) == 1:
+            await ctx.reply(embed=pages[0])
+        else:
+            view = pagination_service.Paginator(pages, ctx.author.id)
+            view.message = await ctx.send(embed=pages[0], view=view)
+
+    @commands.hybrid_command(name="clearwarns", description="Limpia las advertencias de un usuario.")
+    @app_commands.describe(usuario="Miembro")
+    @app_commands.checks.has_permissions(administrator=True)
+    async def clear_warns(self, ctx: commands.Context, usuario: discord.Member):
+        lang = await lang_service.get_guild_lang(ctx.guild.id)
+        await moderation_service.clear_warns(ctx.guild.id, usuario.id)
+        msg = lang_service.get_text("warn_cleared", lang, user=usuario.name)
+        await ctx.reply(embed=embed_service.success(lang_service.get_text("title_success", lang), msg, lite=True))
+
+    @commands.hybrid_command(name="delwarn", description="Elimina una advertencia específica por su ID.")
+    @app_commands.describe(id="ID de la advertencia")
+    @app_commands.checks.has_permissions(moderate_members=True)
+    async def delwarn(self, ctx: commands.Context, id: int):
+        lang = await lang_service.get_guild_lang(ctx.guild.id)
+        
+        success = await moderation_service.delete_warn(ctx.guild.id, id)
+        
+        if success:
+            msg = lang_service.get_text("warn_deleted", lang, id=id)
+            await ctx.reply(embed=embed_service.success(lang_service.get_text("title_success", lang), msg, lite=True))
+        else:
+            msg = lang_service.get_text("warn_not_found", lang, id=id)
+            await ctx.reply(embed=embed_service.error(lang_service.get_text("title_error", lang), msg, lite=True), ephemeral=True)
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(Moderacion(bot))
