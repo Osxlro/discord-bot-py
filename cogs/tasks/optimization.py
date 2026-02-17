@@ -39,17 +39,24 @@ class OptimizationTasks(commands.Cog):
             # 1. Guardamos todo antes de limpiar por seguridad
             await db_service.flush_xp_cache()
             
-            # 2. Limpiamos el caché de configuración (se recargará si es necesario)
+            # 2. Mantenimiento de Base de Datos (Ligero)
+            # PRAGMA optimize es recomendado por SQLite para apps de larga ejecución
+            await db_service.execute("PRAGMA optimize")
+            
+            # 3. Limpieza de persistencia binaria antigua (Mantenido por 3 días)
+            await db_service.prune_old_persistence(days=3)
+            
+            # 4. Limpiamos el caché de configuración (se recargará bajo demanda)
             if hasattr(db_service, 'clear_memory_cache'):
                 db_service.clear_memory_cache()
             
-            # 3. Limpiamos usuarios inactivos de la RAM (XP Cache)
+            # 5. Limpiamos usuarios inactivos de la RAM (XP Cache)
             if hasattr(db_service, 'clear_xp_cache_safe'):
                 db_service.clear_xp_cache_safe()
             
-            # 4. Forzamos a Python a liberar memoria no usada
+            # 6. Forzamos a Python a liberar memoria no usada
             await asyncio.to_thread(gc.collect)
-            logger.debug("🧹 [Sistema] Mantenimiento de memoria completado (RAM liberada).")
+            logger.info("🧹 [Optimization] Mantenimiento integral completado (DB optimizada y RAM liberada).")
         except Exception as e:
             logger.error(f"⚠️ Error en limpieza de memoria: {e}")
 

@@ -331,6 +331,7 @@ PT = {
     "music_loop_queue": "🔁 Loop: **Fila**",
     "music_loop_off": "➡️ Loop: **Desligado**",
     "music_shuffled": "🔀 Fila misturada.",
+    "music_now_listening": "🎧 A Ouvir Agora",
     "music_autoplay_on": "♾️ Autoplay: **Ligado**",
     "music_autoplay_off": "♾️ Autoplay: **Desligado**",
     "music_now_playing_title": "🎶 A Reproduzir Agora",

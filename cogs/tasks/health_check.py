@@ -44,9 +44,6 @@ class HealthCheck(commands.Cog):
         await self._check_command_logic(errors, warnings)
         await self._check_system_resources(warnings)
 
-        # --- MANTENIMIENTO PREVENTIVO ---
-        await db_service.prune_old_persistence(days=3)
-
         # --- REPORTE DE RESULTADOS ---
         for w in warnings:
             logger.warning(f"⚠️ [HealthCheck] Advertencia: {w}")
