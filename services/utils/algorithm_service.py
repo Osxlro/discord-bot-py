@@ -208,6 +208,11 @@ class RecommendationEngine:
         """Analiza metadatos técnicos como duración e idioma."""
         adjustment = 0
         diff_ms = abs(candidate.length - seed.length)
+
+        # Bonus por cohesión de autor (mismo artista)
+        if candidate.author.lower() == seed.author.lower():
+            adjustment += 40
+
         if diff_ms > 600000: adjustment -= 30
         elif diff_ms < 60000: adjustment += 10
 
@@ -255,7 +260,7 @@ class RecommendationEngine:
 
         scored = []
         for track in candidates:
-            if self._is_valid_candidate(track, played_ids, played_titles, played_authors, artist_streak):
+            if self._is_valid_candidate(track, played_ids, played_titles, played_authors, artist_streak, author):
                 score = self._calculate_score(track, seed, seed_styles, mood, spotify_data)
                 scored.append((track, score))
 
@@ -285,7 +290,10 @@ class RecommendationEngine:
 
     def _get_heuristic_queries(self, provider, author, title, styles, streak):
         clean = music_service.clean_track_title(title)
-        queries = [f"{provider}:{clean} {author} mix"]
+        queries = [
+            f"{provider}:{clean} {author} mix",
+            f"{provider}:{author} top tracks" # Sugerencias directas del mismo autor
+        ]
         
         peers = self._get_related_known_artists(author)
         if peers:
@@ -293,7 +301,8 @@ class RecommendationEngine:
             queries.extend([f"{provider}:{p} top hits", f"{provider}:{p} {self._get_artist_genre(author)}"])
 
         if styles: queries.append(f"{provider}:{clean} {' '.join(styles)} similar")
-        queries.append(f"{provider}:{author} {'best songs' if streak >= 3 else 'similar artist'}")
+        # Si ya hay una racha, buscamos radio; si no, buscamos artistas similares
+        queries.append(f"{provider}:{author} {'radio' if streak >= 2 else 'similar artist'}")
         
         if "yt" in provider: queries.append(f"scsearch:{clean} {author} similar")
         return queries
@@ -310,10 +319,15 @@ class RecommendationEngine:
                 
         return candidates
 
-    def _is_valid_candidate(self, track, p_ids, p_titles, p_authors, streak):
+    def _is_valid_candidate(self, track, p_ids, p_titles, p_authors, streak, seed_author):
         if track.identifier in p_ids: return False
         if any(self._is_similar(track.title, pt) for pt in p_titles): return False
-        if track.author.lower() in p_authors and streak < 2: return False
+        
+        # Si el autor ya sonó recientemente, solo permitimos repetir si es el autor actual
+        # para permitir pequeñas rachas (máximo 3 canciones seguidas)
+        if track.author.lower() in p_authors:
+            if track.author.lower() != seed_author.lower() or streak >= 3:
+                return False
         return True
 
     def _select_best_candidate(self, scored):
