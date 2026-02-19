@@ -85,6 +85,7 @@ PT = {
     "profile_field_lvl": "🏆 Nvl",
     "profile_field_rebirths": "🌀 Rebirths",
     "profile_field_xp": "✨ XP",
+    "profile_progress": "Progresso ({percent}%)",
     "profile_field_coins": "🪙 Moedas",
     "profile_joined": "📅 Juntou-se em: {date}",
     "profile_btn_general": "Geral",
@@ -373,4 +374,6 @@ PT = {
     "title_error": "Erro",
     "title_info": "Info",
     "title_translate": "Traduzir",
+    "title_ping": "Ping",
+    "title_math": "Calculadora",
 }
