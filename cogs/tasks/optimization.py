@@ -75,10 +75,10 @@ class OptimizationTasks(commands.Cog):
     async def network_optimization_loop(self):
         try:
             for guild in self.bot.guilds:
-                player: wavelink.Player = guild.voice_client
+                player = guild.voice_client
                 
                 # Si el bot está conectado pero solo (sin humanos)
-                if player and player.connected and player.channel:
+                if player and player.channel:
                     # Si el guild está en voice_targets, es un modo AFK intencional. No desconectar.
                     if guild.id in voice_service.voice_targets:
                         continue
@@ -86,7 +86,8 @@ class OptimizationTasks(commands.Cog):
                     # Filtrar bots para contar solo humanos
                     human_members = [m for m in player.channel.members if not m.bot]
                     if not human_members:
-                        await music_service.cleanup_player(player)
+                        if isinstance(player, wavelink.Player):
+                            await music_service.cleanup_player(player)
                         await player.disconnect()
                         logger.info(f"🔌 [Network Opt] Desconectado de {guild.name} (Canal vacío).")
         except Exception as e:
