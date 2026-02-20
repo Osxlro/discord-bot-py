@@ -1,8 +1,10 @@
 import gc
 import asyncio
 import logging
+import wavelink
 from discord.ext import commands, tasks
 from services.core import db_service
+from services.features import music_service
 from config import settings
 
 logger = logging.getLogger(__name__)
@@ -12,10 +14,12 @@ class OptimizationTasks(commands.Cog):
         self.bot = bot
         self.cache_flush_loop.start()    # Guardado rápido (60s)
         self.memory_cleanup_loop.start() # Limpieza profunda (6h)
+        self.network_optimization_loop.start() # Limpieza de red (5m)
 
     def cog_unload(self):
         self.cache_flush_loop.cancel()
         self.memory_cleanup_loop.cancel()
+        self.network_optimization_loop.cancel()
 
     # TAREA 1: Guardado de datos (Frecuente - cada 60s)
     # Evita perder XP si el bot se reinicia.
@@ -63,6 +67,25 @@ class OptimizationTasks(commands.Cog):
     @memory_cleanup_loop.error
     async def memory_cleanup_error(self, error):
         logger.critical(f"🔥 Error CRÍTICO en tarea de limpieza (Cleanup): {error}")
+
+    # TAREA 3: Optimización de Red (Cada 5 minutos)
+    # Desconecta el bot de canales vacíos para reducir tráfico inbound/outbound innecesario.
+    @tasks.loop(minutes=5)
+    async def network_optimization_loop(self):
+        try:
+            for guild in self.bot.guilds:
+                player: wavelink.Player = guild.voice_client
+                
+                # Si el bot está conectado pero solo (sin humanos)
+                if player and player.connected and player.channel:
+                    # Filtrar bots para contar solo humanos
+                    human_members = [m for m in player.channel.members if not m.bot]
+                    if not human_members:
+                        await music_service.cleanup_player(player)
+                        await player.disconnect()
+                        logger.info(f"🔌 [Network Opt] Desconectado de {guild.name} (Canal vacío).")
+        except Exception as e:
+            logger.error(f"⚠️ Error en optimización de red: {e}")
 
     @cache_flush_loop.before_loop
     async def before_flush(self):
