@@ -5,6 +5,7 @@ import wavelink
 from discord.ext import commands, tasks
 from services.core import db_service
 from services.features import music_service
+from services.utils import voice_service
 from config import settings
 
 logger = logging.getLogger(__name__)
@@ -78,6 +79,10 @@ class OptimizationTasks(commands.Cog):
                 
                 # Si el bot está conectado pero solo (sin humanos)
                 if player and player.connected and player.channel:
+                    # Si el guild está en voice_targets, es un modo AFK intencional. No desconectar.
+                    if guild.id in voice_service.voice_targets:
+                        continue
+
                     # Filtrar bots para contar solo humanos
                     human_members = [m for m in player.channel.members if not m.bot]
                     if not human_members:
