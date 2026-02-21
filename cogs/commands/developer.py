@@ -138,5 +138,31 @@ class Developer(commands.Cog):
         # El servicio se encarga de la ejecución del sistema para el reinicio
         await developer_service.restart_bot(str(ctx.author))
 
+    @commands.command(name="shutdown", hidden=True)
+    @commands.is_owner()
+    async def shutdown(self, ctx: commands.Context):
+        """
+        Apaga el bot completamente (útil si usas un gestor de procesos como PM2 o Docker).
+        """
+        await ctx.send("👋 Apagando sistemas... ¡Hasta luego!")
+        logger.info(f"🛑 Apagado solicitado por {ctx.author}")
+        await self.bot.close()
+
+    @commands.command(name="reload", hidden=True)
+    @commands.is_owner()
+    async def reload(self, ctx: commands.Context, extension: str):
+        """
+        Recarga una extensión (Cog) específica sin reiniciar el bot.
+        Uso: !reload cogs.commands.cumpleaños
+        """
+        try:
+            # Intentamos recargar la extensión
+            await self.bot.reload_extension(extension)
+            await ctx.send(f"✅ Extensión `{extension}` recargada correctamente.")
+            logger.info(f"🔄 Extensión recargada manualmente: {extension}")
+        except Exception as e:
+            await ctx.send(f"❌ Error al recargar `{extension}`:\n```py\n{e}\n```")
+            logger.error(f"❌ Error recargando {extension}: {e}")
+
 async def setup(bot):
     await bot.add_cog(Developer(bot))

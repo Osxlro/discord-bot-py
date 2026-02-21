@@ -42,7 +42,7 @@ class RecommendationEngine:
         """Obtiene o crea una sesión persistente para peticiones HTTP."""
         if self._session is None or self._session.closed:
             # TCPConnector optimiza el reuso de conexiones y evita fugas de sockets
-            connector = aiohttp.TCPConnector(limit=10, ttl_dns_cache=300)
+            connector = aiohttp.TCPConnector(limit=0, ttl_dns_cache=300)
             self._session = aiohttp.ClientSession(connector=connector)
         return self._session
 

@@ -4,6 +4,7 @@ import logging.handlers
 import pathlib
 import discord
 from discord.ext import commands
+from discord import app_commands
 from config import settings
 from services.features import music_service
 from services.core import db_service
@@ -35,9 +36,8 @@ async def get_prefix(bot, message):
     if not message.guild:
         return settings.CONFIG["bot_config"]["prefix"]
     try:
-        row = await db_service.fetch_one("SELECT custom_prefix FROM users WHERE user_id = ?", (message.author.id,))
-        if row and row['custom_prefix']:
-            return row['custom_prefix']
+        custom = await db_service.get_user_prefix(message.author.id)
+        if custom: return custom
     except Exception:
         logger.exception("Error obteniendo prefijo dinámico")
     return settings.CONFIG["bot_config"]["prefix"]
@@ -54,17 +54,48 @@ class BotPersonal(commands.AutoShardedBot):
                 assets={'large_image': settings.CONFIG["bot_config"]["presence_asset"]}
             )
         )
+        # Cooldown Global: 1 comando cada 3.0 segundos por usuario
+        self.global_cd = commands.CooldownMapping.from_cooldown(1, 3.0, commands.BucketType.user)
 
     async def setup_hook(self):
         """Configuración inicial del bot en orden lógico."""
         # 1. Base de Datos: Debe estar lista antes de cargar cualquier lógica.
         await self._init_database()
         
+        # 1.5 Registrar chequeos globales (Cooldowns)
+        self.add_check(self.check_global_cooldown)
+        self.tree.interaction_check = self.check_global_interaction
+
         # 2. Extensiones: Carga todos los Cogs (comandos, eventos, tareas).
         await self._load_extensions()
 
         # 3. Sincronización: Registra los Slash Commands en la API de Discord.
         await self._sync_commands()
+
+    async def check_global_cooldown(self, ctx):
+        """Verifica el cooldown global para comandos de prefijo."""
+        # Los dueños del bot ignoran el cooldown
+        if await self.is_owner(ctx.author): return True
+        
+        bucket = self.global_cd.get_bucket(ctx.message)
+        retry_after = bucket.update_rate_limit()
+        if retry_after:
+            raise commands.CommandOnCooldown(bucket, retry_after, commands.BucketType.user)
+        return True
+
+    async def check_global_interaction(self, interaction: discord.Interaction) -> bool:
+        """Verifica el cooldown global para Slash Commands."""
+        if await self.is_owner(interaction.user): return True
+
+        # Adaptador: Creamos un objeto dummy porque CooldownMapping espera un mensaje con atributo .author
+        class MockMsg:
+            def __init__(self, u): self.author = u
+            
+        bucket = self.global_cd.get_bucket(MockMsg(interaction.user))
+        retry_after = bucket.update_rate_limit()
+        if retry_after:
+            raise app_commands.CommandOnCooldown(bucket, retry_after)
+        return True
 
     async def _init_database(self):
         logger.info("--- 💾 INICIANDO BASE DE DATOS ---")

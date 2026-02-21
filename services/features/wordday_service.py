@@ -1,5 +1,6 @@
 import random
 import aiohttp
+import asyncio
 import html
 import discord
 import logging
@@ -68,34 +69,39 @@ async def get_daily_phrase(session: aiohttp.ClientSession):
 
 async def post_wordday(bot: discord.Client):
     """Envía la frase del día a todos los servidores configurados."""
-    async with aiohttp.ClientSession() as session:
+    session = getattr(bot, "session", None)
+    if session:
         phrases = await get_daily_phrase(session)
+    else:
+        async with aiohttp.ClientSession() as session:
+            phrases = await get_daily_phrase(session)
     
-    for guild in bot.guilds:
-        try:
-            config = await db_service.get_guild_config(guild.id)
-            channel_id = config.get("wordday_channel_id")
-            lang = config.get("language", "es")
-            
-            # Seleccionamos la versión según el idioma del servidor
-            phrase = phrases.get(lang, phrases["es"])
-            
-            if not channel_id:
-                continue
+    # Semáforo para limitar concurrencia y no saturar la API de Discord
+    sem = asyncio.Semaphore(10) 
+
+    async def send_to_guild(guild):
+        async with sem:
+            try:
+                config = await db_service.get_guild_config(guild.id)
+                channel_id = config.get("wordday_channel_id")
+                if not channel_id: return
+
+                channel = guild.get_channel(channel_id)
+                if not channel: return
+
+                lang = config.get("language", "es")
+                phrase = phrases.get(lang, phrases["es"])
                 
-            channel = guild.get_channel(channel_id)
-            if not channel:
-                continue
+                role_id = config.get("wordday_role_id")
+                role = guild.get_role(role_id) if role_id else guild.default_role
+                mention = role.mention if role else "@everyone"
                 
-            role_id = config.get("wordday_role_id")
-            
-            # Si role_id es 0, usamos el default_role (@everyone)
-            role = guild.get_role(role_id) if role_id else guild.default_role
-            mention = role.mention if role else "@everyone"
-            
-            embed = embed_service.info(lang_service.get_text("wordday_title", lang), f"**{phrase}**")
-            embed.set_footer(text=lang_service.get_text("wordday_footer", lang))
-            
-            await channel.send(content=mention, embed=embed)
-        except Exception:
-            logger.exception(f"Error enviando frase del día en {guild.id}")
+                embed = embed_service.info(lang_service.get_text("wordday_title", lang), f"**{phrase}**")
+                embed.set_footer(text=lang_service.get_text("wordday_footer", lang))
+                
+                await channel.send(content=mention, embed=embed)
+            except Exception:
+                logger.warning(f"No se pudo enviar frase del día a {guild.name} ({guild.id})")
+
+    # Ejecutar todas las tareas en paralelo
+    await asyncio.gather(*(send_to_guild(guild) for guild in bot.guilds))

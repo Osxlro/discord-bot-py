@@ -21,6 +21,7 @@ _connection = None
 # _config_cache: Read-through (Lectura a través). Se lee de DB si no está en RAM.
 _xp_cache = {}      
 _config_cache = {}  
+_prefix_cache = {} # Caché para prefijos de usuario
 
 # --- PROTOCOLO DE LIMPIEZA ---
 # Solo las tablas en esta lista serán preservadas. 
@@ -199,11 +200,8 @@ async def _cleanup_unused_tables():
     
     for table in existing_tables:
         if table not in REQUIRED_TABLES and not table.startswith("sqlite_"):
-            try:
-                await db.execute(f"DROP TABLE IF EXISTS {table}")
-                logger.info(f"🧹 [DB Service] Tabla obsoleta eliminada: {table}")
-            except Exception as e:
-                logger.error(f"❌ Error al eliminar tabla {table}: {e}")
+            # Seguridad: Solo alertar en logs en lugar de borrar datos automáticamente
+            logger.warning(f"⚠️ [DB Service] Tabla detectada fuera de esquema: '{table}'. No se eliminará automáticamente.")
 
 # =============================================================================
 # 2. HELPERS DE CONSULTA (CORE)
@@ -240,6 +238,7 @@ async def fetch_all(query: str, params: tuple = ()):
 def clear_memory_cache():
     """Limpia el caché de configuración de la RAM para liberar memoria."""
     global _config_cache
+    _prefix_cache.clear()
     _config_cache.clear()
     # Nota: No limpiamos _xp_cache aquí porque puede tener datos sin guardar.
 
@@ -365,6 +364,20 @@ async def update_guild_config(guild_id: int, updates: dict):
         await get_guild_config(guild_id)
     else:
         _config_cache[guild_id].update(updates)
+
+async def get_user_prefix(user_id: int) -> str | None:
+    """
+    Obtiene el prefijo personalizado de un usuario usando caché.
+    """
+    if user_id in _prefix_cache:
+        return _prefix_cache[user_id]
+
+    row = await fetch_one("SELECT custom_prefix FROM users WHERE user_id = ?", (user_id,))
+    prefix = row['custom_prefix'] if row else None
+    
+    # Guardamos en caché (incluso si es None, para evitar re-consultar que no tiene)
+    _prefix_cache[user_id] = prefix
+    return prefix
 
 # =============================================================================
 # 5. LÓGICA DE NEGOCIO: XP Y NIVELES

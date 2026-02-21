@@ -14,21 +14,27 @@ async def get_upcoming_birthdays_embed(guild: discord.Guild, lang: str) -> disco
     hoy = datetime.date.today()
     for row in rows:
         try:
+            # Optimización: Verificar si el usuario está en el guild ANTES de procesar fechas
+            # Esto arregla el bug donde si los próximos cumpleaños eran de otros servers,
+            # la lista salía vacía o incompleta aquí.
+            user = guild.get_member(row['user_id'])
+            if not user: continue
+
             d, m = map(int, row['birthday'].split('/'))
             bday = datetime.date(hoy.year, m, d)
             if bday < hoy: bday = datetime.date(hoy.year + 1, m, d)
             diff = (bday - hoy).days
-            lista.append((diff, row['user_id'], row['birthday']))
+            lista.append((diff, user, row['birthday']))
         except Exception:
             continue
     
     lista.sort(key=lambda x: x[0])
     txt = ""
-    for dias, uid, fecha in lista[:settings.BIRTHDAY_CONFIG["LIST_LIMIT"]]:
-        user = guild.get_member(uid)
-        if user:
-            key = "bday_today" if dias == 0 else "bday_soon"
-            txt += lang_service.get_text(key, lang, user=user.display_name, date=fecha, days=dias) + "\n"
+    
+    # Ahora recortamos la lista YA filtrada por miembros del servidor
+    for dias, user, fecha in lista[:settings.BIRTHDAY_CONFIG["LIST_LIMIT"]]:
+        key = "bday_today" if dias == 0 else "bday_soon"
+        txt += lang_service.get_text(key, lang, user=user.display_name, date=fecha, days=dias) + "\n"
 
     return embed_service.info(lang_service.get_text("bday_list_title", lang), txt or lang_service.get_text("bday_list_empty", lang))
 

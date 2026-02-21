@@ -1,4 +1,5 @@
 import discord
+from discord import app_commands
 from discord.ext import commands
 from typing import Literal
 from services.features import birthday_service
@@ -20,7 +21,7 @@ class Cumpleanos(commands.Cog):
             await ctx.send_help(ctx.command)
 
     @cumple.command(name="establish", description="Establece tu cumpleaños.")
-    async def establecer(self, ctx: commands.Context, dia: int, mes: int):
+    async def establecer(self, ctx: commands.Context, dia: app_commands.Range[int, 1, 31], mes: app_commands.Range[int, 1, 12]):
         """Registra o actualiza la fecha de cumpleaños del usuario."""
         # Obtener idioma del servidor
         lang = await lang_service.get_guild_lang(ctx.guild.id)
