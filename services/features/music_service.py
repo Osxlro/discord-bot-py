@@ -16,6 +16,24 @@ logger = logging.getLogger(__name__)
 _is_connecting = False
 
 # =============================================================================
+# 0. CONFIGURACIÓN DE FILTROS (PRESETS)
+# =============================================================================
+FILTERS_CONFIG = {
+    "bassboost": {"type": "equalizer", "bands": [(0, 0.3), (1, 0.25), (2, 0.2), (3, 0.1), (4, 0.05)]},
+    "superbass": {"type": "equalizer", "bands": [(0, 0.5), (1, 0.4), (2, 0.3), (3, 0.2), (4, 0.1)]},
+    "pop":       {"type": "equalizer", "bands": [(0, -0.05), (1, 0.1), (2, 0.2), (3, 0.15), (4, 0.05)]},
+    "soft":      {"type": "lowpass", "smoothing": 20.0},
+    "treble":    {"type": "equalizer", "bands": [(10, 0.1), (11, 0.2), (12, 0.25), (13, 0.3)]},
+    "nightcore": {"type": "timescale", "speed": 1.25, "pitch": 1.25},
+    "vaporwave": {"type": "timescale", "speed": 0.85, "pitch": 0.8},
+    "8d":        {"type": "rotation", "rotation_hz": 0.2},
+    "karaoke":   {"type": "karaoke"},
+    "tremolo":   {"type": "tremolo", "frequency": 2.0, "depth": 0.5},
+    "vibrato":   {"type": "vibrato", "frequency": 2.0, "depth": 0.5},
+    "flat":      {"type": "clear"}
+}
+
+# =============================================================================
 # 1. UTILIDADES DE FORMATEO Y TEXTO
 # =============================================================================
 
@@ -111,6 +129,7 @@ async def cleanup_player(player: wavelink.Player, skip_message_edit: bool = Fals
     # Resetear estados internos
     player.smart_autoplay = False
     player.last_track_error = False
+    await player.set_filters(wavelink.Filters()) # Limpiar filtros
 
 async def ensure_player(ctx, lang: str) -> wavelink.Player | None:
     """Asegura que el bot esté conectado correctamente y retorna el player."""
@@ -462,6 +481,44 @@ async def check_voice(ctx) -> bool:
     if not ctx.author.voice or (player.channel and ctx.author.voice.channel.id != player.channel.id):
         await ctx.send(embed=embed_service.error(lang_service.get_text("title_error", lang), lang_service.get_text("music_control_voice_error", lang), lite=True), ephemeral=True)
         return False
+    return True
+
+async def apply_filter(player: wavelink.Player, filter_name: str) -> bool:
+    """Aplica un preset de filtros al reproductor."""
+    config = FILTERS_CONFIG.get(filter_name.lower())
+    if not config: return False
+
+    filters = wavelink.Filters()
+    
+    # Si es 'flat' o 'clear', enviamos filtros vacíos para resetear
+    if config["type"] == "clear":
+        await player.set_filters(filters)
+        return True
+
+    if config["type"] == "equalizer":
+        # Wavelink Equalizer usa bandas de 0 a 14
+        bands = [wavelink.EqualizerBand(band, gain) for band, gain in config["bands"]]
+        filters.equalizer = wavelink.Equalizer(bands=bands)
+    
+    elif config["type"] == "timescale":
+        filters.timescale = wavelink.Timescale(
+            speed=config.get("speed", 1.0),
+            pitch=config.get("pitch", 1.0)
+        )
+    
+    elif config["type"] == "rotation":
+        filters.rotation = wavelink.Rotation(rotation_hz=config.get("rotation_hz", 0.2))
+        
+    elif config["type"] == "karaoke":
+        filters.karaoke = wavelink.Karaoke()
+        
+    elif config["type"] == "tremolo":
+        filters.tremolo = wavelink.Tremolo(frequency=config.get("frequency", 2.0), depth=config.get("depth", 0.5))
+        
+    elif config["type"] == "lowpass":
+        filters.low_pass = wavelink.LowPass(smoothing=config.get("smoothing", 20.0))
+
+    await player.set_filters(filters)
     return True
 
 async def fade_in(player: wavelink.Player, duration_ms: int):

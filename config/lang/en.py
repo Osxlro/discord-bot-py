@@ -370,6 +370,10 @@ EN = {
     "music_err_load_failed": "❌ Could not load track: {error}",
     "music_err_generic": "Error: {error}",
     "music_vol_changed": "🔊 {vol}%",
+    "music_effect_applied": "🎚️ Filter applied: **{filter}**",
+    "music_effect_cleared": "✨ All audio effects have been disabled.",
+    "music_effect_invalid": "❌ Unrecognized filter.",
+    "music_effect_title": "Audio Effects",
     
     # --- TITLES (GENERIC) ---
     "title_success": "Success",

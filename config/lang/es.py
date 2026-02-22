@@ -368,6 +368,10 @@ ES = {
     "music_err_load_failed": "❌ No se pudo cargar la canción: {error}",
     "music_err_generic": "Error: {error}",
     "music_vol_changed": "🔊 {vol}%",
+    "music_effect_applied": "🎚️ Filtro aplicado: **{filter}**",
+    "music_effect_cleared": "✨ Todos los efectos de audio han sido desactivados.",
+    "music_effect_invalid": "❌ Filtro no reconocido.",
+    "music_effect_title": "Efectos de Audio",
     
     # --- TITLES (GENERIC) ---
     "title_success": "Éxito",

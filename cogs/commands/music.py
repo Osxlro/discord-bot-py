@@ -292,5 +292,40 @@ class Music(commands.Cog):
             view = pagination_service.Paginator(pages, ctx.author.id)
             view.message = await ctx.send(embed=pages[0], view=view)
 
+    @commands.hybrid_group(name="effect", description="Aplica filtros y efectos de audio a la música.")
+    async def effect(self, ctx: commands.Context):
+        """Grupo de comandos para gestionar efectos de audio."""
+        if ctx.invoked_subcommand is None:
+            await ctx.send_help(ctx.command)
+
+    @effect.command(name="apply", description="Activa un filtro de audio.")
+    @app_commands.describe(nombre="El efecto a aplicar")
+    @app_commands.choices(nombre=[
+        app_commands.Choice(name="🔊 BassBoost (Bajos Potentes)", value="bassboost"),
+        app_commands.Choice(name="💣 SuperBass (Extremo)", value="superbass"),
+        app_commands.Choice(name="🌙 Nightcore (Rápido/Agudo)", value="nightcore"),
+        app_commands.Choice(name="📼 Vaporwave (Lento/Grave)", value="vaporwave"),
+        app_commands.Choice(name="🌀 8D Audio (Rotación)", value="8d"),
+        app_commands.Choice(name="🎤 Karaoke (Sin voz)", value="karaoke"),
+        app_commands.Choice(name="🎸 Metal", value="metal"),
+        app_commands.Choice(name="🎹 Pop", value="pop"),
+        app_commands.Choice(name="☁️ Soft (Suave)", value="soft"),
+        app_commands.Choice(name="〰️ Tremolo", value="tremolo")
+    ])
+    async def effect_apply(self, ctx: commands.Context, nombre: app_commands.Choice[str]):
+        lang = await lang_service.get_guild_lang(ctx.guild.id)
+        if not await music_service.check_voice(ctx): return
+
+        await music_service.apply_filter(ctx.voice_client, nombre.value)
+        await ctx.send(embed=embed_service.success(lang_service.get_text("music_effect_title", lang), lang_service.get_text("music_effect_applied", lang, filter=nombre.name), lite=True))
+
+    @effect.command(name="disable", description="Desactiva todos los efectos de audio.")
+    async def effect_disable(self, ctx: commands.Context):
+        lang = await lang_service.get_guild_lang(ctx.guild.id)
+        if not await music_service.check_voice(ctx): return
+
+        await music_service.apply_filter(ctx.voice_client, "flat")
+        await ctx.send(embed=embed_service.success(lang_service.get_text("music_effect_title", lang), lang_service.get_text("music_effect_cleared", lang), lite=True))
+
 async def setup(bot):
     await bot.add_cog(Music(bot))
