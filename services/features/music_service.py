@@ -496,27 +496,36 @@ async def apply_filter(player: wavelink.Player, filter_name: str) -> bool:
         return True
 
     if config["type"] == "equalizer":
-        # Wavelink Equalizer usa bandas de 0 a 14
-        bands = [wavelink.EqualizerBand(band, gain) for band, gain in config["bands"]]
-        filters.equalizer = wavelink.Equalizer(bands=bands)
+        filters.equalizer = wavelink.Equalizer()
+        # En Wavelink 3.x, bands es una lista de floats que modificamos por índice
+        for band, gain in config["bands"]:
+            filters.equalizer.bands[band] = gain
     
     elif config["type"] == "timescale":
-        filters.timescale = wavelink.Timescale(
-            speed=config.get("speed", 1.0),
-            pitch=config.get("pitch", 1.0)
-        )
+        filters.timescale = wavelink.Timescale()
+        filters.timescale.speed = config.get("speed", 1.0)
+        filters.timescale.pitch = config.get("pitch", 1.0)
     
     elif config["type"] == "rotation":
-        filters.rotation = wavelink.Rotation(rotation_hz=config.get("rotation_hz", 0.2))
+        filters.rotation = wavelink.Rotation()
+        filters.rotation.rotation_hz = config.get("rotation_hz", 0.2)
         
     elif config["type"] == "karaoke":
-        filters.karaoke = wavelink.Karaoke()
+        # Karaoke requiere un payload inicial en esta versión
+        filters.karaoke = wavelink.Karaoke(payload={})
+        filters.karaoke.level = 1.0
+        filters.karaoke.mono_level = 1.0
+        filters.karaoke.filter_band = 220.0
+        filters.karaoke.filter_width = 100.0
         
     elif config["type"] == "tremolo":
-        filters.tremolo = wavelink.Tremolo(frequency=config.get("frequency", 2.0), depth=config.get("depth", 0.5))
+        filters.tremolo = wavelink.Tremolo()
+        filters.tremolo.frequency = config.get("frequency", 2.0)
+        filters.tremolo.depth = config.get("depth", 0.5)
         
     elif config["type"] == "lowpass":
-        filters.low_pass = wavelink.LowPass(smoothing=config.get("smoothing", 20.0))
+        filters.low_pass = wavelink.LowPass()
+        filters.low_pass.smoothing = config.get("smoothing", 20.0)
 
     await player.set_filters(filters)
     return True
