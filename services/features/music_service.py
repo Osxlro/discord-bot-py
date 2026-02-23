@@ -21,6 +21,8 @@ _is_connecting = False
 FILTERS_CONFIG = {
     "bassboost": {"type": "equalizer", "bands": [(0, 0.3), (1, 0.25), (2, 0.2), (3, 0.1), (4, 0.05)]},
     "superbass": {"type": "equalizer", "bands": [(0, 0.5), (1, 0.4), (2, 0.3), (3, 0.2), (4, 0.1)]},
+    "hifi":      {"type": "equalizer", "bands": [(0, 0.15), (1, 0.1), (2, 0.05), (12, 0.05), (13, 0.1), (14, 0.15)]},
+    "surround":  {"type": "rotation", "rotation_hz": 0.02},
     "metal":     {"type": "equalizer", "bands": [(0, 0.3), (1, 0.2), (2, 0.1), (3, -0.1), (4, -0.2), (5, -0.1), (6, 0.0), (7, 0.1), (8, 0.2), (9, 0.3), (10, 0.35), (11, 0.4), (12, 0.4), (13, 0.4), (14, 0.4)]},
     "pop":       {"type": "equalizer", "bands": [(0, -0.05), (1, 0.1), (2, 0.2), (3, 0.15), (4, 0.05)]},
     "soft":      {"type": "lowpass", "smoothing": 20.0},
