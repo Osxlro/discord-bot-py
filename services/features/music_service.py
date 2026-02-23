@@ -398,7 +398,7 @@ async def connect_best_node(bot, node_configs, max_retries=3):
                 identifier = config.get("IDENTIFIER", config["HOST"])
                 
                 if identifier in wavelink.Pool.nodes:
-                    old_node = wavelink.Pool.get_node(identifier=identifier)
+                    old_node = wavelink.Pool.get_node(identifier)
                     if old_node.status == wavelink.NodeStatus.CONNECTED and i == 0:
                         return
                     
