@@ -43,6 +43,12 @@ FR = {
     "timeout_limit_error": "❌ La durée maximale d'exclusion est de 28 jours.",
     "mod_title_kick": "Expulsion",
     "mod_title_ban": "Bannissement",
+    "warn_success": "⚠️ **{user}** a été averti.\nTotal : **{count}** avertissements.\n📝 Raison : {reason}",
+    "warn_list_title": "Avertissements de {user}",
+    "warn_list_empty": "**{user}** n'a aucun avertissement.",
+    "warn_cleared": "Les avertissements de **{user}** ont été effacés.",
+    "warn_deleted": "L'avertissement avec l'ID **{id}** a été supprimé.",
+    "warn_not_found": "Aucun avertissement trouvé avec l'ID **{id}**.",
     
     # --- DIVERTISSEMENT ---
     "coinflip_title": "Pièce Lancée !",
