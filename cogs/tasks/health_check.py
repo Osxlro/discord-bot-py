@@ -42,7 +42,7 @@ class HealthCheck(commands.Cog):
         await self._check_spotify(errors)
         await self._check_localization_parity(errors)
         await self._check_command_logic(errors, warnings)
-        await self._check_system_resources(warnings)
+        await self._check_system_resources(errors, warnings)
 
         # --- REPORTE DE RESULTADOS ---
         for w in warnings:
@@ -174,7 +174,8 @@ class HealthCheck(commands.Cog):
 
             # Prueba lógica de Moderación
             try:
-                if moderation_service.parse_time("1h") != 3600:
+                # Aseguramos que parse_time devuelva lo esperado (int o timedelta según tu implementación)
+                if int(moderation_service.parse_time("1h")) != 3600:
                     errors.append("Service Logic (Moderation): parse_time falló.")
                 embed = moderation_service.get_mod_embed(test_guild, "TestUser", "kick", "TestReason", lang, {})
                 check_embed(embed, "Moderation UI")
@@ -227,7 +228,7 @@ class HealthCheck(commands.Cog):
             if not perms.embed_links or not perms.send_messages:
                 warnings.append(f"Permissions: Faltan permisos básicos en {test_guild.name}")
 
-    async def _check_system_resources(self, warnings):
+    async def _check_system_resources(self, errors, warnings):
         # 4. Verificación de Latencia
         if self.bot.latency > 1.0: # Más de 1000ms es crítico
             warnings.append(f"Latency: {round(self.bot.latency * 1000)}ms")

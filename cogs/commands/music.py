@@ -235,6 +235,26 @@ class Music(commands.Cog):
         msg = lang_service.get_text("music_volume", lang, vol=nivel)
         await ctx.send(embed=embed_service.success(lang_service.get_text("title_volume", lang), msg, lite=True))
 
+    @commands.hybrid_command(name="seek", description="Salta a una posición específica de la canción (ej: 1:30).")
+    @app_commands.describe(tiempo="Tiempo en formato MM:SS o segundos")
+    async def seek(self, ctx: commands.Context, tiempo: str):
+        lang = await lang_service.get_guild_lang(ctx.guild.id)
+        if not await music_service.check_voice(ctx): return
+        
+        player: wavelink.Player = ctx.voice_client
+        if not player.playing or not player.current:
+             return await ctx.send(embed=embed_service.error(lang_service.get_text("title_error", lang), lang_service.get_text("music_error_nothing", lang), lite=True), ephemeral=True)
+
+        if not player.current.is_seekable:
+            return await ctx.send(embed=embed_service.error(lang_service.get_text("title_error", lang), "Esta pista no permite adelantar (es un stream en vivo).", lite=True), ephemeral=True)
+
+        # Convertir MM:SS a milisegundos
+        seconds = sum(x * int(t) for x, t in zip([60, 1], tiempo.split(":"))) if ":" in tiempo else int(tiempo)
+        position_ms = seconds * 1000
+
+        await player.seek(position_ms)
+        await ctx.send(embed=embed_service.success(lang_service.get_text("title_music", lang), f"⏩ Saltado a **{tiempo}**.", lite=True))
+
     @commands.hybrid_command(name="nowlistening", aliases=["np"], description="Muestra la canción actual.")
     async def nowlistening(self, ctx: commands.Context):
         lang = await lang_service.get_guild_lang(ctx.guild.id)
