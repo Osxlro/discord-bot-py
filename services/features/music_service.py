@@ -149,14 +149,23 @@ async def ensure_player(ctx, lang: str) -> wavelink.Player | None:
 
     try:
         if ctx.voice_client and not isinstance(ctx.voice_client, wavelink.Player):
+            # Si hay una conexión de voz estándar (VoiceService), la reemplazamos por Wavelink.
+            # IMPORTANTE: Eliminamos el target de VoiceService para evitar que intente reconectar
+            # automáticamente al detectar la desconexión, causando un bucle o timeout.
+            if ctx.guild.id in voice_service.voice_targets:
+                voice_service.voice_targets.pop(ctx.guild.id)
+
             await ctx.voice_client.disconnect(force=True)
             player = await ctx.author.voice.channel.connect(cls=SafePlayer, self_deaf=True)
+            voice_service.voice_targets[ctx.guild.id] = ctx.author.voice.channel.id
         elif not ctx.voice_client:
             player = await ctx.author.voice.channel.connect(cls=SafePlayer, self_deaf=True)
+            voice_service.voice_targets[ctx.guild.id] = ctx.author.voice.channel.id
         else:
             player = ctx.voice_client
             if not player.connected:
                 await player.connect(cls=SafePlayer, self_deaf=True, channel=ctx.author.voice.channel)
+            voice_service.voice_targets[ctx.guild.id] = ctx.author.voice.channel.id
         
         if player.volume == 0:
             await player.set_volume(settings.LAVALINK_CONFIG.get("DEFAULT_VOLUME", 50))
