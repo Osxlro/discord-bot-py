@@ -5,3 +5,4 @@ deep-translator
 PyNacl
 wavelink
 psutil
+davey

@@ -94,6 +94,7 @@ FR = {
     "profile_desc_saved": "Votre description a été enregistrée.",
     "profile_msg_saved": "Votre message a été configuré.",
     "profile_preview_lvl": "**• Msg Niv :** \"{msg}...\"",
+    "profile_progress": "Progression",
     "profile_preview_bday": "**• Msg Anniv :** \"{msg}...\"",
     
     # --- SYSTÈME DE REBIRTH ---

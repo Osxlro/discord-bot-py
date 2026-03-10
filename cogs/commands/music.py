@@ -325,7 +325,7 @@ class Music(commands.Cog):
         app_commands.Choice(name="💣 SuperBass (Extremo)", value="superbass"),
         app_commands.Choice(name="🎧 Hi-Fi (Alta Fidelidad)", value="hifi"),
         app_commands.Choice(name="🌐 Surround (Envolvente)", value="surround"),
-        app_commands.Choice(name="� Nightcore (Rápido/Agudo)", value="nightcore"),
+        app_commands.Choice(name="🌑 Nightcore (Rápido/Agudo)", value="nightcore"),
         app_commands.Choice(name="📼 Vaporwave (Lento/Grave)", value="vaporwave"),
         app_commands.Choice(name="🌀 8D Audio (Rotación)", value="8d"),
         app_commands.Choice(name="🎤 Karaoke (Sin voz)", value="karaoke"),

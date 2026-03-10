@@ -118,21 +118,23 @@ async def cleanup_player(player: wavelink.Player, skip_message_edit: bool = Fals
             else:
                 await msg.edit(view=view)
         except (discord.HTTPException, discord.Forbidden): pass
-    
-    # Limpiar referencias
-    player.last_msg = None
-    player.last_view = None
-    player.home = None # Liberar referencia al canal de texto
-    
-    # Limpiar cola
-    if hasattr(player, "queue"):
-        try: player.queue.clear()
-        except: pass
+
+    # Las siguientes operaciones solo son válidas para wavelink.Player
+    if isinstance(player, wavelink.Player):
+        # Limpiar referencias
+        player.last_msg = None
+        player.last_view = None
+        player.home = None # Liberar referencia al canal de texto
         
-    # Resetear estados internos
-    player.smart_autoplay = False
-    player.last_track_error = False
-    await player.set_filters(wavelink.Filters()) # Limpiar filtros
+        # Limpiar cola
+        if hasattr(player, "queue"):
+            try: player.queue.clear()
+            except: pass
+            
+        # Resetear estados internos
+        player.smart_autoplay = False
+        player.last_track_error = False
+        await player.set_filters(wavelink.Filters()) # Limpiar filtros
 
 async def ensure_player(ctx, lang: str) -> wavelink.Player | None:
     """Asegura que el bot esté conectado correctamente y retorna el player."""
