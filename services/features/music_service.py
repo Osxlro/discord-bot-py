@@ -138,12 +138,15 @@ async def cleanup_player(player: wavelink.Player, skip_message_edit: bool = Fals
 
 async def ensure_player(ctx, lang: str) -> wavelink.Player | None:
     """Asegura que el bot esté conectado correctamente y retorna el player."""
+    logger.debug("🎵 [Music Service] Ejecutando ensure_player")
     if not ctx.author.voice:
+        logger.debug("🎵 [Music Service] Usuario no está en canal de voz.")
         await ctx.send(embed=embed_service.error(lang_service.get_text("title_error", lang), lang_service.get_text("music_error_join", lang)))
         return None
 
     permissions = ctx.author.voice.channel.permissions_for(ctx.guild.me)
     if not permissions.connect or not permissions.speak:
+        logger.debug("🎵 [Music Service] Permisos insuficientes para el canal de voz.")
         await ctx.send(embed=embed_service.error(lang_service.get_text("title_error", lang), lang_service.get_text("voice_error_perms", lang)))
         return None
 
@@ -155,21 +158,25 @@ async def ensure_player(ctx, lang: str) -> wavelink.Player | None:
             if ctx.guild.id in voice_service.voice_targets:
                 voice_service.voice_targets.pop(ctx.guild.id)
 
+            logger.debug("🎵 [Music Service] Reemplazando VoiceClient estándar por wavelink.Player...")
             await ctx.voice_client.disconnect(force=True)
             player = await ctx.author.voice.channel.connect(cls=wavelink.Player, self_deaf=True)
             voice_service.voice_targets[ctx.guild.id] = ctx.author.voice.channel.id
         elif not ctx.voice_client:
+            logger.debug("🎵 [Music Service] Conectando nuevo wavelink.Player...")
             player = await ctx.author.voice.channel.connect(cls=wavelink.Player, self_deaf=True)
             voice_service.voice_targets[ctx.guild.id] = ctx.author.voice.channel.id
         else:
             player = ctx.voice_client
             if not player.connected:
+                logger.debug("🎵 [Music Service] wavelink.Player desconectado, reconectando...")
                 await player.connect(cls=wavelink.Player, self_deaf=True, channel=ctx.author.voice.channel)
             voice_service.voice_targets[ctx.guild.id] = ctx.author.voice.channel.id
         
         if player.volume == 0:
             await player.set_volume(settings.LAVALINK_CONFIG.get("DEFAULT_VOLUME", 50))
             
+        logger.debug("🎵 [Music Service] ensure_player completado exitosamente.")
         return player
     except Exception as e:
         await ctx.send(embed=embed_service.error(lang_service.get_text("title_error", lang), str(e)))
@@ -177,7 +184,9 @@ async def ensure_player(ctx, lang: str) -> wavelink.Player | None:
 
 async def send_now_playing(bot: discord.Client, player: wavelink.Player, track: wavelink.Playable):
     """Genera y envía el mensaje de 'Ahora suena' centralizando la lógica de UI."""
+    logger.debug(f"🖼️ [Music Service] send_now_playing invocado para: {track.title}")
     if not hasattr(player, "home") or not player.home:
+        logger.debug("🖼️ [Music Service] Abortado: Player no tiene 'home' configurado.")
         return
 
     # Lock para evitar que múltiples eventos on_track_start dupliquen el mensaje
@@ -206,6 +215,7 @@ async def send_now_playing(bot: discord.Client, player: wavelink.Player, track: 
 
 async def handle_enqueue(ctx, player: wavelink.Player, tracks: wavelink.Playable | wavelink.Playlist, lang: str):
     """Maneja la lógica de añadir pistas o playlists a la cola, optimizando el feedback al usuario."""
+    logger.debug(f"📥 [Music Service] handle_enqueue invocado. Playlist: {isinstance(tracks, wavelink.Playlist)}")
     player.autoplay = wavelink.AutoPlayMode.disabled
     if isinstance(tracks, wavelink.Playlist):
         await _handle_playlist_enqueue(ctx, player, tracks, lang)
@@ -240,15 +250,19 @@ async def _handle_playlist_enqueue(ctx, player, playlist, lang):
 
 async def _handle_track_enqueue(ctx, player, tracks, lang):
     track = tracks[0] if isinstance(tracks, (list, tuple)) else tracks
+    logger.debug(f"📥 [Music Service] _handle_track_enqueue para: {track.title}")
     track.requester = ctx.author
     if not player.playing:
+        logger.debug(f"▶️ [Music Service] Reproductor inactivo. Forzando play: {track.title}")
         await player.play(track)
         msg = lang_service.get_text("music_playing", lang)
         await ctx.send(embed=embed_service.success(lang_service.get_text("music_now_playing_title", lang), f"{msg}: **{track.title}**", lite=True), delete_after=15)
     else:
         if _is_duplicate(player, track):
+            logger.debug(f"⚠️ [Music Service] Pista duplicada detectada: {track.title}")
             return await ctx.send(embed=embed_service.warning(lang_service.get_text("music_queue_title", lang), lang_service.get_text("music_error_duplicate", lang)), delete_after=10)
             
+        logger.debug(f"⏸️ [Music Service] Reproductor activo. Añadiendo a la cola: {track.title}")
         await player.queue.put_wait(track)
         msg = lang_service.get_text("music_track_enqueued", lang, title=track.title)
         await ctx.send(embed=embed_service.success(lang_service.get_text("music_queue_title", lang), msg, lite=True))
@@ -259,7 +273,9 @@ async def handle_play_search(busqueda: str) -> wavelink.Playable | wavelink.Play
     if busqueda.startswith("<") and busqueda.endswith(">"):
         busqueda = busqueda[1:-1]
         
+    logger.debug(f"🔎 [Music Service] Buscando: {busqueda}")
     if re.match(r'https?://(?:www\.)?.+', busqueda):
+        logger.debug("🔎 [Music Service] URL detectada. Buscando directamente...")
         return await wavelink.Playable.search(busqueda)
 
     # Prioridad de búsqueda flexible basada en settings
@@ -268,12 +284,16 @@ async def handle_play_search(busqueda: str) -> wavelink.Playable | wavelink.Play
     
     for source in sources:
         try:
+            logger.debug(f"🔎 [Music Service] Intentando fuente: {source}")
             tracks = await wavelink.Playable.search(f"{source}:{busqueda}")
             if tracks:
-               # logger.debug(f"🔍 [Music Service] Búsqueda resuelta vía {source}")
+                logger.debug(f"✅ [Music Service] Búsqueda exitosa en {source} ({len(tracks) if isinstance(tracks, list) else 'Playlist'} resultados)")
                 return tracks
+            logger.debug(f"⚠️ [Music Service] Sin resultados en {source}")
         except Exception:
+            logger.exception(f"❌ [Music Service] Error buscando en {source}")
             continue
+    logger.debug("❌ [Music Service] Todos los proveedores fallaron.")
     return None
 
 async def handle_track_fallback(player: wavelink.Player, track: wavelink.Playable) -> bool:
@@ -624,4 +644,3 @@ async def sync_ui(player: wavelink.Player):
             await msg.edit(view=view)
         except discord.HTTPException:
             pass
-

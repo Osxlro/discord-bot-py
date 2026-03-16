@@ -49,6 +49,7 @@ class MusicEvents(commands.Cog):
     @commands.Cog.listener()
     async def on_wavelink_track_start(self, payload: wavelink.TrackStartEventPayload):
         player = payload.player
+        logger.debug(f"🎶 [Music Event] on_wavelink_track_start disparado: {payload.track.title}")
         if not player or not hasattr(player, "home"): return
 
         # Lógica de mensaje NP delegada al servicio
@@ -57,6 +58,8 @@ class MusicEvents(commands.Cog):
     @commands.Cog.listener()
     async def on_wavelink_track_end(self, payload: wavelink.TrackEndEventPayload):
         player = payload.player
+        reason_str = payload.reason if hasattr(payload, 'reason') else 'N/A'
+        logger.debug(f"🛑 [Music Event] on_wavelink_track_end disparado para: {payload.track.title} | Razón: {reason_str}")
         if not player: return
 
         # Lógica de Autoplay / Siguiente canción
@@ -65,18 +68,22 @@ class MusicEvents(commands.Cog):
 
         # 1. Bucle de Pista (Single Track Loop)
         if player.queue.mode == wavelink.QueueMode.loop:
+            logger.debug("🔁 [Music Event] Modo Bucle Pista activo. Repitiendo...")
             return await player.play(payload.track)
 
         # 2. Siguiente canción (Normal o Loop All)
         if not player.queue.is_empty:
             next_track = player.queue.get()
+            logger.debug(f"⏭️ [Music Event] Siguiente pista de la cola: {next_track.title}")
             await player.play(next_track)
             
         elif getattr(player, "smart_autoplay", False):
+            logger.debug("🧠 [Music Event] Cola vacía. Generando recomendación Smart Autoplay...")
             # El algoritmo decide la siguiente canción basándose en metadatos
             rec = await self.recommender.get_recommendation(player)
             if rec: await player.play(rec)
         else:
+            logger.debug("🧹 [Music Event] Cola vacía y Autoplay inactivo. Limpiando player...")
             # Limpieza total al terminar la sesión
             await music_service.cleanup_player(player)
             await music_service.reset_presence(self.bot)

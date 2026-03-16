@@ -33,6 +33,7 @@ class Music(commands.Cog):
     @app_commands.autocomplete(busqueda=play_autocomplete)
     async def play(self, ctx: commands.Context, busqueda: str):
         busqueda = busqueda.strip()
+        logger.debug(f"▶️ [/play] Comando invocado por {ctx.author} - Búsqueda: '{busqueda}'")
         await ctx.defer()
         lang = await lang_service.get_guild_lang(ctx.guild.id)
 
@@ -41,24 +42,33 @@ class Music(commands.Cog):
 
         # Verificación y conexión bajo demanda si los nodos están caídos
         if not wavelink.Pool.nodes or not any(n.status == wavelink.NodeStatus.CONNECTED for n in wavelink.Pool.nodes.values()):
+            logger.debug("▶️ [/play] Nodos desconectados. Intentando reconexión...")
             await ctx.send(embed=embed_service.info(lang_service.get_text("title_info", lang), lang_service.get_text("music_connecting", lang), lite=True))
             await music_service.connect_nodes(self.bot)
             
             if not wavelink.Pool.nodes or not any(n.status == wavelink.NodeStatus.CONNECTED for n in wavelink.Pool.nodes.values()):
+                logger.error("▶️ [/play] Falla crítica: No se pudo conectar a ningún nodo Lavalink.")
                 return await ctx.send(embed=embed_service.error(lang_service.get_text("title_error", lang), lang_service.get_text("music_err_lavalink_nodes", lang)))
 
+        logger.debug("▶️ [/play] Nodos OK. Asegurando reproductor (ensure_player)...")
         player = await music_service.ensure_player(ctx, lang)
-        if not player: return
+        if not player:
+            logger.debug("▶️ [/play] ensure_player devolvió None. Abortando comando.")
+            return
 
+        logger.debug(f"▶️ [/play] Reproductor listo en canal: {player.channel.id}")
         player.home = ctx.channel
 
         try:
             tracks = await music_service.handle_play_search(busqueda)
 
             if not tracks:
+                logger.debug("▶️ [/play] La búsqueda no devolvió resultados.")
                 return await ctx.send(embed=embed_service.warning(lang_service.get_text("title_music", lang), lang_service.get_text("music_search_empty", lang, query=busqueda or "Unknown")))
 
+            logger.debug(f"▶️ [/play] Pistas encontradas. Enviando a handle_enqueue...")
             await music_service.handle_enqueue(ctx, player, tracks, lang)
+            logger.debug("▶️ [/play] Flujo de comando finalizado con éxito.")
         
         except Exception as e:
             logger.exception("Error en comando play")

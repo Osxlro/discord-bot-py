@@ -1,8 +1,11 @@
 import discord
 import wavelink
 import datetime
+import logging
 from config import settings
 from services.core import lang_service, persistence_service
+
+logger = logging.getLogger(__name__)
 
 def format_duration(milliseconds: int) -> str:
     """Formatea milisegundos a MM:SS o HH:MM:SS."""
@@ -36,6 +39,7 @@ def get_source_color(track: wavelink.Playable) -> int:
 
 def create_np_embed(player: wavelink.Player, track: wavelink.Playable, lang: str) -> discord.Embed:
     """Genera el embed de 'Reproduciendo Ahora' con barra de progreso."""
+    logger.debug(f"🎨 [Music UI] Creando embed NP para: {track.title}")
     position = player.position
     length = track.length
     
