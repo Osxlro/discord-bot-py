@@ -1,6 +1,10 @@
 import discord
+import aiohttp
+import logging
 from discord.ext import commands, tasks
 from services.core import db_service
+
+logger = logging.getLogger(__name__)
 
 class Status(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -17,13 +21,20 @@ class Status(commands.Cog):
     @tasks.loop(minutes=2) # Cambia cada 2 minutos
     async def status_loop(self):
         await self.bot.wait_until_ready()
-        
-        # Obtenemos un estado aleatorio de la DB
-        row = await db_service.fetch_one("SELECT type, text FROM bot_statuses ORDER BY RANDOM() LIMIT 1")
-        
-        if row:
-            act_type = self._get_type(row['type'])
-            await self.bot.change_presence(activity=discord.Activity(type=act_type, name=row['text']))
+        if self.bot.is_closed():
+            return
+            
+        try:
+            # Obtenemos un estado aleatorio de la DB
+            row = await db_service.fetch_one("SELECT type, text FROM bot_statuses ORDER BY RANDOM() LIMIT 1")
+            
+            if row:
+                act_type = self._get_type(row['type'])
+                await self.bot.change_presence(activity=discord.Activity(type=act_type, name=row['text']))
+        except (aiohttp.client_exceptions.ClientConnectionResetError, ConnectionError, discord.ConnectionClosed):
+            pass # Ignoramos el error de forma silenciosa si ocurre justo en una reconexión
+        except Exception as e:
+            logger.debug(f"Error cambiando el estado del bot: {e}")
 
     def cog_unload(self):
         self.status_loop.cancel()
