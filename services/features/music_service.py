@@ -417,71 +417,38 @@ async def restore_players(bot):
             await persistence_service.clear("music", guild.id)
 
 async def connect_nodes(bot):
-    """Configura y conecta al primer nodo disponible (Failover)."""
+    """Configura y conecta a los nodos de Lavalink."""
     await bot.wait_until_ready()
     
-    node_config = settings.LAVALINK_CONFIG
-    node_configs = []
-    if "NODES" in node_config:
-        node_configs = list(node_config["NODES"])
-    elif "HOST" in node_config:
-        node_configs = [node_config]
+    node_configs = settings.LAVALINK_CONFIG.get("NODES", [])
+    if not node_configs and "HOST" in settings.LAVALINK_CONFIG:
+        node_configs = [settings.LAVALINK_CONFIG]
 
-    await connect_best_node(bot, node_configs)
-
-async def connect_best_node(bot, node_configs, max_retries=3):
-    """Itera sobre los nodos configurados hasta conectar uno."""
-    global _is_connecting
-    if _is_connecting or not node_configs:
+    if not node_configs:
+        logger.error("❌ [Music Service] No se encontraron nodos de Lavalink en la configuración.")
         return
-    
-    _is_connecting = True
+
+    nodes = []
+    for config in node_configs:
+        try:
+            protocol = "https" if config.get("SECURE") else "http"
+            node = wavelink.Node(
+                identifier=config.get("IDENTIFIER", config["HOST"]),
+                uri=f"{protocol}://{config['HOST']}:{config['PORT']}",
+                password=config['PASSWORD']
+            )
+            nodes.append(node)
+        except Exception as e:
+            logger.error(f"❌ Error configurando nodo {config.get('IDENTIFIER', config.get('HOST'))}: {e}")
+
+    if not nodes:
+        logger.error("❌ No se pudieron configurar nodos de Lavalink válidos.")
+        return
+
     try:
-        for i in range(max_retries):
-            if wavelink.Pool.nodes:
-                for node in wavelink.Pool.nodes.values():
-                    if node.status == wavelink.NodeStatus.CONNECTED:
-                        return
-
-            logger.debug(f"🔄 [Music Service] Intento de conexión {i+1}/{max_retries}...")
-
-            for config in node_configs:
-                identifier = config.get("IDENTIFIER", config["HOST"])
-                
-                if identifier in wavelink.Pool.nodes:
-                    old_node = wavelink.Pool.get_node(identifier)
-                    if old_node.status == wavelink.NodeStatus.CONNECTED and i == 0:
-                        return
-                    
-                    logger.debug(f"🧹 [Music Service] Limpiando nodo antiguo: {identifier}")
-                    await old_node.close()
-
-                try:
-                    protocol = "https" if config.get("SECURE") else "http"
-                    node = wavelink.Node(
-                        identifier=identifier,
-                        uri=f"{protocol}://{config['HOST']}:{config['PORT']}",
-                        password=config['PASSWORD']
-                    )
-                    
-                    await wavelink.Pool.connect(nodes=[node], client=bot, cache_capacity=settings.LAVALINK_CONFIG.get("CACHE_CAPACITY", 100))
-                    
-                    try:
-                        def check(p): return p.node.identifier == identifier and p.node.status == wavelink.NodeStatus.CONNECTED
-                        await bot.wait_for('wavelink_node_ready', check=check, timeout=10.0)
-                        return 
-                    except asyncio.TimeoutError:
-                        logger.warning(f"⚠️ [Music Service] Nodo {identifier} no respondió. Cerrando...")
-                        node = wavelink.Pool.nodes.get(identifier)
-                        if node: await node.close()
-                            
-                except Exception:
-                    logger.exception(f"❌ [Music Service] Error nodo {identifier}")
-            
-            if i < max_retries - 1:
-                await asyncio.sleep(5)
-    finally:
-        _is_connecting = False
+        await wavelink.Pool.connect(nodes=nodes, client=bot, cache_capacity=settings.LAVALINK_CONFIG.get("CACHE_CAPACITY", 100))
+    except Exception as e:
+        logger.exception(f"❌ Error fatal al conectar con los nodos de Lavalink: {e}")
 
 async def get_search_choices(current: str) -> list[app_commands.Choice[str]]:
     """Genera opciones para el autocompletado de búsqueda."""
