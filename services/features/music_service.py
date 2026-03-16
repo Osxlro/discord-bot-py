@@ -156,15 +156,15 @@ async def ensure_player(ctx, lang: str) -> wavelink.Player | None:
                 voice_service.voice_targets.pop(ctx.guild.id)
 
             await ctx.voice_client.disconnect(force=True)
-            player = await ctx.author.voice.channel.connect(cls=SafePlayer, self_deaf=True)
+            player = await ctx.author.voice.channel.connect(cls=wavelink.Player, self_deaf=True)
             voice_service.voice_targets[ctx.guild.id] = ctx.author.voice.channel.id
         elif not ctx.voice_client:
-            player = await ctx.author.voice.channel.connect(cls=SafePlayer, self_deaf=True)
+            player = await ctx.author.voice.channel.connect(cls=wavelink.Player, self_deaf=True)
             voice_service.voice_targets[ctx.guild.id] = ctx.author.voice.channel.id
         else:
             player = ctx.voice_client
             if not player.connected:
-                await player.connect(cls=SafePlayer, self_deaf=True, channel=ctx.author.voice.channel)
+                await player.connect(cls=wavelink.Player, self_deaf=True, channel=ctx.author.voice.channel)
             voice_service.voice_targets[ctx.guild.id] = ctx.author.voice.channel.id
         
         if player.volume == 0:
@@ -356,7 +356,7 @@ async def restore_players(bot):
         if not v_channel: continue
 
         try:
-            player: wavelink.Player = await v_channel.connect(cls=SafePlayer, self_deaf=True)
+            player: wavelink.Player = await v_channel.connect(cls=wavelink.Player, self_deaf=True)
             await player.set_volume(data['volume'])
             player.home = t_channel
             player.smart_autoplay = data.get('smart_autoplay', False)
@@ -426,7 +426,7 @@ async def connect_best_node(bot, node_configs, max_retries=3):
                         password=config['PASSWORD']
                     )
                     
-                    await wavelink.Pool.connect(nodes=[node], client=bot, cache_capacity=settings.LAVALINK_CONFIG.get("CACHE_CAPACITY", 100))
+                    await wavelink.Pool.connect(nodes=[node], cache_capacity=settings.LAVALINK_CONFIG.get("CACHE_CAPACITY", 100))
                     
                     try:
                         def check(p): return p.node.identifier == identifier and p.node.status == wavelink.NodeStatus.CONNECTED
@@ -625,22 +625,3 @@ async def sync_ui(player: wavelink.Player):
         except discord.HTTPException:
             pass
 
-class SafePlayer(wavelink.Player):
-    """
-    Player personalizado que captura errores de conexión con el nodo (ej. 500 Internal Server Error)
-    durante la actualización del servidor de voz, evitando que el bot crashee o quede en estado zombie.
-    """
-    async def on_voice_server_update(self, data: dict):
-        try:
-            await super().on_voice_server_update(data)
-        except Exception as e:
-            logger.warning(f"⚠️ [SafePlayer] Fallo al enviar actualización de voz al nodo: {e}")
-            # Si el nodo rechaza la conexión, desconectamos localmente para limpiar estado
-            try: await self.disconnect()
-            except: pass
-
-    async def on_track_stuck(self, payload: wavelink.TrackStuckEventPayload):
-        """Maneja el bug de canciones que se quedan reproduciendo infinitamente sin audio."""
-        logger.warning(f"⚠️ [SafePlayer] Pista atascada detectada: {payload.track.title}. Forzando salto...")
-        # Al saltar, se disparará on_track_end y la cola seguirá su curso normal
-        await self.skip(force=True)

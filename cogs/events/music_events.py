@@ -110,5 +110,14 @@ class MusicEvents(commands.Cog):
         await music_service.cleanup_player(player)
         await player.stop()
 
+    @commands.Cog.listener()
+    async def on_wavelink_track_stuck(self, payload: wavelink.TrackStuckEventPayload):
+        """Maneja el bug de canciones que se quedan reproduciendo infinitamente sin audio."""
+        logger.warning(f"⚠️ [Music Event] Pista atascada detectada: {payload.track.title}. Forzando salto...")
+        # Al saltar, se disparará on_track_end y la cola seguirá su curso normal
+        player = payload.player
+        if player:
+            await player.skip(force=True)
+
 async def setup(bot):
     await bot.add_cog(MusicEvents(bot))
