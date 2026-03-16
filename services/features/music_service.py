@@ -151,36 +151,38 @@ async def ensure_player(ctx, lang: str) -> wavelink.Player | None:
         return None
 
     try:
-        if ctx.voice_client and not isinstance(ctx.voice_client, wavelink.Player):
-            # Si hay una conexión de voz estándar (VoiceService), la reemplazamos por Wavelink.
-            # IMPORTANTE: Eliminamos el target de VoiceService para evitar que intente reconectar
-            # automáticamente al detectar la desconexión, causando un bucle o timeout.
-            if ctx.guild.id in voice_service.voice_targets:
-                voice_service.voice_targets.pop(ctx.guild.id)
+        # Aislar completamente el reproductor de música del voice_service
+        # para que no sabotee la conexión enviando desconexiones fantasma.
+        if ctx.guild.id in voice_service.voice_targets:
+            voice_service.voice_targets.pop(ctx.guild.id)
 
+        if ctx.voice_client and not isinstance(ctx.voice_client, wavelink.Player):
             logger.debug("🎵 [Music Service] Reemplazando VoiceClient estándar por wavelink.Player...")
             await ctx.voice_client.disconnect(force=True)
-            voice_service.voice_targets[ctx.guild.id] = ctx.author.voice.channel.id
+            # CRÍTICO: Esperar a que el Gateway de Discord procese la desconexión
+            await asyncio.sleep(1.5)
             player = await ctx.author.voice.channel.connect(cls=wavelink.Player, self_deaf=True)
         elif not ctx.voice_client:
             logger.debug("🎵 [Music Service] Conectando nuevo wavelink.Player...")
-            voice_service.voice_targets[ctx.guild.id] = ctx.author.voice.channel.id
             player = await ctx.author.voice.channel.connect(cls=wavelink.Player, self_deaf=True)
         else:
             player = ctx.voice_client
             if not player.connected:
                 logger.debug("🎵 [Music Service] wavelink.Player desconectado, reconectando...")
-                voice_service.voice_targets[ctx.guild.id] = ctx.author.voice.channel.id
                 await player.connect(cls=wavelink.Player, self_deaf=True, channel=ctx.author.voice.channel)
-            else:
-                voice_service.voice_targets[ctx.guild.id] = ctx.author.voice.channel.id
         
         if player.volume == 0:
             await player.set_volume(settings.LAVALINK_CONFIG.get("DEFAULT_VOLUME", 50))
             
         logger.debug("🎵 [Music Service] ensure_player completado exitosamente.")
         return player
+    except asyncio.TimeoutError:
+        logger.exception("❌ [Music Service] Timeout al conectar.")
+        err_msg = "❌ **Error de Red:** El nodo público de Lavalink no pudo establecer conexión con los servidores de voz de Discord. Intenta de nuevo en unos segundos."
+        await ctx.send(embed=embed_service.error(lang_service.get_text("title_error", lang), err_msg))
+        return None
     except Exception as e:
+        logger.exception("❌ [Music Service] Error inesperado en ensure_player.")
         voice_service.voice_targets.pop(ctx.guild.id, None)
         await ctx.send(embed=embed_service.error(lang_service.get_text("title_error", lang), str(e)))
         return None
