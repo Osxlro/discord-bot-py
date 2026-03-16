@@ -426,7 +426,7 @@ async def connect_best_node(bot, node_configs, max_retries=3):
                         password=config['PASSWORD']
                     )
                     
-                    await wavelink.Pool.connect(nodes=[node], cache_capacity=settings.LAVALINK_CONFIG.get("CACHE_CAPACITY", 100))
+                    await wavelink.Pool.connect(nodes=[node], client=bot, cache_capacity=settings.LAVALINK_CONFIG.get("CACHE_CAPACITY", 100))
                     
                     try:
                         def check(p): return p.node.identifier == identifier and p.node.status == wavelink.NodeStatus.CONNECTED
