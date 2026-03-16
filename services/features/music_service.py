@@ -139,84 +139,97 @@ async def cleanup_player(player: wavelink.Player, skip_message_edit: bool = Fals
 async def ensure_player(ctx, lang: str) -> wavelink.Player | None:
     """Asegura que el bot esté conectado correctamente y retorna el player."""
     logger.debug("🎵 [Music Service] Ejecutando ensure_player")
+
     if not ctx.author.voice:
         logger.debug("🎵 [Music Service] Usuario no está en canal de voz.")
         await ctx.send(embed=embed_service.error(lang_service.get_text("title_error", lang), lang_service.get_text("music_error_join", lang)))
         return None
 
-    permissions = ctx.author.voice.channel.permissions_for(ctx.guild.me)
+    channel = ctx.author.voice.channel
+    permissions = channel.permissions_for(ctx.guild.me)
     if not permissions.connect or not permissions.speak:
         logger.debug("🎵 [Music Service] Permisos insuficientes para el canal de voz.")
         await ctx.send(embed=embed_service.error(lang_service.get_text("title_error", lang), lang_service.get_text("voice_error_perms", lang)))
         return None
 
-    try:
-        # Aislar completamente el reproductor de música del voice_service
-        # para que no sabotee la conexión enviando desconexiones fantasma.
-        if ctx.guild.id in voice_service.voice_targets:
-            voice_service.voice_targets.pop(ctx.guild.id)
+    for i in range(3):
+        try:
+            # Ensure voice_service doesn't interfere
+            if ctx.guild.id in voice_service.voice_targets:
+                voice_service.voice_targets.pop(ctx.guild.id)
 
-        if ctx.voice_client and not isinstance(ctx.voice_client, wavelink.Player):
-            logger.debug("🎵 [Music Service] Reemplazando VoiceClient estándar por wavelink.Player...")
-            await ctx.voice_client.disconnect(force=True)
-            # CRÍTICO: Esperar a que el Gateway de Discord procese la desconexión
-            await asyncio.sleep(1.5)
-            player = await ctx.author.voice.channel.connect(cls=wavelink.Player, self_deaf=True, timeout=60)
-        elif not ctx.voice_client:
-            logger.debug("🎵 [Music Service] Conectando nuevo wavelink.Player...")
-            player = await ctx.author.voice.channel.connect(cls=wavelink.Player, self_deaf=True, timeout=60)
-        else:
-            player = ctx.voice_client
-            if not player.connected:
-                logger.debug("🎵 [Music Service] wavelink.Player desconectado, reconectando...")
-                await player.connect(cls=wavelink.Player, self_deaf=True, channel=ctx.author.voice.channel, timeout=60)
-        
-        if player.volume == 0:
-            await player.set_volume(settings.LAVALINK_CONFIG.get("DEFAULT_VOLUME", 50))
+            player: wavelink.Player = ctx.voice_client
+
+            if player and not isinstance(player, wavelink.Player):
+                logger.debug("🎵 [Music Service] Reemplazando VoiceClient no-wavelink...")
+                await player.disconnect(force=True)
+                await asyncio.sleep(1.0) # Shorter wait
+                player = await channel.connect(cls=wavelink.Player, self_deaf=True, timeout=20)
             
-        logger.debug("🎵 [Music Service] ensure_player completado exitosamente.")
-        return player
-    except (asyncio.TimeoutError, wavelink.exceptions.ChannelTimeoutException):
-        logger.exception("❌ [Music Service] Timeout al conectar.")
-        err_msg = "❌ **Error de Red:** El nodo público de Lavalink no pudo establecer conexión con los servidores de voz de Discord. Intenta de nuevo en unos segundos."
-        await ctx.send(embed=embed_service.error(lang_service.get_text("title_error", lang), err_msg))
-        return None
-    except Exception as e:
-        logger.exception("❌ [Music Service] Error inesperado en ensure_player.")
-        voice_service.voice_targets.pop(ctx.guild.id, None)
-        await ctx.send(embed=embed_service.error(lang_service.get_text("title_error", lang), str(e)))
-        return None
+            elif not player:
+                logger.debug(f"🎵 [Music Service] Conectando nuevo wavelink.Player (intento {i+1}/3)...")
+                player = await channel.connect(cls=wavelink.Player, self_deaf=True, timeout=20)
+            
+            else: # Player is a wavelink.Player
+                if player.channel.id != channel.id:
+                    logger.debug(f"🎵 [Music Service] Moviendo a {channel.name}...")
+                    await player.move_to(channel)
+                
+                if not player.connected:
+                    logger.debug(f"🎵 [Music Service] Reconectando player existente (intento {i+1}/3)...")
+                    await player.connect(self_deaf=True, timeout=20)
 
-async def send_now_playing(bot: discord.Client, player: wavelink.Player, track: wavelink.Playable):
-    """Genera y envía el mensaje de 'Ahora suena' centralizando la lógica de UI."""
-    logger.debug(f"🖼️ [Music Service] send_now_playing invocado para: {track.title}")
+            if player and player.volume == 0:
+                await player.set_volume(settings.LAVALINK_CONFIG.get("DEFAULT_VOLUME", 50))
+            
+            logger.debug("🎵 [Music Service] ensure_player completado exitosamente.")
+            return player
+
+        except (asyncio.TimeoutError, wavelink.exceptions.ChannelTimeoutException):
+            if i < 2:
+                logger.warning(f"🎵 [Music Service] Timeout al conectar (intento {i+1}/3). Reintentando en 2s...")
+                await asyncio.sleep(2)
+            else:
+                logger.exception("❌ [Music Service] Timeout final al conectar.")
+                err_msg = "❌ **Error de Red:** No se pudo establecer conexión con los servidores de voz de Discord. El servicio puede estar saturado. Intenta de nuevo."
+                await ctx.send(embed=embed_service.error(lang_service.get_text("title_error", lang), err_msg))
+                return None
+        except Exception as e:
+            logger.exception("❌ [Music Service] Error inesperado en ensure_player.")
+            await ctx.send(embed=embed_service.error(lang_service.get_text("title_error", lang), str(e)))
+            return None
+    
+    return None
+
+async def send_now_playing(bot: discord.Client, player: wavelink.Player, track: wavelink.Playable, new_track=False):
+    """
+    Genera y envía el mensaje 'Ahora Suena', optimizando la edición de mensajes.
+    `new_track=True` fuerza el borrado y re-envío del mensaje.
+    """
     if not hasattr(player, "home") or not player.home:
-        logger.debug("🖼️ [Music Service] Abortado: Player no tiene 'home' configurado.")
         return
 
-    # Lock para evitar que múltiples eventos on_track_start dupliquen el mensaje
-    if not hasattr(player, "_msg_lock"):
-        player._msg_lock = asyncio.Lock()
+    lang = await lang_service.get_guild_lang(player.guild.id)
+    embed = create_np_embed(player, track, lang)
+    view = MusicControls(player, lang=lang)
 
-    async with player._msg_lock:
-        lang = await lang_service.get_guild_lang(player.guild.id)
-        
-        # 1. Limpieza rigurosa del mensaje anterior
-        if hasattr(player, "last_msg") and player.last_msg:
-            try:
-                old_msg = player.last_msg
-                player.last_msg = None # Limpiar referencia antes del await
-                await old_msg.delete()
+    last_msg = getattr(player, "last_msg", None)
+
+    # Forzar re-envío si el último mensaje no es nuestro o si se especifica
+    if new_track or not last_msg or last_msg.author.id != bot.user.id:
+        if last_msg:
+            try: await last_msg.delete()
             except: pass
-
-        # 2. Actualizar Presencia del bot
-        await update_presence(bot, player, track, lang)
         
-        # 3. Enviar nuevo mensaje y guardar referencia
-        embed = create_np_embed(player, track, lang)
-        view = MusicControls(player, lang=lang)
         player.last_msg = await player.home.send(embed=embed, view=view)
-        player.last_view = view
+    else: # Editar mensaje existente
+        try:
+            await last_msg.edit(embed=embed, view=view)
+        except discord.NotFound: # Si el mensaje fue borrado, lo reenviamos
+             player.last_msg = await player.home.send(embed=embed, view=view)
+    
+    player.last_view = view
+    await update_presence(bot, player, track, lang)
 
 async def handle_enqueue(ctx, player: wavelink.Player, tracks: wavelink.Playable | wavelink.Playlist, lang: str):
     """Maneja la lógica de añadir pistas o playlists a la cola, optimizando el feedback al usuario."""
