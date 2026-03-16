@@ -160,18 +160,20 @@ async def ensure_player(ctx, lang: str) -> wavelink.Player | None:
 
             logger.debug("🎵 [Music Service] Reemplazando VoiceClient estándar por wavelink.Player...")
             await ctx.voice_client.disconnect(force=True)
-            player = await ctx.author.voice.channel.connect(cls=wavelink.Player, self_deaf=True)
             voice_service.voice_targets[ctx.guild.id] = ctx.author.voice.channel.id
+            player = await ctx.author.voice.channel.connect(cls=wavelink.Player, self_deaf=True)
         elif not ctx.voice_client:
             logger.debug("🎵 [Music Service] Conectando nuevo wavelink.Player...")
-            player = await ctx.author.voice.channel.connect(cls=wavelink.Player, self_deaf=True)
             voice_service.voice_targets[ctx.guild.id] = ctx.author.voice.channel.id
+            player = await ctx.author.voice.channel.connect(cls=wavelink.Player, self_deaf=True)
         else:
             player = ctx.voice_client
             if not player.connected:
                 logger.debug("🎵 [Music Service] wavelink.Player desconectado, reconectando...")
+                voice_service.voice_targets[ctx.guild.id] = ctx.author.voice.channel.id
                 await player.connect(cls=wavelink.Player, self_deaf=True, channel=ctx.author.voice.channel)
-            voice_service.voice_targets[ctx.guild.id] = ctx.author.voice.channel.id
+            else:
+                voice_service.voice_targets[ctx.guild.id] = ctx.author.voice.channel.id
         
         if player.volume == 0:
             await player.set_volume(settings.LAVALINK_CONFIG.get("DEFAULT_VOLUME", 50))
@@ -179,6 +181,7 @@ async def ensure_player(ctx, lang: str) -> wavelink.Player | None:
         logger.debug("🎵 [Music Service] ensure_player completado exitosamente.")
         return player
     except Exception as e:
+        voice_service.voice_targets.pop(ctx.guild.id, None)
         await ctx.send(embed=embed_service.error(lang_service.get_text("title_error", lang), str(e)))
         return None
 
