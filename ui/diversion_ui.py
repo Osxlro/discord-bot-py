@@ -28,4 +28,5 @@ def get_confess_embed(lang: str, secreto: str) -> discord.Embed:
 
 def get_8ball_embed(lang: str, pregunta: str, respuesta: str) -> discord.Embed:
     title = lang_service.get_text("eightball_title", lang)
-    return embed_service.info(title, f"**P:** {pregunta}\n**R:** {respuesta}", lite=True)
+    desc = lang_service.get_text("diversion_8ball_qa", lang, pregunta=pregunta, respuesta=respuesta)
+    return embed_service.info(title, desc, lite=True)

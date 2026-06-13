@@ -68,7 +68,7 @@ class Configuracion(commands.Cog):
     async def logs(self, ctx: commands.Context, canal: discord.TextChannel):
         """Configura el canal donde se registrarán las acciones de moderación y eventos del servidor."""
         lang = await lang_service.get_guild_lang(ctx.guild.id)
-        await self._apply_setup(ctx, {"logs_channel_id": canal.id}, "Logs", canal.mention)
+        await self._apply_setup(ctx, {"logs_channel_id": canal.id}, lang_service.get_text("setup_logs_label", lang), canal.mention)
 
     @setup.command(name="birthday", description="Establece el canal de avisos de cumpleaños.")
     @app_commands.describe(canal="Canal para felicitaciones")
@@ -136,7 +136,7 @@ class Configuracion(commands.Cog):
     async def wordday_role(self, ctx: commands.Context, rol: discord.Role):
         """Configura el rol que el bot mencionará al publicar la frase del día."""
         lang = await lang_service.get_guild_lang(ctx.guild.id)
-        await self._apply_setup(ctx, {"wordday_role_id": rol.id}, f"Role {lang_service.get_text('wordday_title', lang)}", rol.mention)
+        await self._apply_setup(ctx, {"wordday_role_id": rol.id}, lang_service.get_text("setup_wordday_role_label", lang), rol.mention)
 
 async def setup(bot):
     await bot.add_cog(Configuracion(bot))

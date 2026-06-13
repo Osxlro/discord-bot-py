@@ -191,7 +191,7 @@ async def ensure_player(ctx, lang: str) -> wavelink.Player | None:
                 await asyncio.sleep(2)
             else:
                 logger.exception("❌ [Music Service] Timeout final al conectar.")
-                err_msg = "❌ **Error de Red:** No se pudo establecer conexión con los servidores de voz de Discord. El servicio puede estar saturado. Intenta de nuevo."
+                err_msg = lang_service.get_text("music_error_network", lang)
                 await ctx.send(embed=embed_service.error(lang_service.get_text("title_error", lang), err_msg))
                 return None
         except Exception as e:

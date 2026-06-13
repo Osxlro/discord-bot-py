@@ -144,7 +144,8 @@ class Developer(commands.Cog):
         """
         Apaga el bot completamente (útil si usas un gestor de procesos como PM2 o Docker).
         """
-        await ctx.send("👋 Apagando sistemas... ¡Hasta luego!")
+        lang = await lang_service.get_guild_lang(ctx.guild.id if ctx.guild else None)
+        await ctx.send(lang_service.get_text("dev_shutdown_msg", lang))
         logger.info(f"🛑 Apagado solicitado por {ctx.author}")
         await self.bot.close()
 
@@ -155,13 +156,14 @@ class Developer(commands.Cog):
         Recarga una extensión (Cog) específica sin reiniciar el bot.
         Uso: !reload cogs.commands.cumpleaños
         """
+        lang = await lang_service.get_guild_lang(ctx.guild.id if ctx.guild else None)
         try:
             # Intentamos recargar la extensión
             await self.bot.reload_extension(extension)
-            await ctx.send(f"✅ Extensión `{extension}` recargada correctamente.")
+            await ctx.send(lang_service.get_text("dev_reload_success", lang, extension=extension))
             logger.info(f"🔄 Extensión recargada manualmente: {extension}")
         except Exception as e:
-            await ctx.send(f"❌ Error al recargar `{extension}`:\n```py\n{e}\n```")
+            await ctx.send(lang_service.get_text("dev_reload_error", lang, extension=extension, error=str(e)))
             logger.error(f"❌ Error recargando {extension}: {e}")
 
 async def setup(bot):

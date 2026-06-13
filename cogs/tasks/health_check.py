@@ -262,10 +262,14 @@ class HealthCheck(commands.Cog):
             app_info = await self.bot.application_info()
             owner = app_info.owner
             
+            lang = settings.GENERAL_CONFIG.get("DEFAULT_LANG", "es")
+            title = lang_service.get_text("health_check_report_title", lang)
             error_list = "\n".join([f"• {err}" for err in errors])
+            desc = lang_service.get_text("health_check_report_desc", lang, errors=error_list)
+            
             embed = discord.Embed(
-                title="🚨 Reporte de Errores Automático",
-                description=f"Se han detectado anomalías durante el autodiagnóstico:\n\n{error_list}",
+                title=title,
+                description=desc,
                 color=discord.Color.red()
             )
             await owner.send(embed=embed)

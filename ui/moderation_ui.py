@@ -29,7 +29,7 @@ def get_mod_embed(guild: discord.Guild, user_name: str, action: str, reason: str
     if not data:
         # Fallback genérico localizado
         title = lang_service.get_text("title_success", lang)
-        desc = f"Acción {action} completada para **{user_name}**."
+        desc = lang_service.get_text("mod_action_completed", lang, action=action, user=user_name)
         return embed_service.success(title, desc)
 
     msg_custom = config.get(data["config_key"])

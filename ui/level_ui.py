@@ -44,16 +44,17 @@ def get_leaderboard_pages(guild: discord.Guild, rows: list, lang: str) -> list[d
         lines = []
         for j, row in enumerate(chunk, start=(i * chunk_size) + 1):
             member = guild.get_member(row['user_id'])
-            name = discord.utils.escape_markdown(member.display_name) if member else f"Usuario {row['user_id']}"
+            name = discord.utils.escape_markdown(member.display_name) if member else lang_service.get_text("level_user_fallback", lang, id=row['user_id'])
             rebirth_text = f"🌀 {row['rebirths']} | " if row['rebirths'] > 0 else ""
             xp_fmt = f"{row['xp']:,}"
             
+            lvl_lbl = lang_service.get_text("level_rank_lvl_short", lang)
             if j <= 3:
                 medal = medals[j-1]
                 prefix = "👑" if j == 1 else ("🛡️" if j == 2 else "⚔️")
-                lines.append(f"{medal} **{name}**\n> {prefix} {rebirth_text}Nvl **{row['level']}** • ✨ `{xp_fmt}` XP")
+                lines.append(f"{medal} **{name}**\n> {prefix} {rebirth_text}{lvl_lbl} **{row['level']}** • ✨ `{xp_fmt}` XP")
             else:
-                lines.append(f"`#{j}` **{name}** • {rebirth_text}Nvl {row['level']} • `{xp_fmt}` XP")
+                lines.append(f"`#{j}` **{name}** • {rebirth_text}{lvl_lbl} {row['level']} • `{xp_fmt}` XP")
         
         embed = embed_service.info(title, "\n\n".join(lines), thumbnail=guild.icon.url if guild.icon else None)
         embed.set_footer(text=lang_service.get_text("leaderboard_footer", lang, current=i+1, total=len(chunks)))

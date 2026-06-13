@@ -256,14 +256,14 @@ class Music(commands.Cog):
              return await ctx.send(embed=embed_service.error(lang_service.get_text("title_error", lang), lang_service.get_text("music_error_nothing", lang), lite=True), ephemeral=True)
 
         if not player.current.is_seekable:
-            return await ctx.send(embed=embed_service.error(lang_service.get_text("title_error", lang), "Esta pista no permite adelantar (es un stream en vivo).", lite=True), ephemeral=True)
+            return await ctx.send(embed=embed_service.error(lang_service.get_text("title_error", lang), lang_service.get_text("music_seek_not_seekable", lang), lite=True), ephemeral=True)
 
         # Convertir MM:SS a milisegundos
         seconds = sum(x * int(t) for x, t in zip([60, 1], tiempo.split(":"))) if ":" in tiempo else int(tiempo)
         position_ms = seconds * 1000
 
         await player.seek(position_ms)
-        await ctx.send(embed=embed_service.success(lang_service.get_text("title_music", lang), f"⏩ Saltado a **{tiempo}**.", lite=True))
+        await ctx.send(embed=embed_service.success(lang_service.get_text("title_music", lang), lang_service.get_text("music_seek_success", lang, time=tiempo), lite=True))
 
     @commands.hybrid_command(name="nowlistening", aliases=["np"], description="Muestra la canción actual.")
     async def nowlistening(self, ctx: commands.Context):

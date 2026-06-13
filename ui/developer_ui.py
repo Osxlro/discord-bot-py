@@ -63,7 +63,7 @@ async def get_memory_embed(lang, info=None):
             from services.features import developer_service
             info = await developer_service.get_psutil_info()
             
-        if info["available"]: embed.add_field(name="Uso RSS", value=f"`{info['mem_proc']:.2f} MB`")
+        if info["available"]: embed.add_field(name=lang_service.get_text("dev_mem_rss_label", lang), value=f"`{info['mem_proc']:.2f} MB`")
     else:
         snapshot = tracemalloc.take_snapshot()
         stats = snapshot.statistics('filename')
