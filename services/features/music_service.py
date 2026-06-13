@@ -16,6 +16,41 @@ logger = logging.getLogger(__name__)
 _is_connecting = False
 
 # =============================================================================
+# BotPlayer y Registro Centralizado de Datos del Player
+# =============================================================================
+class BotPlayer(wavelink.Player):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.home = None
+        self.last_msg = None
+        self.last_view = None
+        self.smart_autoplay = False
+        self.last_track_error = False
+
+_player_data = {}
+
+def get_player_data(guild_id: int) -> dict:
+    """Retorna los datos persistentes del reproductor de un servidor."""
+    if guild_id not in _player_data:
+        _player_data[guild_id] = {
+            "home": None,
+            "last_msg": None,
+            "last_view": None,
+            "smart_autoplay": False,
+            "last_track_error": False
+        }
+    return _player_data[guild_id]
+
+def set_player_home(guild_id: int, channel: discord.TextChannel):
+    """Establece el canal de texto asignado para el reproductor."""
+    data = get_player_data(guild_id)
+    data["home"] = channel
+
+def get_player_home(guild_id: int) -> discord.TextChannel | None:
+    """Retorna el canal de texto del reproductor."""
+    return get_player_data(guild_id).get("home")
+
+# =============================================================================
 # 0. CONFIGURACIÓN DE FILTROS (PRESETS)
 # =============================================================================
 FILTERS_CONFIG = {
@@ -98,13 +133,15 @@ async def reset_presence(bot: discord.Client):
 async def cleanup_player(player: wavelink.Player, skip_message_edit: bool = False):
     """Realiza limpieza de interfaz y persistencia al detener el player."""
     if not player: return
+    guild_id = player.guild.id
+    data = get_player_data(guild_id)
 
     # 1. Limpiar persistencia de Voice
-    voice_service.voice_targets.pop(player.guild.id, None)
+    voice_service.voice_targets.pop(guild_id, None)
 
     # 2. Manejar mensaje y vista
-    msg = getattr(player, "last_msg", None)
-    view = getattr(player, "last_view", None)
+    msg = getattr(player, "last_msg", None) or data.get("last_msg")
+    view = getattr(player, "last_view", None) or data.get("last_view")
     
     if view:
         for child in view.children:
@@ -118,6 +155,13 @@ async def cleanup_player(player: wavelink.Player, skip_message_edit: bool = Fals
             else:
                 await msg.edit(view=view)
         except (discord.HTTPException, discord.Forbidden): pass
+
+    # Limpiar referencias en la caché centralizada
+    data["last_msg"] = None
+    data["last_view"] = None
+    data["home"] = None
+    data["smart_autoplay"] = False
+    data["last_track_error"] = False
 
     # Las siguientes operaciones solo son válidas para wavelink.Player
     if isinstance(player, wavelink.Player):
@@ -158,19 +202,19 @@ async def ensure_player(ctx, lang: str) -> wavelink.Player | None:
             if ctx.guild.id in voice_service.voice_targets:
                 voice_service.voice_targets.pop(ctx.guild.id)
 
-            player: wavelink.Player = ctx.voice_client
+            player: BotPlayer = ctx.voice_client
 
-            if player and not isinstance(player, wavelink.Player):
-                logger.debug("🎵 [Music Service] Reemplazando VoiceClient no-wavelink...")
+            if player and not isinstance(player, BotPlayer):
+                logger.debug("🎵 [Music Service] Reemplazando VoiceClient no-BotPlayer...")
                 await player.disconnect(force=True)
                 await asyncio.sleep(1.0) # Shorter wait
-                player = await channel.connect(cls=wavelink.Player, self_deaf=True, timeout=20)
+                player = await channel.connect(cls=BotPlayer, self_deaf=True, timeout=20)
             
             elif not player:
-                logger.debug(f"🎵 [Music Service] Conectando nuevo wavelink.Player (intento {i+1}/3)...")
-                player = await channel.connect(cls=wavelink.Player, self_deaf=True, timeout=20)
+                logger.debug(f"🎵 [Music Service] Conectando nuevo BotPlayer (intento {i+1}/3)...")
+                player = await channel.connect(cls=BotPlayer, self_deaf=True, timeout=20)
             
-            else: # Player is a wavelink.Player
+            else: # Player is a BotPlayer
                 if player.channel.id != channel.id:
                     logger.debug(f"🎵 [Music Service] Moviendo a {channel.name}...")
                     await player.move_to(channel)
@@ -206,14 +250,17 @@ async def send_now_playing(bot: discord.Client, player: wavelink.Player, track: 
     Genera y envía el mensaje 'Ahora Suena', optimizando la edición de mensajes.
     `new_track=True` fuerza el borrado y re-envío del mensaje.
     """
-    if not hasattr(player, "home") or not player.home:
+    guild_id = player.guild.id
+    data = get_player_data(guild_id)
+    home = getattr(player, "home", None) or data.get("home")
+    if not home:
         return
 
-    lang = await lang_service.get_guild_lang(player.guild.id)
+    lang = await lang_service.get_guild_lang(guild_id)
     embed = create_np_embed(player, track, lang)
     view = MusicControls(player, lang=lang)
 
-    last_msg = getattr(player, "last_msg", None)
+    last_msg = getattr(player, "last_msg", None) or data.get("last_msg")
 
     # Forzar re-envío si el último mensaje no es nuestro o si se especifica
     if new_track or not last_msg or last_msg.author.id != bot.user.id:
@@ -221,14 +268,22 @@ async def send_now_playing(bot: discord.Client, player: wavelink.Player, track: 
             try: await last_msg.delete()
             except: pass
         
-        player.last_msg = await player.home.send(embed=embed, view=view)
+        sent_msg = await home.send(embed=embed, view=view)
+        player.last_msg = sent_msg
+        data["last_msg"] = sent_msg
     else: # Editar mensaje existente
         try:
             await last_msg.edit(embed=embed, view=view)
-        except discord.NotFound: # Si el mensaje fue borrado, lo reenviamos
-             player.last_msg = await player.home.send(embed=embed, view=view)
+        except Exception as e:
+            logger.warning(f"No se pudo editar el mensaje del reproductor: {e}. Enviando uno nuevo.")
+            try: await last_msg.delete()
+            except: pass
+            sent_msg = await home.send(embed=embed, view=view)
+            player.last_msg = sent_msg
+            data["last_msg"] = sent_msg
     
     player.last_view = view
+    data["last_view"] = view
     await update_presence(bot, player, track, lang)
 
 async def handle_enqueue(ctx, player: wavelink.Player, tracks: wavelink.Playable | wavelink.Playlist, lang: str):
@@ -394,10 +449,12 @@ async def restore_players(bot):
         if not v_channel: continue
 
         try:
-            player: wavelink.Player = await v_channel.connect(cls=wavelink.Player, self_deaf=True)
+            player: BotPlayer = await v_channel.connect(cls=BotPlayer, self_deaf=True)
             await player.set_volume(data['volume'])
             player.home = t_channel
+            set_player_home(guild.id, t_channel)
             player.smart_autoplay = data.get('smart_autoplay', False)
+            get_player_data(guild.id)["smart_autoplay"] = player.smart_autoplay
 
             # Restaurar canción actual
             tracks = await wavelink.Playable.search(data['current_track_uri'])

@@ -4,7 +4,7 @@ import wavelink
 import asyncio
 from discord.ext import commands, tasks
 from services.features import music_service
-from services.utils import algorithm_service
+from services.utils import algorithm_service, voice_service
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +50,10 @@ class MusicEvents(commands.Cog):
     async def on_wavelink_track_start(self, payload: wavelink.TrackStartEventPayload):
         player = payload.player
         logger.debug(f"🎶 [Music Event] on_wavelink_track_start disparado: {payload.track.title}")
-        if not player or not hasattr(player, "home"): return
+        if not player: return
+        
+        home = getattr(player, "home", None) or music_service.get_player_home(player.guild.id)
+        if not home: return
 
         # Lógica de mensaje NP delegada al servicio
         await music_service.send_now_playing(self.bot, player, payload.track)
@@ -91,15 +94,30 @@ class MusicEvents(commands.Cog):
 
     @commands.Cog.listener()
     async def on_voice_state_update(self, member: discord.Member, before: discord.VoiceState, after: discord.VoiceState):
-        """Detecta desconexiones manuales para limpiar la interfaz."""
-        if member.id != self.bot.user.id: return
+        """Detecta desconexiones manuales para limpiar la interfaz, o si el canal se queda vacío."""
+        # Caso 1: El bot mismo es desconectado del canal
+        if member.id == self.bot.user.id:
+            if before.channel and not after.channel:
+                player: wavelink.Player = member.guild.voice_client
+                if player:
+                    logger.info(f"🔌 [Music Event] Desconexión detectada en {member.guild.name}. Limpiando UI...")
+                    await music_service.cleanup_player(player)
+            return
 
-        # Si el bot fue desconectado del canal
-        if before.channel and not after.channel:
-            player: wavelink.Player = member.guild.voice_client
-            if player:
-                logger.info(f"🔌 [Music Event] Desconexión detectada en {member.guild.name}. Limpiando UI...")
-                await music_service.cleanup_player(player)
+        # Caso 2: Otro miembro cambia de estado de voz
+        guild = member.guild
+        player = guild.voice_client
+
+        # Si el bot está en un canal y el miembro se desconectó o cambió de canal desde nuestro canal de voz
+        if player and player.channel and before.channel and before.channel.id == player.channel.id:
+            # Si el canal quedó sin humanos (solo bots o vacío)
+            # Excluimos el modo AFK intencional (voice_targets)
+            if guild.id not in voice_service.voice_targets:
+                human_members = [m for m in player.channel.members if not m.bot]
+                if not human_members:
+                    logger.info(f"🔌 [Music Event] Canal vacío detectado en {guild.name} (se fue el último miembro). Desconectando...")
+                    await music_service.cleanup_player(player)
+                    await player.disconnect()
 
     @commands.Cog.listener()
     async def on_wavelink_track_exception(self, payload: wavelink.TrackExceptionEventPayload):

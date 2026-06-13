@@ -56,8 +56,8 @@ class Music(commands.Cog):
             logger.debug("▶️ [/play] ensure_player devolvió None. Abortando comando.")
             return
 
-        logger.debug(f"▶️ [/play] Reproductor listo en canal: {player.channel.id}")
         player.home = ctx.channel
+        music_service.set_player_home(ctx.guild.id, ctx.channel)
 
         try:
             tracks = await music_service.handle_play_search(busqueda)

@@ -69,29 +69,52 @@ class OptimizationTasks(commands.Cog):
     async def memory_cleanup_error(self, error):
         logger.critical(f"🔥 Error CRÍTICO en tarea de limpieza (Cleanup): {error}")
 
-    # TAREA 3: Optimización de Red (Cada 5 minutos)
-    # Desconecta el bot de canales vacíos para reducir tráfico inbound/outbound innecesario.
-    @tasks.loop(minutes=5)
+    # TAREA 3: Optimización de Red e Inactividad (Cada 30 segundos)
+    # Desconecta el bot de canales vacíos o reproductores inactivos (idle).
+    @tasks.loop(seconds=30)
     async def network_optimization_loop(self):
         try:
             for guild in self.bot.guilds:
                 player = guild.voice_client
+                if not player:
+                    continue
                 
-                # Si el bot está conectado pero solo (sin humanos)
-                if player and player.channel:
+                # 1. Comprobación de canal vacío (sin humanos)
+                if player.channel:
                     # Si el guild está en voice_targets, es un modo AFK intencional. No desconectar.
                     if guild.id in voice_service.voice_targets:
                         continue
 
-                    # Filtrar bots para contar solo humanos
                     human_members = [m for m in player.channel.members if not m.bot]
                     if not human_members:
                         if isinstance(player, wavelink.Player):
                             await music_service.cleanup_player(player)
                         await player.disconnect()
                         logger.info(f"🔌 [Network Opt] Desconectado de {guild.name} (Canal vacío).")
+                        continue
+
+                # 2. Comprobación de inactividad (Idle Timeout)
+                if isinstance(player, wavelink.Player):
+                    # Un player está inactivo si no está reproduciendo nada o está pausado
+                    is_inactive = (player.current is None) or player.paused
+                    
+                    if is_inactive:
+                        # Inicializar timestamp de inactividad si no existe
+                        if not hasattr(player, "inactive_since") or player.inactive_since is None:
+                            player.inactive_since = asyncio.get_event_loop().time()
+                        else:
+                            # Comprobar si superó el límite
+                            elapsed = asyncio.get_event_loop().time() - player.inactive_since
+                            timeout = settings.LAVALINK_CONFIG.get("INACTIVITY_TIMEOUT", 300)
+                            if elapsed >= timeout:
+                                logger.info(f"💤 [Network Opt] Desconectando {guild.name} por inactividad prolongada ({timeout}s).")
+                                await music_service.cleanup_player(player)
+                                await player.disconnect()
+                    else:
+                        # Si está reproduciendo activamente, resetear el temporizador
+                        player.inactive_since = None
         except Exception as e:
-            logger.error(f"⚠️ Error en optimización de red: {e}")
+            logger.error(f"⚠️ Error en optimización de red e inactividad: {e}")
 
     @cache_flush_loop.before_loop
     async def before_flush(self):
