@@ -391,6 +391,7 @@ ES = {
     
     # --- TITLES (GENERIC) ---
     "title_success": "Éxito",
+    "title_volume": "🔊 Volumen",
     "title_error": "Error",
     "title_info": "Info",
     "title_translate": "Traducir",

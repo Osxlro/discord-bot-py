@@ -393,6 +393,7 @@ EN = {
     
     # --- TITLES (GENERIC) ---
     "title_success": "Success",
+    "title_volume": "🔊 Volume",
     "title_error": "Error",
     "title_info": "Info",
     "title_translate": "Translate",

@@ -391,6 +391,7 @@ PT = {
     
     # --- TÍTULOS (GENÉRICOS) ---
     "title_success": "Sucesso",
+    "title_volume": "🔊 Volume",
     "title_error": "Erro",
     "title_info": "Info",
     "title_translate": "Traduzir",

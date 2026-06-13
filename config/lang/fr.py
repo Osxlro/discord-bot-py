@@ -391,6 +391,7 @@ FR = {
     
     # --- TITRES (GÉNÉRIQUE) ---
     "title_success": "Succès",
+    "title_volume": "🔊 Volume",
     "title_error": "Erreur",
     "title_info": "Info",
     "title_translate": "Traduire",

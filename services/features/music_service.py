@@ -245,7 +245,7 @@ async def ensure_player(ctx, lang: str) -> wavelink.Player | None:
     
     return None
 
-async def send_now_playing(bot: discord.Client, player: wavelink.Player, track: wavelink.Playable, new_track=False):
+async def send_now_playing(bot: discord.Client, player: wavelink.Player, track: wavelink.Playable, new_track=True):
     """
     Genera y envía el mensaje 'Ahora Suena', optimizando la edición de mensajes.
     `new_track=True` fuerza el borrado y re-envío del mensaje.
