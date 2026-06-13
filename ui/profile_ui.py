@@ -63,7 +63,7 @@ def get_messages_embed(target: discord.Member, user_data: dict, lang: str) -> di
 
 class ProfileView(discord.ui.View):
     """Vista con botones para navegar por las secciones del perfil."""
-    def __init__(self, target, user_data, guild_data, xp_next, lang, author_id):
+    def __init__(self, target, user_data, guild_data, xp_next, lang, author_id, is_dm: bool = False):
         super().__init__(timeout=settings.TIMEOUT_CONFIG.get("BOT_INFO", 120))
         self.target, self.user_data, self.guild_data = target, user_data, guild_data
         self.xp_next, self.lang, self.author_id = xp_next, lang, author_id
@@ -72,6 +72,9 @@ class ProfileView(discord.ui.View):
         self.btn_general.label = lang_service.get_text("profile_btn_general", lang)
         self.btn_stats.label = lang_service.get_text("profile_btn_stats", lang)
         self.btn_msgs.label = lang_service.get_text("profile_btn_msgs", lang)
+
+        if is_dm:
+            self.remove_item(self.btn_stats)
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         if interaction.user.id != self.author_id:

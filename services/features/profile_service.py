@@ -11,13 +11,17 @@ async def get_profile_embed(bot, guild, target, lang):
 async def handle_profile(guild, target, lang, author_id: int):
     """Orquesta la obtención de datos y generación del embed y vista de perfil."""
     user_data = await db_service.fetch_one("SELECT * FROM users WHERE user_id = ?", (target.id,))
-    guild_data = await db_service.fetch_one("SELECT xp, level, rebirths FROM guild_stats WHERE guild_id = ? AND user_id = ?", (guild.id, target.id))
+    
+    if guild:
+        guild_data = await db_service.fetch_one("SELECT xp, level, rebirths FROM guild_stats WHERE guild_id = ? AND user_id = ?", (guild.id, target.id))
+    else:
+        guild_data = None
     
     nivel = guild_data['level'] if guild_data else 1
     xp_next = db_service.calculate_xp_required(nivel)
     
     embed = profile_ui.get_general_embed(target, user_data, lang)
-    view = profile_ui.ProfileView(target, user_data, guild_data, xp_next, lang, author_id)
+    view = profile_ui.ProfileView(target, user_data, guild_data, xp_next, lang, author_id, is_dm=(guild is None))
     return embed, view
 
 async def handle_update_description(user_id: int, text: str, lang: str):

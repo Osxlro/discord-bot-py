@@ -13,6 +13,7 @@ FR = {
     "error_bad_arg": "❌ L'un des arguments fournis est invalide.",
     "error_did_you_mean": "❓ Vouliez-vous dire : `{suggestion}` ?",
     "error_max_chars": "❌ Maximum {max} caractères.",
+    "error_guild_only": "❌ Cette commande ne peut être utilisée que dans un serveur.",
     "lang_list": "Espagnol (`es`), Anglais (`en`), Portugais (`pt`), Français (`fr`)",
     "lang_name_es": "Espagnol 🇪🇸",
     "lang_name_en": "Anglais 🇺🇸",

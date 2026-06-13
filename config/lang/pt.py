@@ -13,6 +13,7 @@ PT = {
     "error_bad_arg": "❌ Um dos argumentos fornecidos é inválido.",
     "error_did_you_mean": "❓ Quiseste dizer: `{suggestion}`?",
     "error_max_chars": "❌ Máximo {max} caracteres.",
+    "error_guild_only": "❌ Este comando só pode ser usado dentro de um servidor.",
     "lang_list": "Espanhol (`es`), Inglês (`en`), Português (`pt`)",
     "lang_name_es": "Espanhol 🇪🇸",
     "lang_name_en": "Inglês 🇺🇸",

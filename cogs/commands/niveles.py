@@ -18,6 +18,7 @@ class Niveles(commands.Cog):
         self.bot = bot
 
     @commands.hybrid_command(name="rank", description="Muestra el nivel, progreso y rebirths de un usuario.")
+    @commands.guild_only()
     @app_commands.describe(usuario="El usuario a consultar")
     async def rank(self, ctx: commands.Context, usuario: discord.Member = None):
         """Muestra una tarjeta informativa con el nivel actual, XP y barra de progreso."""
@@ -38,6 +39,7 @@ class Niveles(commands.Cog):
         await ctx.reply(embed=embed)
 
     @commands.hybrid_command(name="leaderboard", description="Muestra el top de XP del servidor")
+    @commands.guild_only()
     async def leaderboard(self, ctx: commands.Context):
         """Muestra el ranking de los usuarios con más experiencia en el servidor."""
         lang = await lang_service.get_guild_lang(ctx.guild.id)
@@ -59,6 +61,7 @@ class Niveles(commands.Cog):
             view.message = await ctx.reply(embed=pages[0], view=view)
 
     @commands.hybrid_command(name="rebirth", description="Reinicia tu nivel (requiere Nivel 100) para ganar un Rebirth.")
+    @commands.guild_only()
     async def rebirth(self, ctx: commands.Context):
         """Permite a un usuario de nivel 100 reiniciar su progreso a cambio de un punto de Rebirth."""
         # Diferir respuesta ya que la validación y actualización de DB puede tardar

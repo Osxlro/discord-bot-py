@@ -79,6 +79,10 @@ class GlobalErrorHandler(commands.Cog):
         if isinstance(error, commands.NSFWChannelRequired):
             return await ctx.send("🔞 Este comando solo puede usarse en canales NSFW.")
 
+        if isinstance(error, commands.NoPrivateMessage):
+            msg = lang_service.get_text("error_guild_only", lang)
+            return await ctx.send(embed=embed_service.error(error_title, msg, lite=True))
+
         logger.error(f"🔥 Error en comando de prefijo '{ctx.command}': {error}", exc_info=error)
         await ctx.send(embed=embed_service.error(error_title, lang_service.get_text("error_generic", lang)))
 
@@ -95,7 +99,9 @@ class GlobalErrorHandler(commands.Cog):
         if isinstance(error, discord.NotFound) and error.code == 10062:
             return
 
-        if isinstance(error, app_commands.MissingPermissions):
+        if isinstance(error, app_commands.NoPrivateMessage):
+            msg = lang_service.get_text("error_guild_only", lang)
+        elif isinstance(error, app_commands.MissingPermissions):
             msg = lang_service.get_text("error_no_perms", lang)
         elif isinstance(error, app_commands.BotMissingPermissions):
             perms = ", ".join(error.missing_permissions)
