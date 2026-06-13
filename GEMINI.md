@@ -207,3 +207,30 @@ class MiModulo(commands.Cog):
 async def setup(bot: commands.Bot):
     await bot.add_cog(MiModulo(bot))
 ```
+
+---
+
+## 🚨 Protocolo ante Bugs, Errores y Fallos Críticos
+
+Para garantizar la estabilidad y fácil mantenimiento del bot en entornos de producción, se debe seguir este protocolo ante incidentes:
+
+1. **Monitoreo y Diagnóstico con Logs:**
+   - Ubicación del log rotativo: `data/discord.log` (Rotación automática: 5 archivos de hasta 5MB).
+   - Siempre registrar excepciones usando `logger.exception("Mensaje del error")` para capturar la traza completa (stack trace).
+
+2. **Suite de Autodiagnóstico Activo (`health_check.py`):**
+   - El bot ejecuta una prueba automática en segundo plano cada 30 minutos (`cogs/tasks/health_check.py`).
+   - Comprueba la integridad física de la base de datos (PRAGMA check), tamaño del disco, estado de los nodos Lavalink, credenciales de Spotify, paridad de las claves i18n entre idiomas, y uso de CPU/RAM.
+   - Si se detecta un fallo, el bot enviará un mensaje directo (DM) automático con la alerta al dueño de la aplicación.
+
+3. **Manejo de Excepciones en Comandos:**
+   - Centralizado en `cogs/events/error_handler.py`. Evitar bloques `try/except` genéricos que silencien errores en la capa del comando; permitir que escalen al manejador global.
+   - Enviar siempre respuestas visuales controladas usando `embed_service.error(...)` e internacionalizadas.
+
+4. **Respaldo y Recuperación ante Pérdida de Datos:**
+   - La tarea `cogs/tasks/backup.py` realiza un volcado de XP en memoria a disco cada 5 minutos (`flush_xp_cache()`) y genera un backup completo de la base de datos SQLite cada 12 horas.
+   - El backup se envía directamente al DM del dueño del bot. Solo se mantienen los últimos 3 backups en el historial para evitar saturar el almacenamiento.
+   - Para restaurar en caso de corrupción: Detener el bot, descargar el último archivo sqlite3 del DM, renombrarlo a `database.sqlite3` en `/data/`, y reiniciar.
+
+5. **Garantía de Tiempo de Actividad (Resiliency):**
+   - En producción, ejecutar siempre el bot bajo un gestor de procesos (como `PM2` o un servicio de `systemd`) que lo reinicie automáticamente en caso de detención inesperada o caída fatal del proceso de Python.
