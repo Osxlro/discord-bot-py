@@ -9,7 +9,7 @@ load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")  # Token principal del bot de Discord
 DATABASE_URL = os.getenv("DATABASE_URL")  # URL para DB externa (PostgreSQL/MySQL)
 REDIS_URL = os.getenv("REDIS_URL")  # URL para servidor de caché Redis
-IS_PRODUCTION = os.getenv("PRODUCTION", "False") == "True"  # Flag de entorno de producción
+IS_PRODUCTION = os.getenv("PRODUCTION", "True") == "True"  # Flag de entorno de producción
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # Ruta raíz del proyecto
 LOG_FILE = os.path.join(BASE_DIR, "data", "discord.log")  # Ruta del archivo de logs
 
