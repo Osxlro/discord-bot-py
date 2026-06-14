@@ -236,6 +236,9 @@ ES = {
     "serverinfo_conf_desc": "🌐 **Idioma:** {language}\n👋 **Bienvenida:** {welcome}\n🤫 **Confesiones:** {confess}\n📜 **Logs:** {logs}\n🎂 **Cumpleaños:** {bday}\n🎭 **Auto-Rol:** {autorole}",
     "serverinfo_not_set": "❌",
     "serverinfo_na": "N/A",
+    "serverinfo_boost_tier": "🔮 Nivel de Boost",
+    "serverinfo_emojis": "😊 Emojis & Stickers",
+    "serverinfo_verification": "🛡️ Verificación",
     "trans_error": "❌ Error interno en el traductor.",
 
     # --- STATUS ---

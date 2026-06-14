@@ -38,7 +38,11 @@ async def handle_serverinfo(guild: discord.Guild, lang: str):
         'channels': len(guild.channels),
         'cats': len(guild.categories),
         'text': len(guild.text_channels),
-        'voice': len(guild.voice_channels)
+        'voice': len(guild.voice_channels),
+        'emojis': len(guild.emojis),
+        'stickers': len(guild.stickers),
+        'tier': guild.premium_tier,
+        'verification': str(guild.verification_level).lower()
     }
 
     if guild.member_count > settings.GENERAL_CONFIG["LARGE_SERVER_THRESHOLD"]:

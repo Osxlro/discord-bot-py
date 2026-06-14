@@ -11,27 +11,50 @@ def get_calc_success_embed(num1: float, op_symbol: str, num2: float, res: float,
     return embed_service.success(lang_service.get_text("title_math", lang), txt)
 
 def get_serverinfo_embed(guild: discord.Guild, config: dict, stats: dict, lang: str) -> discord.Embed:
+    from config import settings
     title = lang_service.get_text("serverinfo_title", lang, name=guild.name)
-    embed = discord.Embed(title=title, color=guild.me.color)
+    
+    # Usar el color del bot en el servidor o el azul Discord de marca (0x5865F2)
+    color = guild.me.color if guild.me.color.value != 0 else discord.Color(0x5865F2)
+    embed = discord.Embed(title=title, color=color)
     
     if guild.icon: embed.set_thumbnail(url=guild.icon.url)
     if guild.banner: embed.set_image(url=guild.banner.url)
 
-    # Información General
+    # Fila 1: Información Básica
     embed.add_field(name=lang_service.get_text("serverinfo_owner", lang), value=f"<@{guild.owner_id}>", inline=True)
     embed.add_field(name=lang_service.get_text("serverinfo_id", lang), value=f"`{guild.id}`", inline=True)
     embed.add_field(name=lang_service.get_text("serverinfo_created", lang), value=f"<t:{int(guild.created_at.timestamp())}:D>", inline=True)
 
-    # Estadísticas
+    # Fila 2: Información del Servidor (Boosts, Emojis, Verificación)
+    verification_map = {
+        "none": {"es": "Ninguno", "en": "None", "pt": "Nenhum", "fr": "Aucun"},
+        "low": {"es": "Bajo", "en": "Low", "pt": "Baixo", "fr": "Faible"},
+        "medium": {"es": "Medio", "en": "Medium", "pt": "Médio", "fr": "Moyen"},
+        "high": {"es": "Alto", "en": "High", "pt": "Alto", "fr": "Élevé"},
+        "highest": {"es": "Extremo", "en": "Extreme", "pt": "Extremo", "fr": "Maximum"}
+    }
+    raw_ver = stats.get('verification', 'none')
+    ver_txt = verification_map.get(raw_ver, verification_map["none"]).get(lang, "None")
+    
+    emojis_txt = f"😊 {stats['emojis']} / 👾 {stats['stickers']}"
+    boost_tier_txt = f"Tier {stats['tier']} ({stats['boosts']} 🚀)"
+
+    embed.add_field(name=lang_service.get_text("serverinfo_boost_tier", lang), value=boost_tier_txt, inline=True)
+    embed.add_field(name=lang_service.get_text("serverinfo_emojis", lang), value=emojis_txt, inline=True)
+    embed.add_field(name=lang_service.get_text("serverinfo_verification", lang), value=ver_txt, inline=True)
+
+    # Fila 3: Estadísticas del Servidor
     stats_txt = lang_service.get_text("serverinfo_stats_desc", lang,
         total=guild.member_count, humans=stats['humans'], bots=stats['bots'],
         roles=stats['roles'], boosts=stats['boosts'],
         channels=stats['channels'], cats=stats['cats'],
         text=stats['text'], voice=stats['voice']
     )
-    embed.add_field(name=lang_service.get_text("serverinfo_stats", lang), value=stats_txt, inline=False)
+    formatted_stats = "\n".join(f"> {line}" for line in stats_txt.split('\n'))
+    embed.add_field(name=lang_service.get_text("serverinfo_stats", lang), value=formatted_stats, inline=False)
 
-    # Configuración
+    # Fila 4: Configuración del Bot
     def fmt(val, type_):
         if not val: return lang_service.get_text("serverinfo_not_set", lang)
         return f"<#{val}>" if type_ == "ch" else f"<@&{val}>"
@@ -47,7 +70,8 @@ def get_serverinfo_embed(guild: discord.Guild, config: dict, stats: dict, lang: 
         bday=fmt(config.get("birthday_channel_id"), "ch"),
         autorole=fmt(config.get("autorole_id"), "role")
     )
-    embed.add_field(name=lang_service.get_text("serverinfo_config", lang), value=conf_txt, inline=False)
+    formatted_conf = "\n".join(f"> {line}" for line in conf_txt.split('\n'))
+    embed.add_field(name=lang_service.get_text("serverinfo_config", lang), value=formatted_conf, inline=False)
 
     return embed
 
