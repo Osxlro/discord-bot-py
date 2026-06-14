@@ -76,8 +76,6 @@ async def init_db():
     await db.execute("""
     CREATE TABLE IF NOT EXISTS users (
         user_id INTEGER PRIMARY KEY,
-        xp INTEGER DEFAULT 0,
-        level INTEGER DEFAULT 1,
         birthday TEXT DEFAULT NULL,
         celebrate BOOLEAN DEFAULT 1,
         custom_prefix TEXT DEFAULT NULL,
@@ -136,11 +134,7 @@ async def init_db():
     """)
 
     # Migración segura: SQLite no permite CURRENT_TIMESTAMP en ALTER TABLE ADD COLUMN
-    async with db.execute("PRAGMA table_info(bot_persistence)") as cursor:
-        columns = [row['name'] for row in await cursor.fetchall()]
-        if "created_at" not in columns:
-            await db.execute("ALTER TABLE bot_persistence ADD COLUMN created_at DATETIME DEFAULT (datetime('now'))")
-            logger.info("🛠️ Columna 'created_at' añadida a 'bot_persistence'.")
+    await _ensure_column("bot_persistence", "created_at", "DATETIME DEFAULT (datetime('now'))")
 
     # 4. Estados Rotativos del Bot
     await db.execute("""
@@ -191,6 +185,7 @@ async def _ensure_column(table: str, column: str, definition: str):
         if column not in columns:
             try:
                 await db.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")
+                await db.commit()
                 logger.info(f"🛠️ Columna '{column}' añadida a la tabla '{table}'.")
             except Exception:
                 logger.exception(f"❌ Error en migración {table}.{column}")
@@ -293,13 +288,18 @@ async def flush_xp_cache():
         try:
             async def _do_update():
                 db = await get_db()
-                await db.executemany("""
-                    INSERT INTO guild_stats (xp, level, rebirths, guild_id, user_id) 
-                    VALUES (?, ?, ?, ?, ?)
-                    ON CONFLICT(guild_id, user_id) DO UPDATE SET 
-                    xp = excluded.xp, level = excluded.level, rebirths = excluded.rebirths
-                """, updates)
-                await db.commit()
+                await db.execute("BEGIN TRANSACTION;")
+                try:
+                    await db.executemany("""
+                        INSERT INTO guild_stats (xp, level, rebirths, guild_id, user_id) 
+                        VALUES (?, ?, ?, ?, ?)
+                        ON CONFLICT(guild_id, user_id) DO UPDATE SET 
+                        xp = excluded.xp, level = excluded.level, rebirths = excluded.rebirths
+                    """, updates)
+                    await db.execute("COMMIT;")
+                except Exception as e:
+                    await db.execute("ROLLBACK;")
+                    raise e
 
             await _execute_with_retry(_do_update)
             

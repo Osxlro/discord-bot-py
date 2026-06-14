@@ -234,7 +234,7 @@ ES = {
     "serverinfo_stats": "📊 Estadísticas",
     "serverinfo_stats_desc": "👥 **Usuarios:** {total} ({humans} 👤 / {bots} 🤖)\n🎭 **Roles:** {roles}\n🚀 **Boosts:** {boosts}\n📂 **Canales:** {channels} ({cats} Cats | {text} 💬 | {voice} 🔊)",
     "serverinfo_config": "⚙️ Configuración",
-    "serverinfo_conf_desc": "🌐 **Idioma:** {language}\n👋 **Bienvenida:** {welcome}\n🤫 **Confesiones:** {confess}\n📜 **Logs:** {logs}\n🎂 **Cumpleaños:** {bday}\n🎭 **Auto-Rol:** {autorole}",
+    "serverinfo_conf_desc": "🌐 **Idioma:** {language}\n👋 **Bienvenida:** {welcome}\n🤫 **Confesiones:** {confess}\n📜 **Logs:** {logs}\n🎂 **Cumpleaños:** {bday}\n🎭 **Auto-Rol:** {autorole}\n📖 **Wordday Canal:** {wordday_ch}\n🏷️ **Wordday Rol:** {wordday_role}",
     "serverinfo_not_set": "❌",
     "serverinfo_na": "N/A",
     "serverinfo_boost_tier": "🔮 Nivel de Boost",

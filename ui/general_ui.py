@@ -68,7 +68,9 @@ def get_serverinfo_embed(guild: discord.Guild, config: dict, stats: dict, lang: 
         confess=fmt(config.get("confessions_channel_id"), "ch"),
         logs=fmt(config.get("logs_channel_id"), "ch"),
         bday=fmt(config.get("birthday_channel_id"), "ch"),
-        autorole=fmt(config.get("autorole_id"), "role")
+        autorole=fmt(config.get("autorole_id"), "role"),
+        wordday_ch=fmt(config.get("wordday_channel_id"), "ch"),
+        wordday_role=fmt(config.get("wordday_role_id"), "role")
     )
     formatted_conf = "\n".join(f"> {line}" for line in conf_txt.split('\n'))
     embed.add_field(name=lang_service.get_text("serverinfo_config", lang), value=formatted_conf, inline=False)

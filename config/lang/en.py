@@ -236,7 +236,7 @@ EN = {
     "serverinfo_stats": "📊 Statistics",
     "serverinfo_stats_desc": "👥 **Users:** {total} ({humans} 👤 / {bots} 🤖)\n🎭 **Roles:** {roles}\n🚀 **Boosts:** {boosts}\n📂 **Channels:** {channels} ({cats} Cats | {text} 💬 | {voice} 🔊)",
     "serverinfo_config": "⚙️ Configuration",
-    "serverinfo_conf_desc": "🌐 **Language:** {language}\n👋 **Welcome:** {welcome}\n🤫 **Confessions:** {confess}\n📜 **Logs:** {logs}\n🎂 **Birthday:** {bday}\n🎭 **Auto-Role:** {autorole}",
+    "serverinfo_conf_desc": "🌐 **Language:** {language}\n👋 **Welcome:** {welcome}\n🤫 **Confessions:** {confess}\n📜 **Logs:** {logs}\n🎂 **Birthday:** {bday}\n🎭 **Auto-Role:** {autorole}\n📖 **Wordday Channel:** {wordday_ch}\n🏷️ **Wordday Role:** {wordday_role}",
     "serverinfo_not_set": "❌",
     "serverinfo_na": "N/A",
     "serverinfo_boost_tier": "🔮 Boost Tier",
