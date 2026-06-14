@@ -8,6 +8,7 @@ def get_general_embed(target: discord.Member, user_data: dict, lang: str) -> dis
     desc = user_data['description'] if user_data else lang_service.get_text("profile_desc", lang)
     cumple = user_data['birthday'] if user_data and user_data['birthday'] else lang_service.get_text("profile_no_bday", lang)
     prefix = user_data['custom_prefix'] if user_data and user_data['custom_prefix'] else settings.CONFIG["bot_config"]["prefix"]
+    coins = user_data['coins'] if user_data and 'coins' in user_data else 0
     
     title = lang_service.get_text("profile_title", lang, user=target.display_name)
     embed = discord.Embed(title=title, color=target.color)
@@ -16,7 +17,7 @@ def get_general_embed(target: discord.Member, user_data: dict, lang: str) -> dis
     embed.add_field(name=lang_service.get_text("profile_field_desc", lang), value=f"*{desc}*", inline=False)
     embed.add_field(name=lang_service.get_text("profile_field_bday", lang), value=f"{cumple}", inline=True)
     embed.add_field(name=lang_service.get_text("profile_field_prefix", lang), value=f"`{prefix}`", inline=True)
-    embed.add_field(name=lang_service.get_text("profile_field_coins", lang), value="`0` (Soon)", inline=True)
+    embed.add_field(name=lang_service.get_text("profile_field_coins", lang), value=f"`{coins}`", inline=True)
 
     return embed
 

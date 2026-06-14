@@ -116,6 +116,7 @@ FR = {
     # --- SYSTÈME DE REBIRTH ---
     "rebirth_success": "✨ **RENAISSANCE TERMINÉE !** ✨\nVous avez sacrifié votre niveau 100+ pour renaître. Vous avez maintenant **{rebirths}** Rebirth(s).\nVotre niveau est revenu à 1.",
     "rebirth_fail_level": "❌ Vous n'êtes pas encore prêt. Vous devez être au moins **Niveau 100** (Vous êtes niveau {level}).",
+    "rebirth_fail_coins": "❌ Vous n'avez pas assez de pièces pour renaître. Vous avez besoin de **{cost}** pièces.",
     "rebirth_fail_generic": "❌ La renaissance n'a pas pu être effectuée.",
     "rebirth_title_success": "🌀 Renaissance Réussie",
     "rebirth_title_fail": "Renaissance Échouée",

@@ -118,6 +118,7 @@ EN = {
     # --- REBIRTH SYSTEM ---
     "rebirth_success": "✨ **REBIRTH COMPLETED!** ✨\nYou sacrificed level 100+ to be reborn. You now have **{rebirths}** Rebirth(s).\nYour level is back to 1.",
     "rebirth_fail_level": "❌ You are not ready yet. You need **Level 100** minimum (You are level {level}).",
+    "rebirth_fail_coins": "❌ You do not have enough coins to rebirth. You need **{cost}** coins.",
     "rebirth_fail_generic": "❌ Rebirth could not be completed.",
     "rebirth_title_success": "🌀 Rebirth Successful",
     "rebirth_title_fail": "Rebirth Failed",

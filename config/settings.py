@@ -138,7 +138,9 @@ LEVELS_CONFIG = {
     "XP_EXPONENT": 1.2,  # Exponente de dificultad de nivel
     "REBIRTH_LEVEL": 100,  # Nivel necesario para renacer
     "MEDALS": ["🥇", "🥈", "🥉"],  # Emojis para el podio
-    "LEADERBOARD_CHUNK_SIZE": 10  # Usuarios por página en el leaderboard
+    "LEADERBOARD_CHUNK_SIZE": 10,  # Usuarios por página en el leaderboard
+    "REBIRTH_COST": 100,  # Costo en monedas para hacer rebirth
+    "COINS_PER_LEVEL": (5, 10)  # Monedas ganadas por nivel subido (mínimo, máximo)
 }
 
 # =============================================================================

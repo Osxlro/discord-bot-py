@@ -72,6 +72,8 @@ def get_rebirth_fail_embed(lang: str, result: any) -> discord.Embed:
     title = lang_service.get_text("rebirth_title_fail", lang)
     if result == "no_data":
         msg = lang_service.get_text("rank_no_data", lang)
+    elif result == "not_enough_coins":
+        msg = lang_service.get_text("rebirth_fail_coins", lang, cost=settings.LEVELS_CONFIG.get("REBIRTH_COST", 100))
     elif isinstance(result, int):
         msg = lang_service.get_text("rebirth_fail_level", lang, level=result)
     else:

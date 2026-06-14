@@ -3,6 +3,7 @@ import os
 import asyncio
 import sqlite3
 import aiosqlite
+import random
 from config import settings
 
 # --- CONFIGURACIÓN ---
@@ -82,7 +83,8 @@ async def init_db():
         custom_prefix TEXT DEFAULT NULL,
         description TEXT DEFAULT 'Sin descripción.',
         personal_level_msg TEXT DEFAULT NULL,
-        personal_birthday_msg TEXT DEFAULT NULL
+        personal_birthday_msg TEXT DEFAULT NULL,
+        coins INTEGER DEFAULT 0
     )
     """)
     
@@ -167,6 +169,7 @@ async def init_db():
     await db.execute("CREATE INDEX IF NOT EXISTS idx_ranking ON guild_stats(guild_id, rebirths DESC, level DESC, xp DESC)")
     
     # --- MIGRACIONES ROBUSTAS ---
+    await _ensure_column("users", "coins", "INTEGER DEFAULT 0")
     await _ensure_column("guild_stats", "rebirths", "INTEGER DEFAULT 0")
     await _ensure_column("guild_config", "language", "TEXT DEFAULT 'es'")
     await _ensure_column("guild_config", "server_goodbye_msg", "TEXT DEFAULT NULL")
@@ -379,6 +382,18 @@ async def get_user_prefix(user_id: int) -> str | None:
     _prefix_cache[user_id] = prefix
     return prefix
 
+async def get_user_coins(user_id: int) -> int:
+    """Obtiene la cantidad de monedas de un usuario (global)."""
+    row = await fetch_one("SELECT coins FROM users WHERE user_id = ?", (user_id,))
+    return row['coins'] if row else 0
+
+async def add_user_coins(user_id: int, amount: int):
+    """Añade o quita monedas a un usuario (global)."""
+    await execute("""
+        INSERT INTO users (user_id, coins) VALUES (?, ?)
+        ON CONFLICT(user_id) DO UPDATE SET coins = coins + excluded.coins
+    """, (user_id, amount))
+
 # =============================================================================
 # 5. LÓGICA DE NEGOCIO: XP Y NIVELES
 # =============================================================================
@@ -413,6 +428,12 @@ async def add_xp(guild_id: int, user_id: int, amount: int) -> tuple[int, bool]:
         data['xp'] -= required
         data['level'] += 1
         leveled_up = True
+        
+        # Otorgar monedas por cada nivel subido
+        coins_min, coins_max = settings.LEVELS_CONFIG.get("COINS_PER_LEVEL", (5, 10))
+        coins_earned = random.randint(coins_min, coins_max)
+        await add_user_coins(user_id, coins_earned)
+        
         required = calculate_xp_required(data['level'])
     
     return data['level'], leveled_up
@@ -431,7 +452,16 @@ async def do_rebirth(guild_id: int, user_id: int) -> tuple[bool, any]:
     min_level = settings.LEVELS_CONFIG["REBIRTH_LEVEL"]
     if row['level'] < min_level: return False, row['level']
     
+    # Verificar si el usuario tiene suficientes monedas
+    cost = settings.LEVELS_CONFIG.get("REBIRTH_COST", 100)
+    coins = await get_user_coins(user_id)
+    if coins < cost:
+        return False, "not_enough_coins"
+    
     new_reb = row['rebirths'] + 1
+    
+    # Deducir monedas
+    await add_user_coins(user_id, -cost)
     
     # Actualizamos DB directamente
     await execute("UPDATE guild_stats SET level = 1, xp = 0, rebirths = ? WHERE guild_id = ? AND user_id = ?", (new_reb, guild_id, user_id))

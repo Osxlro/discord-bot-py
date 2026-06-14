@@ -116,6 +116,7 @@ ES = {
     # --- REBIRTH SYSTEM ---
     "rebirth_success": "✨ **¡RENACIMIENTO COMPLETADO!** ✨\nHas sacrificado tu nivel 100+ para renacer. Ahora tienes **{rebirths}** Rebirth(s).\nTu nivel ha vuelto a 1.",
     "rebirth_fail_level": "❌ Aún no estás listo para renacer. Necesitas ser **Nivel 100** mínimo (Eres nivel {level}).",
+    "rebirth_fail_coins": "❌ No tienes suficientes monedas para renacer. Necesitas **{cost}** monedas.",
     "rebirth_fail_generic": "❌ No se pudo completar el renacimiento.",
     "rebirth_title_success": "🌀 Rebirth Exitoso",
     "rebirth_title_fail": "Rebirth Fallido",
