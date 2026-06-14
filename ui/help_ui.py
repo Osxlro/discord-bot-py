@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 from config import settings
 from services.core import lang_service
+from services.utils import embed_service
 
 def _get_visible_cogs(bot):
     """Retorna una lista de Cogs que tienen al menos un comando visible."""
