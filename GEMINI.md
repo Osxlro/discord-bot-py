@@ -222,6 +222,28 @@ async def setup(bot: commands.Bot):
 
 ---
 
+## 🧪 Protocolo de Pruebas y Validaciones Obligatorias
+
+Para prevenir errores de sintaxis, variables indefinidas o discrepancias de internacionalización, es **obligatorio** ejecutar la suite de validación estática local después de realizar cualquier cambio en el código, comandos o traducciones, y antes de hacer commits o desplegar en producción.
+
+La suite se compone de tres validadores en el directorio `/validators/`:
+
+1. **Validación de Código (`validators/validate_code.py`)**:
+   - Analiza estáticamente la sintaxis de todos los archivos de código del bot y busca nombres de variables indefinidos (`NameError`) en todos los bloques locales y globales.
+   - *Ejecución:* `.venv\Scripts\python.exe validators/validate_code.py`
+
+2. **Validación de Comandos y Cogs (`validators/validate_commands.py`)**:
+   - Verifica que todos los Cogs tengan la función `setup(bot)` necesaria para su registro.
+   - Audita que todos los comandos híbridos y slash cumplan estrictamente con las reglas de Discord (nombres en minúsculas, sin espacios, de 1 a 32 caracteres, y descripciones válidas menores a 100 caracteres).
+   - Detecta colisiones o nombres duplicados de comandos y subcomandos.
+   - *Ejecución:* `.venv\Scripts\python.exe validators/validate_commands.py`
+
+3. **Validación de Internacionalización (`validators/validate_locales.py`)**:
+   - Comprueba la sincronía de llaves y paridad de marcadores de formato (como `{user}`, `{level}`) en todos los archivos de traducción (es, en, pt, fr) para prevenir fallos `KeyError` en producción.
+   - *Ejecución:* `.venv\Scripts\python.exe validators/validate_locales.py`
+
+---
+
 ## 🚨 Protocolo ante Bugs, Errores y Fallos Críticos
 
 Para garantizar la estabilidad y fácil mantenimiento del bot en entornos de producción, se debe seguir este protocolo ante incidentes:

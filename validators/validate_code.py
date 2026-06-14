@@ -132,12 +132,6 @@ class CodeValidator(ast.NodeVisitor):
         self.generic_visit(node)
         self.pop_scope()
 
-    def visit_FunctionDef(self, node):
-        self.visit_function(node)
-
-    def visit_AsyncFunctionDef(self, node):
-        self.visit_function(node)
-
     def visit_function(self, node):
         for decorator in node.decorator_list:
             self.visit(decorator)
@@ -176,6 +170,12 @@ class CodeValidator(ast.NodeVisitor):
         for stmt in node.body:
             self.visit(stmt)
         self.pop_scope()
+
+    def visit_FunctionDef(self, node):
+        self.visit_function(node)
+
+    def visit_AsyncFunctionDef(self, node):
+        self.visit_function(node)
 
     def visit_ClassDef(self, node):
         for decorator in node.decorator_list:
@@ -240,21 +240,24 @@ class CodeValidator(ast.NodeVisitor):
         self.generic_visit(node)
 
 def run_validation():
+    root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     target_dirs = ["cogs", "services", "ui", "config"]
     target_files = ["main.py"]
     
     files_to_check = []
     for directory in target_dirs:
-        if not os.path.exists(directory):
+        dir_path = os.path.join(root_dir, directory)
+        if not os.path.exists(dir_path):
             continue
-        for root, _, files in os.walk(directory):
+        for r, _, files in os.walk(dir_path):
             for file in files:
                 if file.endswith(".py"):
-                    files_to_check.append(os.path.join(root, file))
+                    files_to_check.append(os.path.join(r, file))
                     
     for file in target_files:
-        if os.path.exists(file):
-            files_to_check.append(file)
+        file_path = os.path.join(root_dir, file)
+        if os.path.exists(file_path):
+            files_to_check.append(file_path)
             
     files_to_check = sorted(files_to_check)
     
@@ -287,7 +290,9 @@ def run_validation():
         print("\nSe encontraron los siguientes problemas de codigo:")
         print("=" * 60)
         for filename, errors in errors_by_file.items():
-            print(f"\n[File] Archivo: {filename}")
+            # Mostramos ruta relativa al directorio raíz para mejor visualización
+            relative_path = os.path.relpath(filename, root_dir)
+            print(f"\n[File] Archivo: {relative_path}")
             for line, col, msg in errors:
                 print(f"  - Linea {line}, Col {col}: {msg}")
         print("\n" + "=" * 60)
