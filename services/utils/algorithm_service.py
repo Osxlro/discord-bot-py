@@ -232,16 +232,17 @@ class RecommendationEngine:
         return adjustment
 
     async def get_recommendation(self, player: wavelink.Player) -> wavelink.Playable:
-        if not player.queue.history: return None
+        if not player.queue.history and not player.current: 
+            return None
 
         # 1. Preparar Contexto
         history = list(player.queue.history)
-        recent = history[-self.history_limit:]
+        recent = history[-self.history_limit:] if history else []
         played_ids = {t.identifier for t in recent}
         played_titles = [t.title for t in recent]
         played_authors = {t.author.lower() for t in recent}
 
-        seed = history[-1]
+        seed = history[-1] if history else player.current
         author = seed.author or settings.ALGORITHM_CONFIG["DEFAULT_METADATA"]
         title = seed.title or settings.ALGORITHM_CONFIG["DEFAULT_METADATA"]
         seed_styles = self._get_style_tags(title)
@@ -273,7 +274,9 @@ class RecommendationEngine:
 
     async def _resolve_spotify_recs(self, data, seed, styles, mood, played_ids):
         provider = settings.LAVALINK_CONFIG.get("SEARCH_PROVIDER", "ytsearch")
-        tasks = [wavelink.Playable.search(f"{provider}:{rec}") for rec in data["recs"]]
+        # Limitar búsquedas simultáneas a los top 3 recomendados de Spotify
+        recs_to_search = data["recs"][:3]
+        tasks = [wavelink.Playable.search(f"{provider}:{rec}") for rec in recs_to_search]
         results = await asyncio.gather(*tasks, return_exceptions=True)
         
         candidates = [res[0] for res in results if isinstance(res, list) and res and res[0].identifier not in played_ids]
@@ -294,19 +297,17 @@ class RecommendationEngine:
         clean = music_service.clean_track_title(title)
         queries = [
             f"{provider}:{clean} {author} mix",
-            f"{provider}:{author} top tracks" # Sugerencias directas del mismo autor
+            f"{provider}:{author} {'radio' if streak >= 2 else 'top tracks'}"
         ]
         
         peers = self._get_related_known_artists(author)
         if peers:
             p = random.choice(peers)
-            queries.extend([f"{provider}:{p} top hits", f"{provider}:{p} {self._get_artist_genre(author)}"])
-
-        if styles: queries.append(f"{provider}:{clean} {' '.join(styles)} similar")
-        # Si ya hay una racha, buscamos radio; si no, buscamos artistas similares
-        queries.append(f"{provider}:{author} {'radio' if streak >= 2 else 'similar artist'}")
-        
-        if "yt" in provider: queries.append(f"scsearch:{clean} {author} similar")
+            queries.append(f"{provider}:{p} top hits")
+            
+        if styles:
+            queries.append(f"{provider}:{clean} {' '.join(styles)} similar")
+            
         return queries
 
     async def _fetch_candidates(self, queries):

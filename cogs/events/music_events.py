@@ -34,7 +34,7 @@ class MusicEvents(commands.Cog):
         if not wavelink.Pool.nodes or not any(n.status == wavelink.NodeStatus.CONNECTED for n in wavelink.Pool.nodes.values()):
             await music_service.connect_nodes(self.bot)
 
-    @tasks.loop(seconds=20)
+    @tasks.loop(seconds=60)
     async def persistence_scheduler(self):
         """Guarda periódicamente el estado de todos los reproductores activos."""
         for node in wavelink.Pool.nodes.values():

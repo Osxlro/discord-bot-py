@@ -85,6 +85,10 @@ class BotPersonal(commands.AutoShardedBot):
 
     async def check_global_interaction(self, interaction: discord.Interaction) -> bool:
         """Verifica el cooldown global para Slash Commands."""
+        # Ignorar interacciones que no sean comandos de aplicación (ej. autocompletados o clics en botones/menús)
+        if interaction.type != discord.InteractionType.application_command:
+            return True
+
         if await self.is_owner(interaction.user): return True
 
         # Adaptador: Creamos un objeto dummy porque CooldownMapping espera un mensaje con atributo .author
