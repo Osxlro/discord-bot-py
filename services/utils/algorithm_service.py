@@ -341,7 +341,7 @@ class RecommendationEngine:
             sel = random.choices(tracks, weights=weights, k=1)[0]
             logger.info(f"🤖 [Algoritmo] Recomendación: {sel.title}")
             return sel
-        except: return top[0][0]
+        except Exception: return top[0][0]
 
     async def _get_fallback_recommendation(self, history, seed):
         if len(history) > 1:
@@ -352,4 +352,4 @@ class RecommendationEngine:
             p = settings.LAVALINK_CONFIG.get("SEARCH_PROVIDER", "spsearch")
             res = await wavelink.Playable.search(f"{p}:{random.choice(['lofi hip hop', 'chill mix'])}")
             return res[0] if res else None
-        except: return None
+        except Exception: return None

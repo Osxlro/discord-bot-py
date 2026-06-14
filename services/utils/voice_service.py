@@ -17,7 +17,7 @@ async def join_voice(guild: discord.Guild, channel: discord.VoiceChannel) -> boo
             # Aseguramos que siga en modo "Chill" al moverse
             if guild.me.voice:
                 try: await guild.me.edit(deafen=True, mute=True)
-                except: pass
+                except Exception: pass
         else:
             await channel.connect(self_deaf=True, self_mute=True)
         
@@ -58,7 +58,7 @@ async def reconnect_voice(bot, guild: discord.Guild, channel_id: int):
             
             if vc:
                 try: await vc.disconnect(force=True)
-                except: pass
+                except Exception: pass
 
             await channel.connect(self_deaf=True, self_mute=True)
             logger.info(f"✅ [Voice Service] Reconexión exitosa en {guild.name}.")

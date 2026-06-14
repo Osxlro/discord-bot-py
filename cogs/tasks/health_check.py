@@ -247,14 +247,14 @@ class HealthCheck(commands.Cog):
             cache_size = len(db_service._xp_cache)
             if cache_size > 500:
                 warnings.append(f"XP Cache: {cache_size} entries pending flush.")
-        except: pass
+        except Exception: pass
 
         # 5. Recursos del Sistema (vía Developer Service)
         try:
             info = await developer_service.get_psutil_info()
             if info.get("available") and info["ram_sys"].percent > 90:
                 warnings.append(f"System RAM: {info['ram_sys'].percent}%")
-        except: pass
+        except Exception: pass
 
     async def _notify_owner(self, errors: list):
         """Envía un reporte de errores al dueño del bot."""

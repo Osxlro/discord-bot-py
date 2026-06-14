@@ -52,7 +52,7 @@ class Voice(commands.Cog):
         else:
             # Si no estaba conectado, reaccionar con una duda
             try: await ctx.message.add_reaction("❓")
-            except: pass
+            except Exception: pass
 
     @commands.Cog.listener()
     async def on_voice_state_update(self, member, before, after):

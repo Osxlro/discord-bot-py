@@ -173,7 +173,7 @@ async def cleanup_player(player: wavelink.Player, skip_message_edit: bool = Fals
         # Limpiar cola
         if hasattr(player, "queue"):
             try: player.queue.clear()
-            except: pass
+            except Exception: pass
             
         # Resetear estados internos
         player.smart_autoplay = False
@@ -266,7 +266,7 @@ async def send_now_playing(bot: discord.Client, player: wavelink.Player, track: 
     if new_track or not last_msg or last_msg.author.id != bot.user.id:
         if last_msg:
             try: await last_msg.delete()
-            except: pass
+            except Exception: pass
         
         sent_msg = await home.send(embed=embed, view=view)
         player.last_msg = sent_msg
@@ -277,7 +277,7 @@ async def send_now_playing(bot: discord.Client, player: wavelink.Player, track: 
         except Exception as e:
             logger.warning(f"No se pudo editar el mensaje del reproductor: {e}. Enviando uno nuevo.")
             try: await last_msg.delete()
-            except: pass
+            except Exception: pass
             sent_msg = await home.send(embed=embed, view=view)
             player.last_msg = sent_msg
             data["last_msg"] = sent_msg

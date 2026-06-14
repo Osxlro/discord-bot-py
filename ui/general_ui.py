@@ -1,4 +1,5 @@
 import discord
+from config import settings
 from services.utils import embed_service
 from services.core import lang_service
 
@@ -11,7 +12,6 @@ def get_calc_success_embed(num1: float, op_symbol: str, num2: float, res: float,
     return embed_service.success(lang_service.get_text("title_math", lang), txt)
 
 def get_serverinfo_embed(guild: discord.Guild, config: dict, stats: dict, lang: str) -> discord.Embed:
-    from config import settings
     title = lang_service.get_text("serverinfo_title", lang, name=guild.name)
     
     # Usar el color del bot en el servidor o el azul Discord de marca (0x5865F2)
@@ -76,7 +76,6 @@ def get_serverinfo_embed(guild: discord.Guild, config: dict, stats: dict, lang: 
     return embed
 
 def get_translate_embed(orig: str, trans: str, lang: str) -> discord.Embed:
-    from config import settings
     limit = settings.UI_CONFIG["MSG_PREVIEW_TRUNCATE"]
     txt = lang_service.get_text("trans_result", lang, orig=orig[:limit]+"...", trans=trans)
     return embed_service.success(lang_service.get_text("title_translate", lang), txt)

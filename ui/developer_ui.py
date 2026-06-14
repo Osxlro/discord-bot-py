@@ -221,7 +221,7 @@ class BotInfoView(discord.ui.View):
         if tracemalloc.is_tracing(): tracemalloc.stop()
         for child in self.children: child.disabled = True
         try: await self.message.edit(view=self)
-        except: pass
+        except Exception: pass
 
     async def _monitor_loop(self):
         for _ in range(24):
@@ -235,7 +235,7 @@ class BotInfoView(discord.ui.View):
         if tracemalloc.is_tracing(): tracemalloc.stop()
         self.btn_monitor.label, self.btn_monitor.style = "Iniciar Monitor", discord.ButtonStyle.success
         try: await self.message.edit(view=self)
-        except: pass
+        except Exception: pass
 
     async def _update(self, interaction, embed, style_idx):
         self.active_tab = style_idx

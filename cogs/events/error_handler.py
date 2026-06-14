@@ -122,7 +122,7 @@ class GlobalErrorHandler(commands.Cog):
                 await interaction.followup.send(embed=embed, ephemeral=True)
             else:
                 await interaction.response.send_message(embed=embed, ephemeral=True)
-        except: pass
+        except Exception: pass
 
 async def setup(bot):
     await bot.add_cog(GlobalErrorHandler(bot))

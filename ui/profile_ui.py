@@ -85,7 +85,7 @@ class ProfileView(discord.ui.View):
     async def on_timeout(self):
         for child in self.children: child.disabled = True
         try: await self.message.edit(view=self)
-        except: pass
+        except Exception: pass
 
     async def _update(self, interaction, embed, style_idx):
         tabs = [self.btn_general, self.btn_stats, self.btn_msgs]

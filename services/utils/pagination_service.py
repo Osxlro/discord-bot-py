@@ -51,7 +51,7 @@ class Paginator(discord.ui.View):
         
         if self.message:
             try: await self.message.edit(view=self)
-            except: pass
+            except Exception: pass
 
     @discord.ui.button(style=discord.ButtonStyle.secondary)
     async def first_page(self, interaction: discord.Interaction, button: discord.ui.Button):
