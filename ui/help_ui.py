@@ -47,22 +47,21 @@ async def get_home_embed(bot, guild: discord.Guild, user: discord.Member, lang: 
     stats = lang_service.get_text("help_stats", lang, cats=cogs_count, cmds=total_cmds)
     stats_title = lang_service.get_text("help_stats_title", lang)
     
-    stats = stats.replace("•", ">")
+    stats_formatted = "\n".join([f"> {line.lstrip('• ').strip()}" for line in stats.split("\n")])
+    cats_formatted = "\n".join([f"> • {cog.qualified_name}" for cog in visible_cogs])
     
-    embed = discord.Embed(
-        title=f"✨ {title}",
-        description=f"{desc}\n\n{stats_title}\n{stats}",
-        color=guild.me.color if guild else discord.Color.blurple()
+    description = (
+        f"{desc}\n\n"
+        f"### {stats_title}\n{stats_formatted}\n\n"
+        f"### {lang_service.get_text('help_categories', lang)}\n{cats_formatted}"
     )
     
-    cats = [f"• {cog.qualified_name}" for cog in visible_cogs]
-    cats_formatted = "\n".join(cats)
-    
-    embed.add_field(name=f"{lang_service.get_text('help_categories', lang)}", value=f"```\n{cats_formatted}\n```", inline=False)
-    embed.set_thumbnail(url=bot.user.display_avatar.url)
-    embed.set_footer(text=lang_service.get_text("help_home_footer", lang), icon_url=bot.user.display_avatar.url)
-    
-    return embed
+    return embed_service.info(
+        title=f"✨ {title}",
+        description=description,
+        thumbnail=bot.user.display_avatar.url,
+        footer=lang_service.get_text("help_home_footer", lang)
+    )
 
 def get_module_embed(bot, module_name: str, guild: discord.Guild, lang: str) -> discord.Embed:
     """Construye el embed detallado para un módulo específico."""
@@ -70,12 +69,6 @@ def get_module_embed(bot, module_name: str, guild: discord.Guild, lang: str) -> 
     title = lang_service.get_text("help_module_title", lang, module=module_name)
     module_desc = lang_service.get_text("help_module_desc", lang, module=module_name)
     
-    embed = discord.Embed(
-        title=f"{settings.HELP_CONFIG['EMOJI_MAP'].get(module_name, '📂')} {title}",
-        description=f"*{module_desc}*\n\n",
-        color=guild.me.color if guild else discord.Color.blurple()
-    )
-
     cmds_list = []
     for cmd in cog.get_commands():
         if cmd.hidden: continue
@@ -83,13 +76,20 @@ def get_module_embed(bot, module_name: str, guild: discord.Guild, lang: str) -> 
         desc_cmd = cmd.description or cmd.short_doc or "..."
         if isinstance(cmd, (commands.HybridGroup, commands.Group)):
             for sub in cmd.commands:
-                cmds_list.append(f"**/{cmd.name} {sub.name}**\n> └ {sub.description or '...'}")
+                cmds_list.append(f"**/{cmd.name} {sub.name}**\n>  • {sub.description or '...'}")
         else:
-            cmds_list.append(f"**/{cmd.name}**\n> └ {desc_cmd}")
+            cmds_list.append(f"**/{cmd.name}**\n>  • {desc_cmd}")
 
-    embed.description += "\n".join(cmds_list) if cmds_list else lang_service.get_text("help_no_cmds", lang)
-    embed.set_footer(text=lang_service.get_text("help_total_cmds", lang, count=len(cmds_list)), icon_url=bot.user.display_avatar.url)
-    return embed
+    commands_txt = "\n".join(cmds_list) if cmds_list else lang_service.get_text("help_no_cmds", lang)
+    description = f"*{module_desc}*\n\n{commands_txt}"
+    
+    emoji = settings.HELP_CONFIG['EMOJI_MAP'].get(module_name, '📂')
+    
+    return embed_service.info(
+        title=f"{emoji} {title}",
+        description=description,
+        footer=lang_service.get_text("help_total_cmds", lang, count=len(cmds_list))
+    )
 
 class HelpSelect(discord.ui.Select):
     def __init__(self, bot, ctx, lang):

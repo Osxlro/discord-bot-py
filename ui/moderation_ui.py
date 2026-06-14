@@ -88,12 +88,16 @@ def get_warns_pages(guild: discord.Guild, user_name: str, warns: list, lang: str
             # Convertir string de DB a timestamp de Discord
             dt = datetime.datetime.strptime(w['timestamp'], "%Y-%m-%d %H:%M:%S").replace(tzinfo=datetime.timezone.utc)
             ts = int(dt.timestamp())
-            desc += f"`ID: {w['id']}` | <@{w['mod_id']}>: {w['reason']} (<t:{ts}:R>)\n\n"
+            desc += f"> **ID: {w['id']}** | <@{w['mod_id']}>: {w['reason']} (<t:{ts}:R>)\n"
         
-        embed = discord.Embed(title=title, description=desc.strip(), color=settings.COLORS["WARNING"])
+        footer_text = None
         if len(chunks) > 1:
-            # Usamos el formato de página de leaderboard para consistencia
             footer_text = lang_service.get_text("leaderboard_footer", lang, current=i+1, total=len(chunks))
-            embed.set_footer(text=footer_text)
+            
+        embed = embed_service.warning(
+            title=title,
+            description=desc.strip(),
+            footer=footer_text
+        )
         pages.append(embed)
     return pages

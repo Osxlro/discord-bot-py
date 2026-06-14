@@ -64,3 +64,12 @@ def xp_embed(title: str, description: str, thumbnail: str = None, image: str = N
     if image:
         embed.set_image(url=image)
     return embed
+
+def fun(title: str, description: str, lite: bool = False, thumbnail: str = None, image: str = None, footer: str = None, url: str = None) -> discord.Embed:
+    """Embed Rosa para comandos de diversión/entretenimiento."""
+    embed = _base_embed(title, description, settings.COLORS["FUN"], footer, url)
+    if thumbnail:
+        embed.set_thumbnail(url=thumbnail)
+    if image:
+        embed.set_image(url=image)
+    return embed

@@ -10,11 +10,6 @@ def get_setup_success_embed(lang: str, label: str, value: str) -> discord.Embed:
 
 def get_setup_info_embed(guild: discord.Guild, config: dict, lang: str) -> discord.Embed:
     """Genera un embed detallado con toda la configuración del servidor."""
-    embed = discord.Embed(
-        title=f"{lang_service.get_text('serverinfo_config', lang)} - {guild.name}",
-        color=discord.Color.blue()
-    )
-    
     def fmt(val, type_):
         if not val or val == 0: return lang_service.get_text("serverinfo_not_set", lang)
         return f"<#{val}>" if type_ == "ch" else f"<@&{val}>"
@@ -22,14 +17,13 @@ def get_setup_info_embed(guild: discord.Guild, config: dict, lang: str) -> disco
     # Sección de Canales
     channels_title = lang_service.get_text("setup_info_channels", lang)
     channels_desc = (
-        f"👋 **Welcome:** {fmt(config.get('welcome_channel_id'), 'ch')}\n"
-        f"🤫 **Confessions:** {fmt(config.get('confessions_channel_id'), 'ch')}\n"
-        f"📜 **Logs:** {fmt(config.get('logs_channel_id'), 'ch')}\n"
-        f"🎂 **Birthday:** {fmt(config.get('birthday_channel_id'), 'ch')}\n"
-        f"📖 **WordDay:** {fmt(config.get('wordday_channel_id'), 'ch')}\n"
-        f"🧱 **Minecraft:** {fmt(config.get('minecraft_channel_id'), 'ch')}"
+        f"> **👋 Welcome:** {fmt(config.get('welcome_channel_id'), 'ch')}\n"
+        f"> **🤫 Confessions:** {fmt(config.get('confessions_channel_id'), 'ch')}\n"
+        f"> **📜 Logs:** {fmt(config.get('logs_channel_id'), 'ch')}\n"
+        f"> **🎂 Birthday:** {fmt(config.get('birthday_channel_id'), 'ch')}\n"
+        f"> **📖 WordDay:** {fmt(config.get('wordday_channel_id'), 'ch')}\n"
+        f"> **🧱 Minecraft:** {fmt(config.get('minecraft_channel_id'), 'ch')}"
     )
-    embed.add_field(name=channels_title, value=channels_desc, inline=False)
 
     # Sección de Ajustes
     settings_title = lang_service.get_text("setup_info_settings", lang)
@@ -47,14 +41,17 @@ def get_setup_info_embed(guild: discord.Guild, config: dict, lang: str) -> disco
     chaos_prob = config.get("chaos_probability", 0.01) * 100
     
     settings_desc = (
-        f"🌐 **Language:** {current_lang}\n"
-        f"🔫 **Chaos:** {chaos_status} ({chaos_prob}%)\n"
-        f"🎭 **Auto-Rol:** {fmt(config.get('autorole_id'), 'role')}\n"
-        f"🏷️ **WordDay Role:** {fmt(config.get('wordday_role_id'), 'role')}"
+        f"> **🌐 Language:** {current_lang}\n"
+        f"> **🔫 Chaos:** {chaos_status} ({chaos_prob}%)\n"
+        f"> **🎭 Auto-Rol:** {fmt(config.get('autorole_id'), 'role')}\n"
+        f"> **🏷️ WordDay Role:** {fmt(config.get('wordday_role_id'), 'role')}"
     )
-    embed.add_field(name=settings_title, value=settings_desc, inline=False)
     
-    if guild.icon:
-        embed.set_thumbnail(url=guild.icon.url)
-        
-    return embed
+    title = f"{lang_service.get_text('serverinfo_config', lang)} - {guild.name}"
+    description = f"### {channels_title}\n{channels_desc}\n\n### {settings_title}\n{settings_desc}"
+    
+    return embed_service.info(
+        title=title,
+        description=description,
+        thumbnail=guild.icon.url if guild.icon else None
+    )

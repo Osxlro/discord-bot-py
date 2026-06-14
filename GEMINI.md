@@ -119,6 +119,18 @@ mensaje = lang_service.get_text("level_up_msg", lang, user=ctx.author.mention, l
 
 Para mantener la consistencia estética y la identidad del bot, **todas las respuestas visuales** deben estructurarse usando el módulo de utilidad [embed_service.py](file:///c:/Users/PC/Documents/GitHub/discord-bot-py/services/utils/embed_service.py).
 
+### Lineamientos Obligatorios de Diseño de Embeds:
+1. **Uso Exclusivo de `embed_service`**:
+   - Queda estrictamente prohibido instanciar `discord.Embed` de forma directa en los comandos o componentes de UI, a excepción de las tarjetas de perfil de usuario que necesitan utilizar dinámicamente el color del rol/avatar del usuario.
+   - En todos los demás casos, use siempre los helpers correspondientes del servicio.
+2. **Formateo de Listas y Datos**:
+   - Para mostrar información estructurada, pares clave-valor, estadísticas o configuraciones dentro de la descripción de un embed, se debe utilizar el formato de citas de bloque de Discord:
+     `> **Clave:** Valor`
+   - Esto unifica la visualización a través de toda la aplicación y mejora drásticamente la legibilidad de la interfaz.
+3. **Manejo de Miniaturas (Thumbnails)**:
+   - Los embeds de respuestas rápidas y sencillas (`lite=True`) deben omitir thumbnails para mantener la interfaz despejada.
+   - Embeds que muestren información compleja o del servidor deben incluir el icono del servidor (`guild.icon.url`) o el avatar del miembro/usuario (`member.display_avatar.url`) como thumbnail.
+
 ### Colores de Marca (`settings.COLORS`)
 - **Success (Verde):** `0x57F287` - Para confirmaciones y acciones exitosas.
 - **Error (Rojo):** `0xED4245` - Para fallas y denegaciones.

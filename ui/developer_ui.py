@@ -26,44 +26,53 @@ async def get_general_embed(bot, guild, lang, info=None):
         d, h = divmod(h, 24)
         uptime_str = f"{d}d {h}h {m}m {s}s"
 
-    embed = discord.Embed(title=f"{settings.BOTINFO_CONFIG['TITLE_EMOJI']} {lang_service.get_text('help_title', lang)}", color=settings.COLORS["INFO"])
-    embed.set_thumbnail(url=bot.user.display_avatar.url)
-    embed.add_field(name=lang_service.get_text("botinfo_name", lang), value=f"{bot.user}", inline=True)
-    embed.add_field(name=lang_service.get_text("botinfo_uptime", lang), value=f"`{uptime_str}`", inline=True)
-    embed.add_field(name=lang_service.get_text("botinfo_python", lang), value=f"`{sys.version.split()[0]}`", inline=True)
-    embed.add_field(name=lang_service.get_text("botinfo_lib", lang), value=f"`{discord.__version__}`", inline=True)
-    embed.add_field(name=lang_service.get_text("botinfo_guilds", lang), value=f"{len(bot.guilds)}", inline=True)
-    embed.add_field(name=lang_service.get_text("botinfo_users", lang), value=f"{len(bot.users)}", inline=True)
-    return embed
+    description = (
+        f"> **{lang_service.get_text('botinfo_name', lang)}:** {bot.user}\n"
+        f"> **{lang_service.get_text('botinfo_uptime', lang)}:** `{uptime_str}`\n"
+        f"> **{lang_service.get_text('botinfo_python', lang)}:** `{sys.version.split()[0]}`\n"
+        f"> **{lang_service.get_text('botinfo_lib', lang)}:** `{discord.__version__}`\n"
+        f"> **{lang_service.get_text('botinfo_guilds', lang)}:** {len(bot.guilds)}\n"
+        f"> **{lang_service.get_text('botinfo_users', lang)}:** {len(bot.users)}"
+    )
+    title = f"{settings.BOTINFO_CONFIG['TITLE_EMOJI']} {lang_service.get_text('help_title', lang)}"
+    return embed_service.info(title=title, description=description, thumbnail=bot.user.display_avatar.url)
 
 async def get_system_embed(guild, lang, info=None):
     if info is None:
         from services.features import developer_service
         info = await developer_service.get_psutil_info()
         
-    embed = discord.Embed(title=lang_service.get_text("botinfo_system_title", lang), color=settings.COLORS["BLUE"])
+    title = lang_service.get_text("botinfo_system_title", lang)
     if not info["available"]:
-        embed.description = lang_service.get_text("dev_psutil_error", lang)
-        return embed
+        return embed_service.info(title=title, description=lang_service.get_text("dev_psutil_error", lang))
 
-    embed.add_field(name=lang_service.get_text("botinfo_cpu", lang), value=f"`{info['cpu_proc']:.1f}%` / `{info['cpu_sys']:.1f}%`", inline=True)
     ram_bar = _make_bar(info['ram_sys'].percent)
-    embed.add_field(name=f"{lang_service.get_text('botinfo_ram', lang)} ({info['ram_sys'].percent}%)", value=f"{ram_bar}\nTotal: `{info['ram_sys'].total / 1024**3:.1f} GB`\nBot: `{info['mem_proc']:.1f} MB`", inline=False)
+    ram_txt = f"{ram_bar}\n>  • **Total:** `{info['ram_sys'].total / 1024**3:.1f} GB`\n>  • **Bot:** `{info['mem_proc']:.1f} MB`"
+    
+    desc_lines = [
+        f"> **{lang_service.get_text('botinfo_cpu', lang)}:** `{info['cpu_proc']:.1f}%` (Bot) / `{info['cpu_sys']:.1f}%` (System)",
+        f"> **{lang_service.get_text('botinfo_ram', lang)} ({info['ram_sys'].percent}%):** {ram_txt}"
+    ]
+    
     if info['disk']:
         disk_bar = _make_bar(info['disk'].percent)
-        embed.add_field(name=f"{lang_service.get_text('botinfo_disk', lang)} ({info['disk'].percent}%)", value=f"{disk_bar}\nLibre: `{info['disk'].free / 1024**3:.1f} GB`", inline=False)
-    embed.add_field(name=lang_service.get_text("botinfo_os", lang), value=f"{platform.system()} {platform.release()}", inline=True)
-    return embed
+        desc_lines.append(f"> **{lang_service.get_text('botinfo_disk', lang)} ({info['disk'].percent}%):** {disk_bar}\n>  • **Libre:** `{info['disk'].free / 1024**3:.1f} GB`")
+        
+    desc_lines.append(f"> **{lang_service.get_text('botinfo_os', lang)}:** {platform.system()} {platform.release()}")
+    
+    return embed_service.info(title=title, description="\n".join(desc_lines))
 
 async def get_memory_embed(lang, info=None):
-    embed = discord.Embed(title=lang_service.get_text("botinfo_memory_title", lang), color=settings.COLORS["GOLD"])
+    title = lang_service.get_text("botinfo_memory_title", lang)
     if not tracemalloc.is_tracing():
-        embed.description = lang_service.get_text("dev_mem_nodetail", lang)
+        description = lang_service.get_text("dev_mem_nodetail", lang)
         if info is None:
             from services.features import developer_service
             info = await developer_service.get_psutil_info()
             
-        if info["available"]: embed.add_field(name=lang_service.get_text("dev_mem_rss_label", lang), value=f"`{info['mem_proc']:.2f} MB`")
+        if info["available"]:
+            description += f"\n\n> **{lang_service.get_text('dev_mem_rss_label', lang)}:** `{info['mem_proc']:.2f} MB`"
+        return embed_service.info(title=title, description=description)
     else:
         snapshot = tracemalloc.take_snapshot()
         stats = snapshot.statistics('filename')
@@ -87,30 +96,26 @@ async def get_memory_embed(lang, info=None):
             elif "site-packages" in path or "lib" in path: grouped[key_libs] += size
             else: grouped[key_others] += size
         
-        desc = lang_service.get_text("dev_mem_summary", lang) + "\n".join([f"**{k}:** `{v/1024/1024:.2f} MB`" for k, v in grouped.items()])
+        desc = lang_service.get_text("dev_mem_summary", lang) + "\n".join([f"> **{k}:** `{v/1024/1024:.2f} MB`" for k, v in grouped.items()])
         desc += "\n\n" + lang_service.get_text("dev_mem_top", lang)
         for name, size in sorted([d for d in details if "🧩" in d[0] or "🛠️" in d[0]], key=lambda x: x[1], reverse=True)[:10]:
-            desc += f"`{name}`: **{size/1024:.1f} KB**\n"
-        embed.description = desc
-    return embed
+            desc += f"> `{name}`: **{size/1024:.1f} KB**\n"
+        return embed_service.info(title=title, description=desc)
 
 async def get_config_embed(lang: str) -> discord.Embed:
     p_stats = await db_service.get_persistence_stats()
-    embed = discord.Embed(title=lang_service.get_text("botinfo_config_title", lang), color=0x5865F2)
-    embed.add_field(name=lang_service.get_text("botinfo_langs", lang), value=lang_service.get_text("lang_list", lang), inline=False)
     log_size = f"{os.path.getsize(settings.LOG_FILE)/1024:.1f} KB" if os.path.exists(settings.LOG_FILE) else "0 KB"
-    embed.add_field(name=lang_service.get_text("botinfo_logfile", lang), value=f"`{log_size}`", inline=True)
-
-    embed.add_field(
-        name=lang_service.get_text("botinfo_persistence", lang), 
-        value=lang_service.get_text("botinfo_persistence_desc", lang, count=p_stats['count'], size=p_stats['size_kb']), 
-        inline=False
-    )
-
+    
     rows = await db_service.fetch_all("SELECT type, text FROM bot_statuses")
-    status_txt = "\n".join([f"• [{r['type']}] {r['text']}" for r in rows[:5]]) + (lang_service.get_text("dev_status_more", lang, count=len(rows)-5) if len(rows) > 5 else "") if rows else lang_service.get_text("log_none", lang)
-    embed.add_field(name=lang_service.get_text("botinfo_statuses", lang), value=status_txt, inline=False)
-    return embed
+    status_txt = "\n".join([f">  • [{r['type']}] {r['text']}" for r in rows[:5]]) + (f"\n>  • {lang_service.get_text('dev_status_more', lang, count=len(rows)-5)}" if len(rows) > 5 else "") if rows else f">  • {lang_service.get_text('log_none', lang)}"
+    
+    description = (
+        f"> **{lang_service.get_text('botinfo_langs', lang)}:** {lang_service.get_text('lang_list', lang)}\n"
+        f"> **{lang_service.get_text('botinfo_logfile', lang)}:** `{log_size}`\n"
+        f"> **{lang_service.get_text('botinfo_persistence', lang)}:** {lang_service.get_text('botinfo_persistence_desc', lang, count=p_stats['count'], size=p_stats['size_kb'])}\n"
+        f"> **{lang_service.get_text('botinfo_statuses', lang)}:**\n{status_txt}"
+    )
+    return embed_service.info(title=lang_service.get_text("botinfo_config_title", lang), description=description)
 
 async def get_status_list_embed(lang: str) -> discord.Embed:
     """Genera un embed con la lista de estados configurados."""
@@ -121,7 +126,7 @@ async def get_status_list_embed(lang: str) -> discord.Embed:
     
     desc = lang_service.get_text("status_list_desc", lang) + "\n\n"
     for i, row in enumerate(rows, 1):
-        desc += f"`{i}.` **[{row['type'].title()}]** {row['text']}\n"
+        desc += f"> `{i}.` **[{row['type'].title()}]** {row['text']}\n"
         
     title = lang_service.get_text("status_list_title", lang)
     return embed_service.info(title, desc)
@@ -149,12 +154,18 @@ def get_server_list_chunks(bot, lang):
     for i, chunk in enumerate(chunks):
         desc = ""
         for guild in chunk:
-            desc += lang_service.get_text("dev_servers_format", lang, 
+            guild_info = lang_service.get_text("dev_servers_format", lang, 
                 name=guild.name, id=guild.id, members=guild.member_count, owner=guild.owner_id
             )
+            # Prefix every non-empty line with > to format as a blockquote
+            formatted_info = "\n".join([f"> {line}" if line.strip() else "" for line in guild_info.strip().split("\n")])
+            desc += formatted_info + "\n\n"
         
-        embed = discord.Embed(title=lang_service.get_text("dev_servers_title", lang, count=len(bot.guilds)), description=desc, color=settings.COLORS["GOLD"])
-        embed.set_footer(text=lang_service.get_text("dev_servers_page", lang, current=i+1, total=len(chunks)))
+        embed = embed_service.info(
+            title=lang_service.get_text("dev_servers_title", lang, count=len(bot.guilds)),
+            description=desc.strip(),
+            footer=lang_service.get_text("dev_servers_page", lang, current=i+1, total=len(chunks))
+        )
         pages.append(embed)
     return pages
 
