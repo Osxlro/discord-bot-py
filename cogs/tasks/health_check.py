@@ -200,8 +200,8 @@ class HealthCheck(commands.Cog):
 
             # Prueba lógica de Configuración
             try:
-                embed = await setup_service.handle_get_info(test_guild, lang)
-                check_embed(embed, "/setup info")
+                embed = await setup_service.handle_chaos_setup(self.bot, test_guild.id, True, 1.0, lang)
+                check_embed(embed, "/setup chaos")
             except Exception as e:
                 errors.append(f"Command Logic (Setup): {e}")
 
