@@ -401,4 +401,11 @@ ES = {
     "title_translate": "Traducir",
     "title_ping": "Ping",
     "title_math": "Calculadora",
+    "title_status": "Estados",
+    "title_music": "Música",
+    "title_queue": "Cola de Reproducción",
+    "title_shuffle": "Mezclar Cola",
+    "title_autoplay": "Autoplay",
+    "title_loop": "Bucle",
+    "title_empty": "Vacío",
 }

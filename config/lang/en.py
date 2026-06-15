@@ -401,4 +401,11 @@ EN = {
     "title_error": "Error",
     "title_info": "Info",
     "title_translate": "Translate",
+    "title_status": "Statuses",
+    "title_music": "Music",
+    "title_queue": "Playback Queue",
+    "title_shuffle": "Shuffle Queue",
+    "title_autoplay": "Autoplay",
+    "title_loop": "Loop",
+    "title_empty": "Empty",
 }

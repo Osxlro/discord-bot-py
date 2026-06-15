@@ -130,6 +130,15 @@ def analyze_file(filename):
                                 elif len(cmd_desc) > 100:
                                     errors.append((class_stmt.lineno, f"La descripción del comando slash/híbrido '{cmd_name}' excede los 100 caracteres permitidos por Discord (Largo actual: {len(cmd_desc)})."))
                                     
+                            # Validate Parameters/Arguments for Discord Slash Commands
+                            if is_slash:
+                                # Omit first two args (self, ctx/interaction)
+                                cmd_args = class_stmt.args.args[2:]
+                                for arg in cmd_args:
+                                    arg_name = arg.arg
+                                    if not COMMAND_NAME_REGEX.match(arg_name):
+                                        errors.append((class_stmt.lineno, f"[ERROR] El parámetro '{arg_name}' del comando slash/híbrido '{cmd_name}' tiene un nombre inválido. Debe ser minúscula, alfanumérico, sin espacios, y tener entre 1 y 32 caracteres (regex: ^[a-z0-9_-]{{1,32}}$)."))
+                                    
     if has_cog and not has_setup:
         errors.append((0, f"El archivo contiene un Cog pero le falta la función global 'setup(bot)' para registrarlo."))
         
@@ -142,7 +151,13 @@ def run_validation():
         print(f"Error: No se encontró el directorio {commands_dir}")
         sys.exit(1)
         
-    files = [os.path.join(commands_dir, f) for f in os.listdir(commands_dir) if f.endswith(".py")]
+    # Búsqueda recursiva
+    files = []
+    for r, _, f_list in os.walk(commands_dir):
+        for f in f_list:
+            if f.endswith(".py"):
+                files.append(os.path.join(r, f))
+                
     files = sorted(files)
     
     errors_by_file = {}

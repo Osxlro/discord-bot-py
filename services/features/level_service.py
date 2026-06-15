@@ -62,7 +62,7 @@ async def get_level_up_message(member: discord.Member, nuevo_nivel: int, lang: s
     elif guild_conf.get('server_level_msg'):
         msg_raw = guild_conf['server_level_msg']
     else:
-        msg_raw = lang_service.get_text("level_up_default", lang)
+        msg_raw = lang_service.get_text("level_up_default", lang, user=member.mention, level=nuevo_nivel, server=member.guild.name)
     
     return msg_raw.replace("{user}", member.mention)\
                   .replace("{level}", str(nuevo_nivel))\

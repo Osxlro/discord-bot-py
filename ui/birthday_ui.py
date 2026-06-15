@@ -47,9 +47,8 @@ def get_personal_birthday_embed(lang: str, member: discord.Member, personal_msg:
 def get_server_birthday_embed(lang: str, mentions: list[str], server_msg: str = None) -> discord.Embed:
     """Genera el embed para la felicitación genérica del servidor."""
     title = lang_service.get_text("bday_title", lang)
-    msg_base = server_msg or lang_service.get_text("bday_server_default", lang)
-    
     mentions_str = ", ".join(mentions)
+    msg_base = server_msg or lang_service.get_text("bday_server_default", lang, users=mentions_str)
     msg_final = msg_base.replace("{users}", mentions_str).replace("{user}", mentions_str)
     
     return embed_service.success(title, msg_final, thumbnail=settings.BIRTHDAY_CONFIG["CAKE_ICON"])

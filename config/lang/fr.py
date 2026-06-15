@@ -401,4 +401,11 @@ FR = {
     "title_translate": "Traduire",
     "title_ping": "Ping",
     "title_math": "Calculatrice",
+    "title_status": "Statuts",
+    "title_music": "Musique",
+    "title_queue": "File d'attente",
+    "title_shuffle": "Mélanger File",
+    "title_autoplay": "Lecture auto",
+    "title_loop": "Boucle",
+    "title_empty": "Vide",
 }

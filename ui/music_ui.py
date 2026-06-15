@@ -57,7 +57,7 @@ def create_np_embed(player: wavelink.Player, track: wavelink.Playable, lang: str
         len_str = format_duration(length)
 
     icon = get_source_icon(track)
-    desc = lang_service.get_text("music_np_desc", lang, title=track.title, uri=track.uri or "", pos=pos_str, bar=bar, len=len_str)
+    desc = lang_service.get_text("music_np_desc", lang, title=track.title, pos=pos_str, bar=bar, len=len_str)
 
     embed = discord.Embed(
         title=f"{icon} {lang_service.get_text('music_now_playing_title', lang)}",

@@ -401,4 +401,11 @@ PT = {
     "title_translate": "Traduzir",
     "title_ping": "Ping",
     "title_math": "Calculadora",
+    "title_status": "Estados",
+    "title_music": "Música",
+    "title_queue": "Fila de Reprodução",
+    "title_shuffle": "Misturar Fila",
+    "title_autoplay": "Autoplay",
+    "title_loop": "Repetir",
+    "title_empty": "Vazio",
 }
