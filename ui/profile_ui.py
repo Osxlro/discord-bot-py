@@ -8,7 +8,7 @@ def get_general_embed(target: discord.Member, user_data: dict, lang: str) -> dis
     desc = user_data['description'] if user_data else lang_service.get_text("profile_desc", lang)
     cumple = user_data['birthday'] if user_data and user_data['birthday'] else lang_service.get_text("profile_no_bday", lang)
     prefix = user_data['custom_prefix'] if user_data and user_data['custom_prefix'] else settings.CONFIG["bot_config"]["prefix"]
-    coins = user_data['coins'] if user_data and 'coins' in user_data else 0
+    coins = user_data['coins'] if user_data else 0
     
     title = lang_service.get_text("profile_title", lang, user=target.display_name)
     embed = discord.Embed(title=title, color=target.color)

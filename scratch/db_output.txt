@@ -1,0 +1,6 @@
+=== USUARIOS EN LA BASE DE DATOS ===
+ID: 446456586513154048 | Prefix: None | Bday: 2/9 | Coins: 0
+ID: 544274363650670594 | Prefix: DSLF👀 | Bday: None | Coins: 0
+ID: 716845090500247613 | Prefix: % | Bday: 27/12 | Coins: 0
+ID: 1020509839694241833 | Prefix: tanal | Bday: 8/8 | Coins: 0
+ID: 1287951718352424992 | Prefix: None | Bday: 14/10 | Coins: 0

@@ -48,7 +48,6 @@ async def add_stream_alert(guild_id: int, platform: str, channel_name: str, disc
         "INSERT INTO stream_alerts (guild_id, platform, channel_name, discord_channel_id, role_id) VALUES (?, ?, ?, ?, ?)",
         (guild_id, platform, resolved_id, discord_channel_id, role_id)
     )
-    await db_service.commit()
     return True, resolved_id
 
 async def remove_stream_alert(guild_id: int, platform: str, channel_name: str) -> bool:
@@ -74,7 +73,6 @@ async def remove_stream_alert(guild_id: int, platform: str, channel_name: str) -
         except Exception:
             pass
 
-    await db_service.commit()
     return res.rowcount > 0
 
 async def get_stream_alerts(guild_id: int) -> list[dict]:
@@ -98,7 +96,6 @@ async def update_stream_status(guild_id: int, platform: str, channel_name: str, 
         "UPDATE stream_alerts SET last_status = ?, last_check = datetime('now') WHERE guild_id = ? AND platform = ? AND channel_name = ?",
         (status, guild_id, platform.lower(), channel_name)
     )
-    await db_service.commit()
 
 async def resolve_youtube_channel_id(handle: str) -> str | None:
     """

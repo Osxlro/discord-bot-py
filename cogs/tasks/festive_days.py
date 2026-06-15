@@ -94,7 +94,6 @@ class FestiveDaysTask(commands.Cog):
                         "INSERT OR REPLACE INTO bot_persistence (namespace, key, data) VALUES (?, ?, ?)",
                         ("festive_days", persistence_key, b"1")
                     )
-                    await db_service.commit()
                     logger.info(f"Anuncio festivo '{holiday_key}' enviado a guild {guild_id}")
                 except discord.Forbidden:
                     logger.warning(f"Sin permisos para enviar anuncio festivo en canal {channel_id} de guild {guild_id}")
