@@ -74,6 +74,10 @@ class BotPersonal(commands.AutoShardedBot):
 
     async def check_global_cooldown(self, ctx):
         """Verifica el cooldown global para comandos de prefijo."""
+        # Si es una interacción (Slash Command / Hybrid Command via Slash), ignorar ya que se maneja en check_global_interaction
+        if ctx.interaction is not None:
+            return True
+
         # Los dueños del bot ignoran el cooldown
         if await self.is_owner(ctx.author): return True
         
