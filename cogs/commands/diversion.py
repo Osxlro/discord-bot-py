@@ -131,6 +131,7 @@ class Diversion(commands.Cog):
             correct_index=question_data["correct_index"],
             options=question_data["options"],
             correct_answer=question_data["correct_answer"],
+            difficulty=question_data["difficulty"],
             lang=lang
         )
         

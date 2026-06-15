@@ -126,41 +126,85 @@ def get_serverinfo_stats_embed(guild: discord.Guild, stats: dict, lang: str) -> 
 
     return embed
 
-def get_serverinfo_config_embed(guild: discord.Guild, config: dict, lang: str) -> discord.Embed:
+def get_serverinfo_config_embed(guild: discord.Guild, config: dict, stream_alerts: list, lang: str) -> discord.Embed:
     title = f"{lang_service.get_text('serverinfo_config', lang)} - {guild.name}"
     color = guild.me.color if guild.me.color.value != 0 else discord.Color(0x5865F2)
     embed = discord.Embed(title=title, color=color)
     
     if guild.icon: embed.set_thumbnail(url=guild.icon.url)
 
-    def fmt(val, type_):
-        if not val or val == 0: return lang_service.get_text("serverinfo_not_set", lang)
-        return f"<#{val}>" if type_ == "ch" else f"<@&{val}>"
+    # Helpers de formateo
+    def fmt_ch(val):
+        return f"<#{val}>" if val and val != 0 else lang_service.get_text("setup_disabled", lang)
 
+    def fmt_role(val):
+        return f"<@&{val}>" if val and val != 0 else lang_service.get_text("setup_disabled", lang)
+
+    # Obtener nombre del idioma configurado
     lang_key = f"lang_name_{config.get('language', 'es')}"
     lang_name = lang_service.get_text(lang_key, lang)
-    
-    conf_txt = lang_service.get_text("serverinfo_conf_desc", lang,
-        language=lang_name,
-        welcome=fmt(config.get("welcome_channel_id"), "ch"),
-        confess=fmt(config.get("confessions_channel_id"), "ch"),
-        logs=fmt(config.get("logs_channel_id"), "ch"),
-        bday=fmt(config.get("birthday_channel_id"), "ch"),
-        autorole=fmt(config.get("autorole_id"), "role"),
-        wordday_ch=fmt(config.get("wordday_channel_id"), "ch"),
-        wordday_role=fmt(config.get("wordday_role_id"), "role")
-    )
-    formatted_conf = "\n".join(f"> {line}" for line in conf_txt.split('\n'))
+
+    # Estado de Chaos
+    chaos_enabled = bool(config.get("chaos_enabled", 1))
+    chaos_prob = config.get("chaos_probability", 0.01) * 100
+    chaos_status = f"✅ ({chaos_prob:.1f}%)" if chaos_enabled else lang_service.get_text("setup_disabled", lang)
+
+    # Estado de Días Festivos
+    festive_enabled = bool(config.get("festivedays_enabled", 0))
+    festive_ch = config.get("festivedays_channel_id", 0)
+    festive_role = config.get("festivedays_role_id", 0)
+    if festive_enabled:
+        festive_status = f"✅ en <#{festive_ch}>"
+        if festive_role:
+            festive_status += f" (Mención: <@&{festive_role}>)"
+    else:
+        festive_status = lang_service.get_text("setup_disabled", lang)
+
+    # Estructura dinámica de configuraciones Core
+    # (Emoji, Clave de traducción de la etiqueta, Valor ya formateado)
+    core_configs = [
+        ("🌐", "setup_label_language", lang_name),
+        ("👋", "setup_label_welcome", fmt_ch(config.get("welcome_channel_id"))),
+        ("🤫", "setup_label_confess", fmt_ch(config.get("confessions_channel_id"))),
+        ("📜", "setup_label_logs", fmt_ch(config.get("logs_channel_id"))),
+        ("🎂", "setup_label_birthday", fmt_ch(config.get("birthday_channel_id"))),
+        ("🎭", "setup_label_autorole", fmt_role(config.get("autorole_id"))),
+        ("📖", "setup_label_wordday_ch", fmt_ch(config.get("wordday_channel_id"))),
+        ("🏷️", "setup_label_wordday_role", fmt_role(config.get("wordday_role_id"))),
+        ("🔫", "setup_label_chaos", chaos_status),
+        ("🎉", "setup_label_festivedays", festive_status),
+    ]
+
+    desc_lines = []
+    for emoji, label_key, val in core_configs:
+        label = lang_service.get_text(label_key, lang)
+        desc_lines.append(f"> {emoji} **{label}:** {val}")
+
+    # Sección de Alertas de YouTube
+    yt_label = lang_service.get_text("setup_label_streamalerts", lang)
+    if stream_alerts:
+        alert_lines = []
+        for alert in stream_alerts:
+            ch_mention = f"<#{alert['discord_channel_id']}>"
+            role_mention = f" (Mención: <@&{alert['role_id']}>)" if alert['role_id'] else ""
+            alert_lines.append(f"> 🎥 **YouTube:** `{alert['channel_name']}` ➡️ {ch_mention}{role_mention}")
+        alerts_desc = "\n".join(alert_lines)
+    else:
+        alerts_desc = f"> 🎥 **YouTube:** {lang_service.get_text('setup_disabled', lang)}"
+
+    formatted_conf = "\n".join(desc_lines)
     embed.add_field(name=lang_service.get_text("serverinfo_config", lang), value=formatted_conf, inline=False)
+    embed.add_field(name=yt_label, value=alerts_desc, inline=False)
 
     return embed
 
 class ServerInfoView(discord.ui.View):
-    def __init__(self, guild: discord.Guild, config: dict, stats: dict, lang: str, author_id: int):
+    def __init__(self, guild: discord.Guild, config: dict, stats: dict, stream_alerts: list, lang: str, author_id: int):
         super().__init__(timeout=settings.GLOBAL_TIMEOUT)
         self.guild = guild
         self.config = config
         self.stats = stats
+        self.stream_alerts = stream_alerts
         self.lang = lang
         self.author_id = author_id
         self.message = None
@@ -202,7 +246,7 @@ class ServerInfoView(discord.ui.View):
 
     @discord.ui.button(style=discord.ButtonStyle.secondary)
     async def btn_config(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await self._update(interaction, get_serverinfo_config_embed(self.guild, self.config, self.lang), 2)
+        await self._update(interaction, get_serverinfo_config_embed(self.guild, self.config, self.stream_alerts, self.lang), 2)
 
 def get_translate_embed(orig: str, trans: str, lang: str) -> discord.Embed:
     limit = settings.UI_CONFIG["MSG_PREVIEW_TRUNCATE"]

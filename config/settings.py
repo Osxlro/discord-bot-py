@@ -335,3 +335,11 @@ ROLES_CONFIG = {
     "DEFAULT_EMOJI": "✨",  # Emoji para botones de rol del bot
     "DEFAULT_COLOR": "green"  # Estilo de color inicial de botones de rol
 }
+
+TRIVIA_CONFIG = {
+    "REWARDS": {
+        "easy": (5, 10),      # Monedas mínima y máxima ganadas en preguntas fáciles
+        "medium": (10, 20),   # Monedas mínima y máxima ganadas en preguntas medias
+        "hard": (20, 30)      # Monedas mínima y máxima ganadas en preguntas difíciles
+    }
+}

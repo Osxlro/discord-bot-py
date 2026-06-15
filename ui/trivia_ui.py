@@ -1,18 +1,20 @@
 import discord
 import random
 import logging
+from config import settings
 from services.core import db_service, lang_service
 from services.utils import embed_service
 
 logger = logging.getLogger(__name__)
 
 class TriviaView(discord.ui.View):
-    def __init__(self, author: discord.Member, correct_index: int, options: list[str], correct_answer: str, lang: str):
+    def __init__(self, author: discord.Member, correct_index: int, options: list[str], correct_answer: str, difficulty: str, lang: str):
         super().__init__(timeout=30.0)
         self.author = author
         self.correct_index = correct_index
         self.options = options
         self.correct_answer = correct_answer
+        self.difficulty = difficulty
         self.lang = lang
         self.message = None
 
@@ -33,8 +35,9 @@ class TriviaView(discord.ui.View):
         self.stop()
 
         if selected_index == self.correct_index:
-            # Recompensa
-            coins = random.randint(5, 15)
+            # Recompensa configurada por dificultad
+            rewards = settings.TRIVIA_CONFIG["REWARDS"].get(self.difficulty, (10, 20))
+            coins = random.randint(rewards[0], rewards[1])
             await db_service.add_user_coins(interaction.user.id, coins)
             
             title = lang_service.get_text("trivia_correct_title", self.lang)
@@ -45,7 +48,8 @@ class TriviaView(discord.ui.View):
             desc = lang_service.get_text("trivia_incorrect_desc", self.lang, correct=self.correct_answer)
             embed = embed_service.error(title, desc)
 
-        await interaction.response.edit_message(embed=embed, view=self)
+        # Eliminar los botones al ganar o perder
+        await interaction.response.edit_message(embed=embed, view=None)
 
     @discord.ui.button(label="A", style=discord.ButtonStyle.primary, custom_id="trivia_btn_a")
     async def button_a(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -64,13 +68,14 @@ class TriviaView(discord.ui.View):
         await self.process_answer(interaction, 3)
 
     async def on_timeout(self):
-        """Deshabilitar los botones al agotarse el tiempo."""
+        """Eliminar los botones al agotarse el tiempo."""
         if self.message:
             self.disable_all_buttons()
             try:
                 title = lang_service.get_text("trivia_timeout_title", self.lang)
                 desc = lang_service.get_text("trivia_timeout_desc", self.lang, correct=self.correct_answer)
                 embed = embed_service.warning(title, desc)
-                await self.message.edit(embed=embed, view=self)
+                # Pasar view=None para eliminar los botones
+                await self.message.edit(embed=embed, view=None)
             except Exception as e:
                 logger.warning(f"Error al editar mensaje de trivia en timeout: {e}")

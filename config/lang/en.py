@@ -455,4 +455,17 @@ EN = {
     "trivia_incorrect_desc": "Too bad! You were wrong. The correct answer was: **{correct}**",
     "trivia_timeout_title": "⏱️ Timeout",
     "trivia_timeout_desc": "Time is up to answer. The correct answer was: **{correct}**",
+
+    # --- SETUP LABELS ---
+    "setup_label_language": "Language",
+    "setup_label_welcome": "Welcome",
+    "setup_label_confess": "Confessions",
+    "setup_label_logs": "Moderation Logs",
+    "setup_label_birthday": "Birthday",
+    "setup_label_autorole": "Auto-Role",
+    "setup_label_wordday_ch": "Wordday Channel",
+    "setup_label_wordday_role": "Wordday Role",
+    "setup_label_chaos": "Chaos (Russian Roulette)",
+    "setup_label_festivedays": "Festive Days",
+    "setup_label_streamalerts": "YouTube Alerts",
 }

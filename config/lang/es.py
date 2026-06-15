@@ -455,4 +455,17 @@ ES = {
     "trivia_incorrect_desc": "¡Lástima! Te has equivocado. La respuesta correcta era: **{correct}**",
     "trivia_timeout_title": "⏱️ Tiempo Agotado",
     "trivia_timeout_desc": "Se acabó el tiempo para responder. La respuesta correcta era: **{correct}**",
+
+    # --- SETUP LABELS ---
+    "setup_label_language": "Idioma",
+    "setup_label_welcome": "Bienvenida",
+    "setup_label_confess": "Confesiones",
+    "setup_label_logs": "Logs de Moderación",
+    "setup_label_birthday": "Cumpleaños",
+    "setup_label_autorole": "Auto-Rol",
+    "setup_label_wordday_ch": "Canal de Frase del Día",
+    "setup_label_wordday_role": "Rol de Frase del Día",
+    "setup_label_chaos": "Chaos (Ruleta)",
+    "setup_label_festivedays": "Días Festivos",
+    "setup_label_streamalerts": "Alertas de YouTube",
 }

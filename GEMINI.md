@@ -221,6 +221,90 @@ async def setup(bot: commands.Bot):
 
 ---
 
+## ⚙️ Directrices para Comandos de Configuración (`/setup`)
+
+Para evitar la saturación de subcomandos individuales en la interfaz de Discord y simplificar el mantenimiento, la configuración del bot se centraliza en comandos modulares organizados por tipo de recurso (`channel`, `role`, `message`, `system`, `lang`, `streamalert`).
+
+### Reglas Obligatorias de Diseño para Setups:
+1. **Unificación por Tipo de Recurso:** 
+   - Queda prohibido crear subcomandos específicos para cada parámetro individual (por ejemplo: `/setup welcome_channel` o `/setup logs_channel`). En su lugar, agrégalos como opciones dentro del comando modular correspondiente (ej: `/setup channel tipo:[opciones]`).
+2. **Validación Mediante Literals:**
+   - Usa `typing.Literal` para restringir los valores permitidos del parámetro `tipo` (ej. `Literal["welcome", "confess", "logs"]`). Esto genera menús desplegables interactivos en Discord y previene entradas inválidas.
+3. **Mapeos Clave-Valor Internos:**
+   - Utiliza diccionarios internos (`col_map` y `label_map`) en el comando del Cog para mapear la selección del usuario a la columna correspondiente en SQLite y a su clave de traducción localized.
+4. **Desactivación de Parámetros:**
+   - Permite la desactivación del parámetro pasando un valor por defecto (ej. omitir el canal/rol se traduce a `0` para indicar desactivado, y omitir un mensaje personalizado se evalúa a `None` o `"reset"`).
+5. **Uso Exclusivo de `setup_service`:**
+   - Toda actualización en la configuración del servidor debe delegarse al servicio [setup_service.py](file:///c:/Users/PC/Documents/GitHub/discord-bot-py/services/features/setup_service.py), el cual actualiza tanto la base de datos SQLite como la caché en memoria (`_config_cache`).
+
+---
+
+### Ejemplo Base / Plantilla de un Comando `/setup` Modular
+
+Al agregar nuevos parámetros de configuración al bot, se debe seguir este patrón dentro de [configuracion.py](file:///c:/Users/PC/Documents/GitHub/discord-bot-py/cogs/commands/configuracion.py):
+
+```python
+import discord
+from discord import app_commands
+from discord.ext import commands
+from typing import Literal
+from services.core import lang_service
+from services.features import setup_service
+from services.utils import embed_service
+
+class MiConfiguracion(commands.Cog):
+    def __init__(self, bot: commands.Bot):
+        self.bot = bot
+
+    # Helper interno para aplicar cambios y responder de forma estandarizada
+    async def _apply_setup(self, ctx: commands.Context, updates: dict, label: str, value_display: str):
+        await ctx.defer(ephemeral=True)
+        lang = await lang_service.get_guild_lang(ctx.guild.id)
+        embed = await setup_service.handle_setup_update(ctx.guild.id, updates, lang, label, value_display)
+        await ctx.send(embed=embed, ephemeral=True)
+
+    @commands.hybrid_group(name="setup", description="Panel de configuración del servidor.")
+    @commands.has_permissions(administrator=True)
+    async def setup(self, ctx: commands.Context):
+        if ctx.invoked_subcommand is None:
+            await ctx.send_help(ctx.command)
+
+    # Ejemplo de configuración de canales
+    @setup.command(name="channel", description="Configura los canales de los distintos sistemas del bot.")
+    @app_commands.describe(
+        tipo="El sistema a configurar",
+        canal="Canal de Discord a asociar (deja vacío para desactivar)"
+    )
+    async def setup_channel(self, ctx: commands.Context, tipo: Literal["welcome", "logs", "ejemplo_nuevo"], canal: discord.TextChannel = None):
+        """Asigna o desactiva el canal para un sistema en específico."""
+        lang = await lang_service.get_guild_lang(ctx.guild.id)
+        
+        # 1. Mapear selección a la columna en base de datos
+        col_map = {
+            "welcome": "welcome_channel_id",
+            "logs": "logs_channel_id",
+            "ejemplo_nuevo": "nuevo_channel_id"  # Columna en la DB
+        }
+        
+        # 2. Mapear selección a la clave del archivo lang/
+        label_map = {
+            "welcome": "setup_label_welcome",
+            "logs": "setup_label_logs",
+            "ejemplo_nuevo": "setup_label_nuevo"  # Clave de traducción
+        }
+        
+        col = col_map[tipo]
+        label = lang_service.get_text(label_map[tipo], lang)
+        
+        val = canal.id if canal else 0
+        display = canal.mention if canal else lang_service.get_text("setup_disabled", lang)
+        
+        # 3. Guardar cambios usando setup_service
+        await self._apply_setup(ctx, {col: val}, label, display)
+```
+
+---
+
 ## 🧪 Protocolo de Pruebas y Validaciones Obligatorias
 
 Para prevenir errores de sintaxis, variables indefinidas o discrepancias de internacionalización, es **obligatorio** ejecutar la suite de validación estática local después de realizar cualquier cambio en el código, comandos o traducciones, y antes de hacer commits o desplegar en producción.

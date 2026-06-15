@@ -31,6 +31,8 @@ async def handle_calc(operacion: str, num1: float, num2: float, lang: str):
 
 async def handle_serverinfo(guild: discord.Guild, lang: str, author_id: int):
     config = await db_service.get_guild_config(guild.id)
+    stream_alerts = await db_service.fetch_all("SELECT platform, channel_name, discord_channel_id, role_id FROM stream_alerts WHERE guild_id = ?", (guild.id,))
+    stream_alerts_list = [dict(row) for row in stream_alerts] if stream_alerts else []
     
     stats = {
         'roles': len(guild.roles),
@@ -53,7 +55,7 @@ async def handle_serverinfo(guild: discord.Guild, lang: str, author_id: int):
         stats['bots'] = guild.member_count - stats['humans']
     
     embed = general_ui.get_serverinfo_general_embed(guild, stats, lang)
-    view = general_ui.ServerInfoView(guild, config, stats, lang, author_id)
+    view = general_ui.ServerInfoView(guild, config, stats, stream_alerts_list, lang, author_id)
     return embed, view
 
 async def handle_translate(content: str, lang: str):

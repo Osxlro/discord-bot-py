@@ -455,4 +455,17 @@ FR = {
     "trivia_incorrect_desc": "Dommage ! Vous vous êtes trompé. La bonne réponse était : **{correct}**",
     "trivia_timeout_title": "⏱️ Temps Écoulé",
     "trivia_timeout_desc": "Le temps de réponse est écoulé. La bonne réponse était : **{correct}**",
+
+    # --- SETUP LABELS ---
+    "setup_label_language": "Langue",
+    "setup_label_welcome": "Bienvenue",
+    "setup_label_confess": "Confessions",
+    "setup_label_logs": "Logs",
+    "setup_label_birthday": "Anniversaire",
+    "setup_label_autorole": "Auto-Rôle",
+    "setup_label_wordday_ch": "Salon de Phrase du Jour",
+    "setup_label_wordday_role": "Rôle de Phrase du Jour",
+    "setup_label_chaos": "Chaos (Roulette)",
+    "setup_label_festivedays": "Jours Fériés",
+    "setup_label_streamalerts": "Alertes YouTube",
 }
