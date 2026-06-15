@@ -29,14 +29,13 @@ La persistencia del bot se maneja a través de SQLite3 utilizando `db_service.py
 ### Tablas Principales
 1. **`users`** (Preferencias globales de usuario):
    - `user_id` (INTEGER PRIMARY KEY)
-   - `xp` (INTEGER DEFAULT 0) - XP global
-   - `level` (INTEGER DEFAULT 1) - Nivel global
    - `birthday` (TEXT DEFAULT NULL) - Cumpleaños ("DD-MM")
    - `celebrate` (BOOLEAN DEFAULT 1) - Permitir felicitación
    - `custom_prefix` (TEXT DEFAULT NULL) - Prefijo personalizado del usuario
    - `description` (TEXT DEFAULT 'Sin descripción.') - Biografía del usuario
    - `personal_level_msg` (TEXT DEFAULT NULL) - Mensaje personalizado al subir de nivel
    - `personal_birthday_msg` (TEXT DEFAULT NULL) - Mensaje personalizado de cumpleaños
+   - `coins` (INTEGER DEFAULT 0) - Monedas globales del usuario (sistema de economía)
 
 2. **`guild_stats`** (Estadísticas de experiencia por servidor):
    - `guild_id` (INTEGER)
@@ -121,7 +120,7 @@ Para mantener la consistencia estética y la identidad del bot, **todas las resp
 
 ### Lineamientos Obligatorios de Diseño de Embeds:
 1. **Uso Exclusivo de `embed_service`**:
-   - Queda estrictamente prohibido instanciar `discord.Embed` de forma directa en los comandos o componentes de UI, a excepción de las tarjetas de perfil de usuario que necesitan utilizar dinámicamente el color del rol/avatar del usuario.
+   - Queda estrictamente prohibido instanciar `discord.Embed` de forma directa en los comandos o componentes de UI, a excepción de `profile_ui.py` (tarjetas de perfil con color de rol/avatar dinámico), `general_ui.py` (tarjeta de /serverinfo con color del bot dinámico) y `music_ui.py` (reproductor de música con color de fuente de audio dinámico).
    - En todos los demás casos, use siempre los helpers correspondientes del servicio.
 2. **Formateo de Listas y Datos**:
    - Para mostrar información estructurada, pares clave-valor, estadísticas o configuraciones dentro de la descripción de un embed, se debe utilizar el formato de citas de bloque de Discord:

@@ -260,7 +260,8 @@ OPTIMIZATION_CONFIG = {
 TIMEOUT_CONFIG = {
     "HELP": 120,  # Segundos antes de desactivar menú de ayuda
     "BOT_INFO": 120,  # Segundos antes de desactivar panel de info
-    "STATUS_DELETE": 60  # Segundos antes de desactivar menú de borrar estados
+    "STATUS_DELETE": 60,  # Segundos antes de desactivar menú de borrar estados
+    "SERVER_INFO": 120  # Segundos antes de desactivar panel de serverinfo
 }
 
 PAGINATION_CONFIG = {

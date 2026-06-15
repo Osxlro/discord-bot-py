@@ -192,7 +192,17 @@ class StatusSelect(discord.ui.Select):
 class StatusDeleteView(discord.ui.View):
     def __init__(self, options, placeholder_text):
         super().__init__(timeout=settings.TIMEOUT_CONFIG["STATUS_DELETE"])
+        self.message = None
         self.add_item(StatusSelect(options, placeholder_text))
+
+    async def on_timeout(self):
+        for child in self.children:
+            child.disabled = True
+        if self.message:
+            try:
+                await self.message.edit(view=self)
+            except Exception:
+                pass
 
 class BotInfoView(discord.ui.View):
     def __init__(self, ctx, bot, lang):

@@ -29,7 +29,7 @@ async def handle_calc(operacion: str, num1: float, num2: float, lang: str):
     except ValueError as e:
         return None, lang_service.get_text("calc_error", lang, error=str(e))
 
-async def handle_serverinfo(guild: discord.Guild, lang: str):
+async def handle_serverinfo(guild: discord.Guild, lang: str, author_id: int):
     config = await db_service.get_guild_config(guild.id)
     
     stats = {
@@ -52,7 +52,9 @@ async def handle_serverinfo(guild: discord.Guild, lang: str):
         stats['humans'] = len([m for m in guild.members if not m.bot])
         stats['bots'] = guild.member_count - stats['humans']
     
-    return general_ui.get_serverinfo_embed(guild, config, stats, lang)
+    embed = general_ui.get_serverinfo_general_embed(guild, stats, lang)
+    view = general_ui.ServerInfoView(guild, config, stats, lang, author_id)
+    return embed, view
 
 async def handle_translate(content: str, lang: str):
     try:

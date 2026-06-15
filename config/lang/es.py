@@ -217,6 +217,8 @@ ES = {
     "setup_msg_updated": "✅ Mensaje actualizado.",
     "setup_autorol_on": "✅ Auto-Rol activado: {role}",
     "setup_autorol_off": "⚪ Auto-Rol desactivado.",
+    "setup_disabled": "Desactivado",
+    "setup_autorol_label": "Auto-Rol",
     "setup_chaos_desc": "{status}\n🔫 Probabilidad: **{prob}%**",
     "chaos_title": "🔫 ¡Bang!",
     "setup_info_channels": "📂 Canales",
@@ -228,6 +230,9 @@ ES = {
 
     # --- SERVERINFO ---
     "serverinfo_title": "ℹ️ Información de {name}",
+    "serverinfo_tab_general": "ℹ️ General",
+    "serverinfo_tab_stats": "📊 Estadísticas",
+    "serverinfo_tab_config": "⚙️ Configuración",
     "serverinfo_owner": "👑 Dueño",
     "serverinfo_id": "🆔 ID",
     "serverinfo_created": "📅 Creado",

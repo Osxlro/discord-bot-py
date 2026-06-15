@@ -219,6 +219,8 @@ EN = {
     "setup_msg_updated": "✅ Message updated.",
     "setup_autorol_on": "✅ Auto-Role enabled: {role}",
     "setup_autorol_off": "⚪ Auto-Role disabled.",
+    "setup_disabled": "Disabled",
+    "setup_autorol_label": "Auto-Role",
     "setup_chaos_desc": "{status}\n🔫 Probability: **{prob}%**",
     "chaos_title": "🔫 Bang!",
     "setup_info_channels": "📂 Channels",
@@ -230,6 +232,9 @@ EN = {
 
     # --- SERVERINFO ---
     "serverinfo_title": "ℹ️ {name} Info",
+    "serverinfo_tab_general": "ℹ️ General",
+    "serverinfo_tab_stats": "📊 Statistics",
+    "serverinfo_tab_config": "⚙️ Configuration",
     "serverinfo_owner": "👑 Owner",
     "serverinfo_id": "🆔 ID",
     "serverinfo_created": "📅 Created",

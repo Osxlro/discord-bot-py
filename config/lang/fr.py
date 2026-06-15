@@ -217,6 +217,8 @@ FR = {
     "setup_msg_updated": "✅ Message mis à jour.",
     "setup_autorol_on": "✅ Auto-Rôle activé : {role}",
     "setup_autorol_off": "⚪ Auto-Rôle désactivé.",
+    "setup_disabled": "Désactivé",
+    "setup_autorol_label": "Rôle Automatique",
     "setup_chaos_desc": "{status}\n🔫 Probabilité : **{prob}%**",
     "chaos_title": "🔫 Bang !",
     "setup_info_channels": "📂 Salons",
@@ -228,6 +230,9 @@ FR = {
 
     # --- SERVERINFO ---
     "serverinfo_title": "ℹ️ Info de {name}",
+    "serverinfo_tab_general": "ℹ️ Général",
+    "serverinfo_tab_stats": "📊 Statistiques",
+    "serverinfo_tab_config": "⚙️ Configuration",
     "serverinfo_owner": "👑 Propriétaire",
     "serverinfo_id": "🆔 ID",
     "serverinfo_created": "📅 Créé le",

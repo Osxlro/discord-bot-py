@@ -50,46 +50,54 @@ class Configuracion(commands.Cog):
     # --- SECCIÓN: CONFIGURACIÓN DE CANALES ---
 
     @setup.command(name="welcome", description="Establece el canal de bienvenidas.")
-    @app_commands.describe(canal="Canal donde se enviarán las bienvenidas")
-    async def bienvenida(self, ctx: commands.Context, canal: discord.TextChannel):
+    @app_commands.describe(canal="Canal donde se enviarán las bienvenidas (deja vacío para desactivar)")
+    async def bienvenida(self, ctx: commands.Context, canal: discord.TextChannel = None):
         """Configura el canal donde el bot enviará los mensajes de bienvenida."""
         lang = await lang_service.get_guild_lang(ctx.guild.id)
-        await self._apply_setup(ctx, {"welcome_channel_id": canal.id}, lang_service.get_text("sim_welcome", lang), canal.mention)
+        val = canal.id if canal else 0
+        display = canal.mention if canal else lang_service.get_text("setup_disabled", lang)
+        await self._apply_setup(ctx, {"welcome_channel_id": val}, lang_service.get_text("sim_welcome", lang), display)
 
     @setup.command(name="confess", description="Establece el canal de confesiones anónimas.")
-    @app_commands.describe(canal="Canal para las confesiones")
-    async def confesiones(self, ctx: commands.Context, canal: discord.TextChannel):
+    @app_commands.describe(canal="Canal para las confesiones (deja vacío para desactivar)")
+    async def confesiones(self, ctx: commands.Context, canal: discord.TextChannel = None):
         """Configura el canal destinado a recibir las confesiones anónimas de los usuarios."""
         lang = await lang_service.get_guild_lang(ctx.guild.id)
-        await self._apply_setup(ctx, {"confessions_channel_id": canal.id}, lang_service.get_text("confess_title", lang), canal.mention)
+        val = canal.id if canal else 0
+        display = canal.mention if canal else lang_service.get_text("setup_disabled", lang)
+        await self._apply_setup(ctx, {"confessions_channel_id": val}, lang_service.get_text("confess_title", lang), display)
 
     @setup.command(name="logs", description="Establece el canal de registros (logs).")
-    @app_commands.describe(canal="Canal para logs de moderación")
-    async def logs(self, ctx: commands.Context, canal: discord.TextChannel):
+    @app_commands.describe(canal="Canal para logs de moderación (deja vacío para desactivar)")
+    async def logs(self, ctx: commands.Context, canal: discord.TextChannel = None):
         """Configura el canal donde se registrarán las acciones de moderación y eventos del servidor."""
         lang = await lang_service.get_guild_lang(ctx.guild.id)
-        await self._apply_setup(ctx, {"logs_channel_id": canal.id}, lang_service.get_text("setup_logs_label", lang), canal.mention)
+        val = canal.id if canal else 0
+        display = canal.mention if canal else lang_service.get_text("setup_disabled", lang)
+        await self._apply_setup(ctx, {"logs_channel_id": val}, lang_service.get_text("setup_logs_label", lang), display)
 
     @setup.command(name="birthday", description="Establece el canal de avisos de cumpleaños.")
-    @app_commands.describe(canal="Canal para felicitaciones")
-    async def cumpleanos(self, ctx: commands.Context, canal: discord.TextChannel):
+    @app_commands.describe(canal="Canal para felicitaciones (deja vacío para desactivar)")
+    async def cumpleanos(self, ctx: commands.Context, canal: discord.TextChannel = None):
         """Configura el canal donde el bot anunciará automáticamente los cumpleaños."""
         lang = await lang_service.get_guild_lang(ctx.guild.id)
-        await self._apply_setup(ctx, {"birthday_channel_id": canal.id}, lang_service.get_text("sim_birthday", lang), canal.mention)
+        val = canal.id if canal else 0
+        display = canal.mention if canal else lang_service.get_text("setup_disabled", lang)
+        await self._apply_setup(ctx, {"birthday_channel_id": val}, lang_service.get_text("sim_birthday", lang), display)
 
     # --- SECCIÓN: AJUSTES DE COMPORTAMIENTO Y MENSAJES ---
 
     @setup.command(name="goodbye", description="Personaliza el mensaje de despedida.")
-    @app_commands.describe(mensaje="Usa {user} para el nombre y {server} para el servidor. Escribe 'reset' para borrar.")
-    async def goodbye(self, ctx: commands.Context, mensaje: str):
+    @app_commands.describe(mensaje="Usa {user} para el nombre y {server} para el servidor. Deja vacío o escribe 'reset' para desactivar.")
+    async def goodbye(self, ctx: commands.Context, mensaje: str = None):
         """
         Establece un mensaje personalizado para cuando un usuario abandona el servidor.
         Permite el uso de variables dinámicas como {user} y {server}.
         """
         lang = await lang_service.get_guild_lang(ctx.guild.id)
-        val = None if mensaje.lower() == "reset" else mensaje
-        status = "✅" if val else "❌"
-        await self._apply_setup(ctx, {"server_goodbye_msg": val}, lang_service.get_text("goodbye_title", lang), status)
+        val = None if not mensaje or mensaje.lower() == "reset" else mensaje
+        display = val if val else lang_service.get_text("setup_disabled", lang)
+        await self._apply_setup(ctx, {"server_goodbye_msg": val}, lang_service.get_text("goodbye_title", lang), display)
 
     @setup.command(name="lang", description="Cambia el idioma del bot en este servidor.")
     @app_commands.describe(opcion="Selecciona el idioma (Español/English/Português/Français)")
@@ -115,6 +123,15 @@ class Configuracion(commands.Cog):
         embed = await setup_service.handle_chaos_setup(self.bot, ctx.guild.id, estado, probabilidad, await lang_service.get_guild_lang(ctx.guild.id))
         await ctx.send(embed=embed, ephemeral=True)
 
+    @setup.command(name="autorole", description="Establece el rol que se asignará automáticamente a los nuevos miembros.")
+    @app_commands.describe(rol="Rol a asignar (deja vacío para desactivar)")
+    async def autorole(self, ctx: commands.Context, rol: discord.Role = None):
+        """Configura el rol que el bot asignará automáticamente a los nuevos miembros al unirse."""
+        lang = await lang_service.get_guild_lang(ctx.guild.id)
+        val = rol.id if rol else 0
+        display = rol.mention if rol else lang_service.get_text("setup_disabled", lang)
+        await self._apply_setup(ctx, {"autorole_id": val}, lang_service.get_text("setup_autorol_label", lang), display)
+
     # ==========================================
     #           SUBGRUPO: WORDDAY (Frase del Día)
     # ==========================================
@@ -125,18 +142,22 @@ class Configuracion(commands.Cog):
             await ctx.send_help(ctx.command)
 
     @wordday_group.command(name="channel", description="Establece el canal para la frase del día.")
-    @app_commands.describe(canal="Canal donde se enviará la frase")
-    async def wordday_channel(self, ctx: commands.Context, canal: discord.TextChannel):
+    @app_commands.describe(canal="Canal donde se enviará la frase (deja vacío para desactivar)")
+    async def wordday_channel(self, ctx: commands.Context, canal: discord.TextChannel = None):
         """Configura el canal donde se publicará la frase del día cada mañana."""
         lang = await lang_service.get_guild_lang(ctx.guild.id)
-        await self._apply_setup(ctx, {"wordday_channel_id": canal.id}, lang_service.get_text("wordday_title", lang), canal.mention)
+        val = canal.id if canal else 0
+        display = canal.mention if canal else lang_service.get_text("setup_disabled", lang)
+        await self._apply_setup(ctx, {"wordday_channel_id": val}, lang_service.get_text("wordday_title", lang), display)
 
     @wordday_group.command(name="role", description="Establece el rol a mencionar.")
-    @app_commands.describe(rol="Rol a mencionar")
-    async def wordday_role(self, ctx: commands.Context, rol: discord.Role):
+    @app_commands.describe(rol="Rol a mencionar (deja vacío para desactivar)")
+    async def wordday_role(self, ctx: commands.Context, rol: discord.Role = None):
         """Configura el rol que el bot mencionará al publicar la frase del día."""
         lang = await lang_service.get_guild_lang(ctx.guild.id)
-        await self._apply_setup(ctx, {"wordday_role_id": rol.id}, lang_service.get_text("setup_wordday_role_label", lang), rol.mention)
+        val = rol.id if rol else 0
+        display = rol.mention if rol else lang_service.get_text("setup_disabled", lang)
+        await self._apply_setup(ctx, {"wordday_role_id": val}, lang_service.get_text("setup_wordday_role_label", lang), display)
 
 async def setup(bot):
     await bot.add_cog(Configuracion(bot))

@@ -31,7 +31,7 @@ class General(commands.Cog):
         lang = await lang_service.get_guild_lang(ctx.guild.id if ctx.guild else None)
         # Delegamos la orquestación de la ayuda al servicio especializado
         embed, view = await help_service.handle_help(self.bot, ctx, lang)
-        await ctx.send(embed=embed, view=view)
+        view.message = await ctx.send(embed=embed, view=view)
 
     @commands.hybrid_command(name="ping", description="Muestra la latencia actual del bot.")
     async def ping(self, ctx: commands.Context):
@@ -59,8 +59,8 @@ class General(commands.Cog):
         await ctx.defer()
         lang = await lang_service.get_guild_lang(ctx.guild.id)
         # El servicio recopila estadísticas del servidor y configuración de la base de datos
-        embed = await general_service.handle_serverinfo(ctx.guild, lang)
-        await ctx.send(embed=embed)
+        embed, view = await general_service.handle_serverinfo(ctx.guild, lang, ctx.author.id)
+        view.message = await ctx.send(embed=embed, view=view)
 
     async def traducir_mensaje(self, interaction: discord.Interaction, message: discord.Message):
         """

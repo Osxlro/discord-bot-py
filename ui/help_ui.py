@@ -123,4 +123,14 @@ class HelpSelect(discord.ui.Select):
 class HelpView(discord.ui.View):
     def __init__(self, bot, ctx, lang):
         super().__init__(timeout=settings.TIMEOUT_CONFIG["HELP"])
+        self.message = None
         self.add_item(HelpSelect(bot, ctx, lang))
+
+    async def on_timeout(self):
+        for child in self.children:
+            child.disabled = True
+        if self.message:
+            try:
+                await self.message.edit(view=self)
+            except Exception:
+                pass

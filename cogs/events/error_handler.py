@@ -54,13 +54,14 @@ class GlobalErrorHandler(commands.Cog):
                 return await ctx.send(embed=embed_service.info(error_title, msg, lite=True), delete_after=20)
             return
         
-        if isinstance(error, commands.MissingRequiredArgument):
+        if isinstance(error, (commands.MissingRequiredArgument, commands.BadArgument, commands.BadUnionArgument)):
             usage = f"{ctx.prefix}{ctx.command.qualified_name} {ctx.command.signature}"
-            msg = f"{lang_service.get_text('error_missing_args', lang)}\n\n{lang_service.get_text('error_usage', lang)}\n`{usage}`"
-            return await ctx.send(embed=embed_service.error(error_title, msg, lite=True))
-
-        if isinstance(error, commands.BadArgument):
-            msg = lang_service.get_text("error_bad_arg", lang)
+            error_msg = ""
+            if isinstance(error, commands.MissingRequiredArgument):
+                error_msg = lang_service.get_text('error_missing_args', lang)
+            else:
+                error_msg = lang_service.get_text('error_bad_arg', lang)
+            msg = f"{error_msg}\n\n{lang_service.get_text('error_usage', lang)}\n`{usage}`"
             return await ctx.send(embed=embed_service.error(error_title, msg, lite=True))
 
         if isinstance(error, commands.CommandOnCooldown):
