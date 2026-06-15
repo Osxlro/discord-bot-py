@@ -65,7 +65,7 @@ def get_messages_embed(target: discord.Member, user_data: dict, lang: str) -> di
 class ProfileView(discord.ui.View):
     """Vista con botones para navegar por las secciones del perfil."""
     def __init__(self, target, user_data, guild_data, xp_next, lang, author_id, is_dm: bool = False):
-        super().__init__(timeout=settings.TIMEOUT_CONFIG.get("BOT_INFO", 120))
+        super().__init__(timeout=settings.GLOBAL_TIMEOUT)
         self.target, self.user_data, self.guild_data = target, user_data, guild_data
         self.xp_next, self.lang, self.author_id = xp_next, lang, author_id
         self.message = None

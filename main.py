@@ -127,6 +127,7 @@ class BotPersonal(commands.AutoShardedBot):
         logger.info("--- 🔄 SINCRONIZANDO COMANDOS ---")
         try:
             synced = await self.tree.sync()
+            self.synced_commands_cache = {cmd.name: cmd.id for cmd in synced}
             logger.info(f"✨ Se han sincronizado {len(synced)} comandos.")
         except Exception as e:
             logger.error(f"❌ Error al sincronizar: {e}")

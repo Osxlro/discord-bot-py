@@ -191,7 +191,7 @@ class StatusSelect(discord.ui.Select):
 
 class StatusDeleteView(discord.ui.View):
     def __init__(self, options, placeholder_text):
-        super().__init__(timeout=settings.TIMEOUT_CONFIG["STATUS_DELETE"])
+        super().__init__(timeout=settings.GLOBAL_TIMEOUT)
         self.message = None
         self.add_item(StatusSelect(options, placeholder_text))
 
@@ -206,7 +206,7 @@ class StatusDeleteView(discord.ui.View):
 
 class BotInfoView(discord.ui.View):
     def __init__(self, ctx, bot, lang):
-        super().__init__(timeout=settings.TIMEOUT_CONFIG["BOT_INFO"])
+        super().__init__(timeout=settings.GLOBAL_TIMEOUT)
         self.ctx, self.bot, self.lang = ctx, bot, lang
         self.active_tab, self.message = 0, None
         self.btn_general.label = lang_service.get_text("botinfo_btn_general", lang)

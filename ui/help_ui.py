@@ -71,15 +71,26 @@ def get_module_embed(bot, module_name: str, guild: discord.Guild, lang: str) -> 
     module_desc = lang_service.get_text("help_module_desc", lang, module=module_name)
     
     cmds_list = []
+    cmd_id_map = getattr(bot, "synced_commands_cache", {})
     for cmd in cog.get_commands():
         if cmd.hidden: continue
         
         desc_cmd = cmd.description or cmd.short_doc or "..."
+        cmd_id = cmd_id_map.get(cmd.name)
+        
         if isinstance(cmd, (commands.HybridGroup, commands.Group)):
             for sub in cmd.commands:
-                cmds_list.append(f"**/{cmd.name} {sub.name}**\n>  • {sub.description or '...'}")
+                if cmd_id:
+                    mention = f"</{cmd.name} {sub.name}:{cmd_id}>"
+                else:
+                    mention = f"**/{cmd.name} {sub.name}**"
+                cmds_list.append(f"{mention}\n>  • {sub.description or '...'}")
         else:
-            cmds_list.append(f"**/{cmd.name}**\n>  • {desc_cmd}")
+            if cmd_id:
+                mention = f"</{cmd.name}:{cmd_id}>"
+            else:
+                mention = f"**/{cmd.name}**"
+            cmds_list.append(f"{mention}\n>  • {desc_cmd}")
 
     commands_txt = "\n".join(cmds_list) if cmds_list else lang_service.get_text("help_no_cmds", lang)
     description = f"*{module_desc}*\n\n{commands_txt}"
@@ -122,7 +133,7 @@ class HelpSelect(discord.ui.Select):
 
 class HelpView(discord.ui.View):
     def __init__(self, bot, ctx, lang):
-        super().__init__(timeout=settings.TIMEOUT_CONFIG["HELP"])
+        super().__init__(timeout=settings.GLOBAL_TIMEOUT)
         self.message = None
         self.add_item(HelpSelect(bot, ctx, lang))
 

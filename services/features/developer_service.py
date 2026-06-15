@@ -51,7 +51,9 @@ async def perform_db_maintenance():
 
 async def sync_commands(bot: discord.Client):
     """Sincroniza los comandos de aplicación del bot."""
-    return await bot.tree.sync()
+    synced = await bot.tree.sync()
+    bot.synced_commands_cache = {cmd.name: cmd.id for cmd in synced}
+    return synced
 
 async def restart_bot(author_name: str):
     """Cierra la base de datos y reinicia el proceso del bot."""

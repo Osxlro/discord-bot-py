@@ -157,7 +157,7 @@ def get_serverinfo_config_embed(guild: discord.Guild, config: dict, lang: str) -
 
 class ServerInfoView(discord.ui.View):
     def __init__(self, guild: discord.Guild, config: dict, stats: dict, lang: str, author_id: int):
-        super().__init__(timeout=settings.TIMEOUT_CONFIG.get("SERVER_INFO", 120))
+        super().__init__(timeout=settings.GLOBAL_TIMEOUT)
         self.guild = guild
         self.config = config
         self.stats = stats

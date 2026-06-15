@@ -37,16 +37,6 @@ class Configuracion(commands.Cog):
         if ctx.invoked_subcommand is None:
             await ctx.send_help(ctx.command)
 
-    @setup.command(name="info", description="Muestra un resumen de la configuración del servidor.")
-    async def info(self, ctx: commands.Context):
-        """
-        Muestra un panel informativo con todos los ajustes actuales aplicados en el servidor.
-        """
-        await ctx.defer(ephemeral=True)
-        lang = await lang_service.get_guild_lang(ctx.guild.id)
-        embed = await setup_service.handle_get_info(ctx.guild, lang)
-        await ctx.send(embed=embed, ephemeral=True)
-
     # --- SECCIÓN: CONFIGURACIÓN DE CANALES ---
 
     @setup.command(name="welcome", description="Establece el canal de bienvenidas.")
@@ -113,9 +103,9 @@ class Configuracion(commands.Cog):
     @setup.command(name="chaos", description="Configura el sistema Chaos (ruleta rusa).")
     @app_commands.describe(
         estado="Activar o desactivar el sistema",
-        probabilidad="Probabilidad de activación (0.1 a 100)"
+        probabilidad="Probabilidad de activación (0.1 a 100). Deja vacío para no cambiarla."
     )
-    async def chaos(self, ctx: commands.Context, estado: bool, probabilidad: float):
+    async def chaos(self, ctx: commands.Context, estado: bool, probabilidad: float = None):
         """
         Configura el sistema Chaos (ruleta rusa de mensajes).
         Permite activar/desactivar el sistema y ajustar la probabilidad de que un usuario sea aislado.
