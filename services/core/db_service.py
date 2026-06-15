@@ -29,7 +29,7 @@ _prefix_cache = {} # Caché para prefijos de usuario
 # Cualquier otra tabla encontrada será eliminada para evitar basura.
 REQUIRED_TABLES = {
     "users", "guild_stats", "guild_config", 
-    "bot_persistence", "bot_statuses", "sqlite_sequence", "warns"
+    "bot_persistence", "bot_statuses", "sqlite_sequence", "warns", "stream_alerts"
 }
 
 # =============================================================================
@@ -118,6 +118,9 @@ async def init_db():
         minecraft_channel_id INTEGER DEFAULT 0,
         wordday_channel_id INTEGER DEFAULT 0,
         wordday_role_id INTEGER DEFAULT 0,
+        festivedays_enabled INTEGER DEFAULT 0,
+        festivedays_channel_id INTEGER DEFAULT 0,
+        festivedays_role_id INTEGER DEFAULT 0,
         language TEXT DEFAULT 'es'
     )
     """)
@@ -156,6 +159,20 @@ async def init_db():
         timestamp DATETIME DEFAULT (datetime('now'))
     )
     """)
+
+    # 8. Alertas de Stream (YouTube)
+    await db.execute("""
+    CREATE TABLE IF NOT EXISTS stream_alerts (
+        guild_id INTEGER,
+        platform TEXT,
+        channel_name TEXT,
+        discord_channel_id INTEGER,
+        role_id INTEGER DEFAULT 0,
+        last_status TEXT DEFAULT NULL,
+        last_check DATETIME DEFAULT (datetime('now')),
+        PRIMARY KEY (guild_id, platform, channel_name)
+    )
+    """)
     
     # --- ÍNDICES Y MIGRACIONES ---
     
@@ -170,6 +187,16 @@ async def init_db():
     await _ensure_column("guild_config", "minecraft_channel_id", "INTEGER DEFAULT 0")
     await _ensure_column("guild_config", "wordday_channel_id", "INTEGER DEFAULT 0")
     await _ensure_column("guild_config", "wordday_role_id", "INTEGER DEFAULT 0")
+    await _ensure_column("guild_config", "festivedays_enabled", "INTEGER DEFAULT 0")
+    await _ensure_column("guild_config", "festivedays_channel_id", "INTEGER DEFAULT 0")
+    await _ensure_column("guild_config", "festivedays_role_id", "INTEGER DEFAULT 0")
+    await _ensure_column("stream_alerts", "guild_id", "INTEGER")
+    await _ensure_column("stream_alerts", "platform", "TEXT")
+    await _ensure_column("stream_alerts", "channel_name", "TEXT")
+    await _ensure_column("stream_alerts", "discord_channel_id", "INTEGER")
+    await _ensure_column("stream_alerts", "role_id", "INTEGER DEFAULT 0")
+    await _ensure_column("stream_alerts", "last_status", "TEXT DEFAULT NULL")
+    await _ensure_column("stream_alerts", "last_check", "DATETIME DEFAULT (datetime('now'))")
 
     # --- PROTOCOLO DE LIMPIEZA Y OPTIMIZACIÓN ---
     await _cleanup_unused_tables()

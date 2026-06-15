@@ -1,9 +1,10 @@
 import discord
 from discord.ext import commands
 from discord import app_commands
-from services.features import diversion_service
+from services.features import diversion_service, trivia_service
 from services.core import lang_service
 from services.utils import embed_service
+from ui.trivia_ui import TriviaView
 
 class Diversion(commands.Cog):
     """
@@ -92,6 +93,48 @@ class Diversion(commands.Cog):
         # El servicio elige una respuesta aleatoria localizada
         embed = diversion_service.handle_8ball(pregunta, lang)
         await ctx.reply(embed=embed)
+
+    @commands.hybrid_command(name="trivia", description="Inicia una ronda de trivia de opción múltiple.")
+    async def trivia(self, ctx: commands.Context):
+        """Obtiene una pregunta de trivia aleatoria y presenta 4 opciones con botones."""
+        lang = await lang_service.get_guild_lang(ctx.guild.id if ctx.guild else None)
+        
+        await ctx.defer()
+        
+        question_data = await trivia_service.fetch_trivia_question(lang)
+        if not question_data:
+            return await ctx.reply(embed=embed_service.error(
+                lang_service.get_text("title_error", lang),
+                lang_service.get_text("trivia_error_api", lang),
+                lite=True
+            ))
+            
+        # Generar el embed de la pregunta
+        letter_emojis = ["🇦", "🇧", "🇨", "🇩"]
+        options_text = ""
+        for i, opt in enumerate(question_data["options"]):
+            options_text += f"> {letter_emojis[i]} {opt}\n"
+            
+        title = lang_service.get_text("trivia_embed_title", lang)
+        desc = (
+            f"**{question_data['question']}**\n\n"
+            f"{options_text}\n"
+            f"> **📁 {lang_service.get_text('trivia_category', lang)}:** {question_data['category'].title()}\n"
+            f"> **⚡ {lang_service.get_text('trivia_difficulty', lang)}:** {question_data['difficulty'].title()}"
+        )
+        
+        embed = embed_service.fun(title, desc)
+        
+        # Crear la vista
+        view = TriviaView(
+            author=ctx.author,
+            correct_index=question_data["correct_index"],
+            options=question_data["options"],
+            correct_answer=question_data["correct_answer"],
+            lang=lang
+        )
+        
+        view.message = await ctx.reply(embed=embed, view=view)
 
 async def setup(bot: commands.Bot):
     """Función de entrada para cargar el Cog en el bot."""

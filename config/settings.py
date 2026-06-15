@@ -93,7 +93,7 @@ HELP_CONFIG = {
         "General": "💡", "Moderacion": "🛡️", "Niveles": "📊", "Diversion": "🎲",
         "Configuracion": "⚙️", "Developer": "💻", "Cumpleanos": "🎂", "Roles": "🎭",
         "Voice": "🎙️", "Perfil": "👤", "Status": "🟢", "Backup": "💾",
-        "Usuario": "👤", "Minecraft": "🧱", "Music": "🎵"
+        "Usuario": "👤", "Music": "🎵" # "Minecraft": "🧱" (Archivado)
     },
     "HOME_EMOJI": "🏠"  # Emoji para el botón de regreso al panel principal de ayuda
 }
@@ -112,7 +112,8 @@ ASSETS = {
 COLORS = {  # Paleta de colores oficiales de marca del bot
     "SUCCESS": 0x57F287, "ERROR": 0xED4245, "INFO": 0x5865F2,
     "WARNING": 0xFEE75C, "XP": 0x9B59B6, "FUN": 0xE91E63,
-    "MINECRAFT": 0x2ECC71, "BLUE": 0x3498DB, "GOLD": 0xF1C40F,
+    # "MINECRAFT": 0x2ECC71, (Archivado)
+    "BLUE": 0x3498DB, "GOLD": 0xF1C40F,
     "TEAL": 0x1ABC9C, "ORANGE": 0xE67E22
 }
 
@@ -246,20 +247,19 @@ SEND_BACKUP_TO_OWNER = True  # Bandera para habilitar o desactivar el envío de 
 
 
 # =============================================================================
-# 7. INTEGRACIONES EXTERNAS (MINECRAFT BRIDGE)
+# 7. INTEGRACIONES EXTERNAS (MINECRAFT BRIDGE) [ARCHIVADO]
 # =============================================================================
 # Servidor web local Flask/Sanic para comunicación bidireccional con plugins Spigot/Paper.
-
-MINECRAFT_CONFIG = {
-    "ENABLED": True,  # Activar el bridge de Minecraft
-    "PORT": 5058,  # Puerto de escucha del socket/servidor
-    "DEFAULT_NAME": "Steve",  # Fallback de nombre si falla la obtención del usuario
-    "TOKEN": "CAMBIAME_POR_UN_TOKEN_SEGURO",  # Token de seguridad compartido con el plugin
-    "MAX_PAYLOAD_SIZE": 51200,  # Tamaño máximo de carga (50KB)
-    "HOST": "0.0.0.0",  # Dirección del servidor web
-    "MAX_QUEUE_SIZE": 50,  # Límite de mensajes pendientes de sincronizar
-    "PORT_RANGE": 3  # Puertos secundarios a probar si el principal está en uso
-}
+# MINECRAFT_CONFIG = {
+#     "ENABLED": False,  # Activar el bridge de Minecraft
+#     "PORT": 5058,  # Puerto de escucha del socket/servidor
+#     "DEFAULT_NAME": "Steve",  # Fallback de nombre si falla la obtención del usuario
+#     "TOKEN": "CAMBIAME_POR_UN_TOKEN_SEGURO",  # Token de seguridad compartido con el plugin
+#     "MAX_PAYLOAD_SIZE": 51200,  # Tamaño máximo de carga (50KB)
+#     "HOST": "0.0.0.0",  # Dirección del servidor web
+#     "MAX_QUEUE_SIZE": 50,  # Límite de mensajes pendientes de sincronizar
+#     "PORT_RANGE": 3  # Puertos secundarios a probar si el principal está en uso
+# }
 
 
 # =============================================================================
