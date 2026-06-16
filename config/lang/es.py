@@ -468,4 +468,10 @@ ES = {
     "setup_label_chaos": "Chaos (Ruleta)",
     "setup_label_festivedays": "Días Festivos",
     "setup_label_streamalerts": "Alertas de YouTube",
+    "serverinfo_cat_general": "🌐 General & Idioma",
+    "serverinfo_cat_channels": "🚪 Canales de Interacción",
+    "serverinfo_cat_roles": "👥 Roles & Utilidades",
+    "serverinfo_cat_systems": "🎮 Sistemas Activos",
+    "serverinfo_cat_alerts": "🎥 Alertas de Contenido",
+    "setup_streamalert_msg_label": "Mensaje",
 }

@@ -168,6 +168,7 @@ async def init_db():
         channel_name TEXT,
         discord_channel_id INTEGER,
         role_id INTEGER DEFAULT 0,
+        custom_message TEXT DEFAULT NULL,
         last_status TEXT DEFAULT NULL,
         last_check DATETIME DEFAULT (datetime('now')),
         PRIMARY KEY (guild_id, platform, channel_name)
@@ -195,6 +196,7 @@ async def init_db():
     await _ensure_column("stream_alerts", "channel_name", "TEXT")
     await _ensure_column("stream_alerts", "discord_channel_id", "INTEGER")
     await _ensure_column("stream_alerts", "role_id", "INTEGER DEFAULT 0")
+    await _ensure_column("stream_alerts", "custom_message", "TEXT DEFAULT NULL")
     await _ensure_column("stream_alerts", "last_status", "TEXT DEFAULT NULL")
     await _ensure_column("stream_alerts", "last_check", "DATETIME DEFAULT (datetime('now'))")
 

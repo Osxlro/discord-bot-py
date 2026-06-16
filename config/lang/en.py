@@ -468,4 +468,10 @@ EN = {
     "setup_label_chaos": "Chaos (Russian Roulette)",
     "setup_label_festivedays": "Festive Days",
     "setup_label_streamalerts": "YouTube Alerts",
+    "serverinfo_cat_general": "🌐 General & Language",
+    "serverinfo_cat_channels": "🚪 Interaction Channels",
+    "serverinfo_cat_roles": "👥 Roles & Utilities",
+    "serverinfo_cat_systems": "🎮 Active Systems",
+    "serverinfo_cat_alerts": "🎥 Content Alerts",
+    "setup_streamalert_msg_label": "Message",
 }

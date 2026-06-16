@@ -160,41 +160,67 @@ def get_serverinfo_config_embed(guild: discord.Guild, config: dict, stream_alert
     else:
         festive_status = lang_service.get_text("setup_disabled", lang)
 
-    # Estructura dinámica de configuraciones Core
-    # (Emoji, Clave de traducción de la etiqueta, Valor ya formateado)
-    core_configs = [
-        ("🌐", "setup_label_language", lang_name),
-        ("👋", "setup_label_welcome", fmt_ch(config.get("welcome_channel_id"))),
-        ("🤫", "setup_label_confess", fmt_ch(config.get("confessions_channel_id"))),
-        ("📜", "setup_label_logs", fmt_ch(config.get("logs_channel_id"))),
-        ("🎂", "setup_label_birthday", fmt_ch(config.get("birthday_channel_id"))),
-        ("🎭", "setup_label_autorole", fmt_role(config.get("autorole_id"))),
-        ("📖", "setup_label_wordday_ch", fmt_ch(config.get("wordday_channel_id"))),
-        ("🏷️", "setup_label_wordday_role", fmt_role(config.get("wordday_role_id"))),
-        ("🔫", "setup_label_chaos", chaos_status),
-        ("🎉", "setup_label_festivedays", festive_status),
-    ]
+    # Category 1: General & Idioma
+    cat_general_title = lang_service.get_text("serverinfo_cat_general", lang)
+    lbl_lang = lang_service.get_text("setup_label_language", lang)
+    val_general = f"> 🌐 **{lbl_lang}:** {lang_name}"
+    embed.add_field(name=cat_general_title, value=val_general, inline=False)
 
-    desc_lines = []
-    for emoji, label_key, val in core_configs:
-        label = lang_service.get_text(label_key, lang)
-        desc_lines.append(f"> {emoji} **{label}:** {val}")
+    # Category 2: Canales de Interacción
+    cat_channels_title = lang_service.get_text("serverinfo_cat_channels", lang)
+    lbl_welcome = lang_service.get_text("setup_label_welcome", lang)
+    lbl_confess = lang_service.get_text("setup_label_confess", lang)
+    lbl_logs = lang_service.get_text("setup_label_logs", lang)
+    lbl_birthday = lang_service.get_text("setup_label_birthday", lang)
+    
+    val_channels = (
+        f"> 👋 **{lbl_welcome}:** {fmt_ch(config.get('welcome_channel_id'))}\n"
+        f"> 🤫 **{lbl_confess}:** {fmt_ch(config.get('confessions_channel_id'))}\n"
+        f"> 🎂 **{lbl_birthday}:** {fmt_ch(config.get('birthday_channel_id'))}\n"
+        f"> 📜 **{lbl_logs}:** {fmt_ch(config.get('logs_channel_id'))}"
+    )
+    embed.add_field(name=cat_channels_title, value=val_channels, inline=False)
 
-    # Sección de Alertas de YouTube
-    yt_label = lang_service.get_text("setup_label_streamalerts", lang)
+    # Category 3: Roles & Utilidades
+    cat_roles_title = lang_service.get_text("serverinfo_cat_roles", lang)
+    lbl_autorole = lang_service.get_text("setup_label_autorole", lang)
+    lbl_wordday_ch = lang_service.get_text("setup_label_wordday_ch", lang)
+    lbl_wordday_role = lang_service.get_text("setup_label_wordday_role", lang)
+    
+    val_roles = (
+        f"> 🎭 **{lbl_autorole}:** {fmt_role(config.get('autorole_id'))}\n"
+        f"> 📖 **{lbl_wordday_ch}:** {fmt_ch(config.get('wordday_channel_id'))}\n"
+        f"> 🏷️ **{lbl_wordday_role}:** {fmt_role(config.get('wordday_role_id'))}"
+    )
+    embed.add_field(name=cat_roles_title, value=val_roles, inline=False)
+
+    # Category 4: Sistemas Activos
+    cat_systems_title = lang_service.get_text("serverinfo_cat_systems", lang)
+    lbl_chaos = lang_service.get_text("setup_label_chaos", lang)
+    lbl_festivedays = lang_service.get_text("setup_label_festivedays", lang)
+    
+    val_systems = (
+        f"> 🔫 **{lbl_chaos}:** {chaos_status}\n"
+        f"> 🎉 **{lbl_festivedays}:** {festive_status}"
+    )
+    embed.add_field(name=cat_systems_title, value=val_systems, inline=False)
+
+    # Category 5: Alertas de YouTube
+    cat_alerts_title = lang_service.get_text("serverinfo_cat_alerts", lang)
     if stream_alerts:
         alert_lines = []
         for alert in stream_alerts:
             ch_mention = f"<#{alert['discord_channel_id']}>"
             role_mention = f" (Mención: <@&{alert['role_id']}>)" if alert['role_id'] else ""
-            alert_lines.append(f"> 🎥 **YouTube:** `{alert['channel_name']}` ➡️ {ch_mention}{role_mention}")
+            msg_label = lang_service.get_text("setup_streamalert_msg_label", lang)
+            custom_msg_val = f"\n  * {msg_label}: *\"{alert['custom_message']}\"*" if alert.get('custom_message') else ""
+            alert_lines.append(f"> 🎥 **YouTube:** `{alert['channel_name']}` ➡️ {ch_mention}{role_mention}{custom_msg_val}")
         alerts_desc = "\n".join(alert_lines)
     else:
-        alerts_desc = f"> 🎥 **YouTube:** {lang_service.get_text('setup_disabled', lang)}"
-
-    formatted_conf = "\n".join(desc_lines)
-    embed.add_field(name=lang_service.get_text("serverinfo_config", lang), value=formatted_conf, inline=False)
-    embed.add_field(name=yt_label, value=alerts_desc, inline=False)
+        lbl_streamalerts = lang_service.get_text("setup_label_streamalerts", lang)
+        alerts_desc = f"> 🎥 **{lbl_streamalerts}:** {lang_service.get_text('setup_disabled', lang)}"
+    
+    embed.add_field(name=cat_alerts_title, value=alerts_desc, inline=False)
 
     return embed
 

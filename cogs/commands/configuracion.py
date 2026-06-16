@@ -182,15 +182,16 @@ class Configuracion(commands.Cog):
     @app_commands.describe(
         canal_usuario="ID del canal (UC...) o handle (ej: @ElRubiusOMG)",
         canal_discord="Canal de Discord donde enviar las alertas",
-        rol="Rol a mencionar al enviar la alerta (opcional)"
+        rol="Rol a mencionar al enviar la alerta (opcional)",
+        mensaje="Mensaje personalizado. Placeholders: {role}, {author}, {title}, {link} (opcional)"
     )
-    async def streamalert_add(self, ctx: commands.Context, canal_usuario: str, canal_discord: discord.TextChannel, rol: discord.Role = None):
+    async def streamalert_add(self, ctx: commands.Context, canal_usuario: str, canal_discord: discord.TextChannel, rol: discord.Role = None, mensaje: str = None):
         """Registra un canal de YouTube en el sistema de alertas."""
         await ctx.defer(ephemeral=True)
         lang = await lang_service.get_guild_lang(ctx.guild.id)
         
         success, resolved_id = await stream_alert_service.add_stream_alert(
-            ctx.guild.id, "youtube", canal_usuario, canal_discord.id, rol.id if rol else 0
+            ctx.guild.id, "youtube", canal_usuario, canal_discord.id, rol.id if rol else 0, mensaje
         )
         
         if not success:
@@ -251,7 +252,9 @@ class Configuracion(commands.Cog):
         for i, alert in enumerate(alerts, 1):
             ch_mention = f"<#{alert['discord_channel_id']}>"
             role_mention = f"<@&{alert['role_id']}>" if alert['role_id'] else lang_service.get_text("setup_disabled", lang)
-            lines.append(f"{i}. **YouTube:** `{alert['channel_name']}` ➡️ {ch_mention} (Mención: {role_mention})")
+            msg_label = lang_service.get_text("setup_streamalert_msg_label", lang)
+            msg_str = f" ({msg_label}: *\"{alert['custom_message']}\"*)" if alert.get('custom_message') else ""
+            lines.append(f"{i}. **YouTube:** `{alert['channel_name']}` ➡️ {ch_mention} (Mención: {role_mention}){msg_str}")
             
         desc = "\n".join(lines)
         await ctx.send(embed=embed_service.info(

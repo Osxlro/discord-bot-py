@@ -84,21 +84,21 @@ class StreamAlertsTask(commands.Cog):
                         if role:
                             mention_str = role.mention
 
-                    # Construir el embed del aviso
-                    title_text = lang_service.get_text("stream_youtube_title", lang, author=author)
-                    desc_text = lang_service.get_text(
-                        "stream_youtube_desc", lang,
-                        author=author, title=video_title, link=video_link
-                    )
-
-                    embed = embed_service.info(
-                        title=title_text,
-                        description=desc_text
-                    )
+                    # Reemplazar la mención y el embed con el mensaje personalizado si existe.
+                    # Si no hay mensaje personalizado, solo pon el video y ya (más la mención si hay).
+                    custom_msg = alert.get("custom_message")
+                    if custom_msg:
+                        content = custom_msg.replace("{role}", mention_str).replace("{author}", author).replace("{title}", video_title).replace("{link}", video_link)
+                        if "{link}" not in custom_msg:
+                            content += f"\n{video_link}"
+                    else:
+                        if mention_str:
+                            content = f"{mention_str} {video_link}"
+                        else:
+                            content = video_link
                     
                     try:
-                        content = f"{mention_str} 🎥" if mention_str else "🎥"
-                        await channel.send(content=content, embed=embed)
+                        await channel.send(content=content)
                         logger.info(f"Notificación enviada para {author} en guild {guild_id}, canal {discord_channel_id}")
                     except discord.Forbidden:
                         logger.warning(f"No hay permisos para enviar mensajes en el canal {discord_channel_id} del guild {guild_id}")

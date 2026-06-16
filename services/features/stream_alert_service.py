@@ -12,7 +12,7 @@ YT_NAMESPACES = {
     'yt': 'http://www.youtube.com/xml/schemas/2015'
 }
 
-async def add_stream_alert(guild_id: int, platform: str, channel_name: str, discord_channel_id: int, role_id: int = 0) -> tuple[bool, str]:
+async def add_stream_alert(guild_id: int, platform: str, channel_name: str, discord_channel_id: int, role_id: int = 0, custom_message: str = None) -> tuple[bool, str]:
     """
     Registra una nueva alerta de stream/video para un servidor.
     Intenta verificar y resolver el ID del canal de YouTube si es necesario.
@@ -45,8 +45,8 @@ async def add_stream_alert(guild_id: int, platform: str, channel_name: str, disc
 
     # Insertar en base de datos
     await db_service.execute(
-        "INSERT INTO stream_alerts (guild_id, platform, channel_name, discord_channel_id, role_id) VALUES (?, ?, ?, ?, ?)",
-        (guild_id, platform, resolved_id, discord_channel_id, role_id)
+        "INSERT INTO stream_alerts (guild_id, platform, channel_name, discord_channel_id, role_id, custom_message) VALUES (?, ?, ?, ?, ?, ?)",
+        (guild_id, platform, resolved_id, discord_channel_id, role_id, custom_message)
     )
     return True, resolved_id
 
@@ -78,7 +78,7 @@ async def remove_stream_alert(guild_id: int, platform: str, channel_name: str) -
 async def get_stream_alerts(guild_id: int) -> list[dict]:
     """Obtiene todas las alertas configuradas para un servidor."""
     rows = await db_service.fetch_all(
-        "SELECT platform, channel_name, discord_channel_id, role_id, last_status FROM stream_alerts WHERE guild_id = ?",
+        "SELECT platform, channel_name, discord_channel_id, role_id, custom_message, last_status FROM stream_alerts WHERE guild_id = ?",
         (guild_id,)
     )
     return [dict(row) for row in rows]
@@ -86,7 +86,7 @@ async def get_stream_alerts(guild_id: int) -> list[dict]:
 async def get_all_stream_alerts() -> list[dict]:
     """Obtiene todas las alertas globales registradas para el background task."""
     rows = await db_service.fetch_all(
-        "SELECT guild_id, platform, channel_name, discord_channel_id, role_id, last_status FROM stream_alerts"
+        "SELECT guild_id, platform, channel_name, discord_channel_id, role_id, custom_message, last_status FROM stream_alerts"
     )
     return [dict(row) for row in rows]
 
