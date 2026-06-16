@@ -102,3 +102,66 @@ async def handle_db_maintenance(lang: str):
     """Ejecuta mantenimiento y retorna el embed de éxito."""
     await perform_db_maintenance()
     return developer_ui.get_db_maint_success_embed(lang)
+
+async def handle_edit_coins(user_id: int, amount: int, lang: str):
+    """Establece directamente las monedas de un usuario y retorna el embed de éxito."""
+    await db_service.set_user_coins(user_id, amount)
+    return developer_ui.get_dev_edit_success_embed(lang, "coins", str(amount))
+
+async def handle_edit_xp(guild_id: int, user_id: int, xp: int, level: int, lang: str):
+    """Establece directamente la XP y nivel de un usuario y retorna el embed de éxito."""
+    await db_service.set_user_xp_level(guild_id, user_id, xp, level)
+    val_display = f"XP: {xp}, Level: {level}"
+    return developer_ui.get_dev_edit_success_embed(lang, "xp_level", val_display)
+
+async def handle_edit_profile(user_id: int, campo: str, valor: str, lang: str):
+    """Manipula campos del perfil de un usuario."""
+    if campo == "descripcion":
+        if len(valor) > 200:
+            return None, lang_service.get_text("error_max_chars", lang, max=200)
+        await db_service.execute(
+            "INSERT INTO users (user_id, description) VALUES (?, ?) "
+            "ON CONFLICT(user_id) DO UPDATE SET description = excluded.description",
+            (user_id, valor)
+        )
+    elif campo == "genero":
+        mapping = {
+            "hombre": "hombre",
+            "mujer": "mujer",
+            "no_binario": "no_binario",
+            "extraterrestre": "extraterrestre",
+            "none": "none"
+        }
+        val = mapping.get(valor.lower())
+        if not val:
+            return None, "Género no válido. Opciones: Hombre, Mujer, No Binario, Extraterrestre, none"
+        db_val = None if val == "none" else val
+        await db_service.execute(
+            "INSERT INTO users (user_id, gender) VALUES (?, ?) "
+            "ON CONFLICT(user_id) DO UPDATE SET gender = excluded.gender",
+            (user_id, db_val)
+        )
+    elif campo == "cumpleaños":
+        if valor.lower() in ["reset", "none"]:
+            await db_service.execute("UPDATE users SET birthday = NULL WHERE user_id = ?", (user_id,))
+        else:
+            import re
+            match = re.match(r"^(\d{1,2})[/-](\d{1,2})$", valor)
+            if not match:
+                return None, "Formato de cumpleaños no válido. Usa DD/MM (ej: 25/12) o 'reset'"
+            dia, mes = int(match.group(1)), int(match.group(2))
+            try:
+                import datetime
+                datetime.date(2000, mes, dia)
+            except ValueError:
+                return None, lang_service.get_text("bday_invalid", lang)
+            fecha = f"{dia}/{mes}"
+            await db_service.execute(
+                "INSERT INTO users (user_id, birthday) VALUES (?, ?) "
+                "ON CONFLICT(user_id) DO UPDATE SET birthday = excluded.birthday",
+                (user_id, fecha)
+            )
+    else:
+        return None, "Campo no válido."
+
+    return developer_ui.get_dev_edit_success_embed(lang, f"profile_{campo}", valor), None

@@ -8,6 +8,8 @@ async def get_profile_embed(bot, guild, target, lang):
     embed, _ = await handle_profile(guild, target, lang, 0)
     return embed
 
+from services.utils.embed_service import NonVitalRenderError
+
 async def handle_profile(guild, target, lang, author_id: int):
     """Orquesta la obtención de datos y generación del embed y vista de perfil."""
     user_data = await db_service.fetch_one("SELECT * FROM users WHERE user_id = ?", (target.id,))
@@ -20,7 +22,13 @@ async def handle_profile(guild, target, lang, author_id: int):
     nivel = guild_data['level'] if guild_data else 1
     xp_next = db_service.calculate_xp_required(nivel)
     
-    embed = profile_ui.get_general_embed(target, user_data, lang)
+    try:
+        embed = profile_ui.get_general_embed(target, user_data, lang)
+    except NonVitalRenderError as nve:
+        view = profile_ui.ProfileView(target, user_data, guild_data, xp_next, lang, author_id, is_dm=(guild is None))
+        nve.view = view
+        raise nve
+        
     view = profile_ui.ProfileView(target, user_data, guild_data, xp_next, lang, author_id, is_dm=(guild is None))
     return embed, view
 

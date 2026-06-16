@@ -286,6 +286,9 @@ ES = {
     "dev_db_maint_success": "✅ Base de datos optimizada (VACUUM completado).",
     "dev_restart_msg": "🔄 Reiniciando sistemas...",
     "dev_servers_format": "**{name}**\n🆔 `{id}` | 👥 **{members}** | 👑 <@{owner}>\n\n",
+    "dev_edit_title_success": "⚙️ Edición de Desarrollador",
+    "dev_edit_success": "Se actualizó el campo **{field}** al valor: `{value}`.",
+    "embed_render_warning": "⚠️ Algunos datos no vitales ({field}) no pudieron cargarse.",
     
     # --- BOTINFO LABELS ---
     "botinfo_config_title": "⚙️ Configuración y Estado",

@@ -28,7 +28,7 @@ async def handle_rank(guild: discord.Guild, target: discord.Member, lang: str):
     xp_next = db_service.calculate_xp_required(stats['level'])
     return level_ui.get_rank_embed(target, stats, xp_next, lang)
 
-async def handle_leaderboard(guild: discord.Guild, lang: str, author_id: int = None):
+async def handle_leaderboard(guild: discord.Guild, lang: str):
     """Maneja la lógica para obtener el leaderboard del servidor."""
     limit = settings.LEVELS_CONFIG['LEADERBOARD_LIMIT']
     rows = await db_service.fetch_all(
@@ -39,23 +39,8 @@ async def handle_leaderboard(guild: discord.Guild, lang: str, author_id: int = N
     
     if not rows:
         return None
-
-    author_rank_data = None
-    if author_id:
-        stats = await db_service.fetch_one(
-            "SELECT xp, level, rebirths FROM guild_stats WHERE guild_id = ? AND user_id = ?",
-            (guild.id, author_id)
-        )
-        if stats:
-            rank_row = await db_service.fetch_one(
-                "SELECT COUNT(*) + 1 AS rank FROM guild_stats WHERE guild_id = ? AND "
-                "(rebirths > ? OR (rebirths = ? AND level > ?) OR (rebirths = ? AND level = ? AND xp > ?))",
-                (guild.id, stats['rebirths'], stats['rebirths'], stats['level'], stats['rebirths'], stats['level'], stats['xp'])
-            )
-            rank = rank_row['rank'] if rank_row else 1
-            author_rank_data = (rank, stats)
         
-    return level_ui.get_leaderboard_pages(guild, rows, lang, author_rank_data)
+    return level_ui.get_leaderboard_pages(guild, rows, lang)
 
 async def handle_rebirth(guild_id: int, user_id: int, lang: str):
     """Maneja la lógica para realizar un renacimiento."""

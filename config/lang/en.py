@@ -288,6 +288,9 @@ EN = {
     "dev_db_maint_success": "✅ Database optimized (VACUUM completed).",
     "dev_restart_msg": "🔄 Restarting systems...",
     "dev_servers_format": "**{name}**\n🆔 `{id}` | 👥 **{members}** | 👑 <@{owner}>\n\n",
+    "dev_edit_title_success": "⚙️ Developer Edit",
+    "dev_edit_success": "Successfully updated field **{field}** to: `{value}`.",
+    "embed_render_warning": "⚠️ Some non-vital data ({field}) could not be loaded.",
     
     # --- BOTINFO LABELS ---
     "botinfo_config_title": "⚙️ Configuration & Status",

@@ -275,3 +275,9 @@ class BotInfoView(discord.ui.View):
             button.label, button.style = "Detener Monitor", discord.ButtonStyle.danger
             self.bot.loop.create_task(self._monitor_loop())
         await interaction.response.edit_message(view=self)
+
+def get_dev_edit_success_embed(lang: str, field: str, value: str) -> discord.Embed:
+    """Genera el embed de éxito para edición de estadísticas/perfil."""
+    title = lang_service.get_text("dev_edit_title_success", lang)
+    desc = lang_service.get_text("dev_edit_success", lang, field=field, value=value)
+    return embed_service.success(title, desc, lite=True)

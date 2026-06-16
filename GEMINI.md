@@ -388,3 +388,23 @@ Para garantizar la estabilidad y fácil mantenimiento del bot en entornos de pro
 
 5. **Garantía de Tiempo de Actividad (Resiliency):**
    - En producción, ejecutar siempre el bot bajo un gestor de procesos (como `PM2` o un servicio de `systemd`) que lo reinicie automáticamente en caso de detención inesperada o caída fatal del proceso de Python.
+
+---
+
+## 📋 Protocolo de Desarrollo y Feedback
+
+Para asegurar una comunicación clara y una ejecución ordenada en cada solicitud de cambio, se deben seguir de forma estricta las siguientes pautas:
+
+1. **Análisis y Plan de Implementación Previo:**
+   - Antes de iniciar cualquier modificación o adición de código, se debe analizar detalladamente los requerimientos y crear un **Plan de Implementación** (`implementation_plan.md`) para presentárselo al usuario y recibir feedback.
+   - No se debe modificar código fuente ni ejecutar comandos de escritura antes de obtener la aprobación explícita del usuario sobre dicho plan.
+
+2. **Ejecución Selectiva de Validadores:**
+   - En lugar de ejecutar toda la suite de validadores ante cualquier cambio, se deben ejecutar únicamente los validadores relevantes para el ámbito modificado para optimizar tiempo y recursos (ej: si solo se cambian textos de idioma, ejecutar únicamente `validate_locales.py`; si es un cambio menor de base de datos, `validate_db_schema.py`).
+   - Se ejecutará la suite completa al preparar el entregable final o ante cambios de alto impacto que afecten múltiples capas.
+
+3. **Lineamientos Concisos del Walkthrough:**
+   - El walkthrough final (`walkthrough.md`) debe seguir un esquema fijo y directo al grano, sin extenderse innecesariamente. Su estructura debe limitarse a:
+     - **Cambios Realizados:** Explicación técnica en viñetas breves indicando qué cambió y los archivos afectados.
+     - **Pruebas y Resultados:** Lista concreta de los validadores ejecutados y sus resultados de paso.
+     - **Verificación Manual:** Pasos breves para probar la funcionalidad en Discord.

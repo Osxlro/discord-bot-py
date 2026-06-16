@@ -503,3 +503,35 @@ async def do_rebirth(guild_id: int, user_id: int) -> tuple[bool, any]:
         _xp_cache[key].update({'level': 1, 'xp': 0, 'rebirths': new_reb, 'dirty': False})
         
     return True, new_reb
+
+async def set_user_coins(user_id: int, amount: int):
+    """Establece directamente la cantidad de monedas de un usuario."""
+    await execute(
+        "INSERT INTO users (user_id, coins) VALUES (?, ?) "
+        "ON CONFLICT(user_id) DO UPDATE SET coins = excluded.coins",
+        (user_id, amount)
+    )
+
+async def set_user_xp_level(guild_id: int, user_id: int, xp: int, level: int, rebirths: int = None):
+    """Establece directamente la XP, nivel y opcionalmente rebirths de un usuario, sincronizando caché."""
+    key = (guild_id, user_id)
+    
+    if rebirths is None:
+        if key in _xp_cache:
+            rebirths = _xp_cache[key]['rebirths']
+        else:
+            row = await fetch_one("SELECT rebirths FROM guild_stats WHERE guild_id = ? AND user_id = ?", (guild_id, user_id))
+            rebirths = row['rebirths'] if row else 0
+            
+    await execute(
+        "INSERT INTO guild_stats (guild_id, user_id, xp, level, rebirths) VALUES (?, ?, ?, ?, ?) "
+        "ON CONFLICT(guild_id, user_id) DO UPDATE SET xp = excluded.xp, level = excluded.level, rebirths = excluded.rebirths",
+        (guild_id, user_id, xp, level, rebirths)
+    )
+    
+    _xp_cache[key] = {
+        'xp': xp,
+        'level': level,
+        'rebirths': rebirths,
+        'dirty': False
+    }

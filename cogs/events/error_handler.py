@@ -4,6 +4,7 @@ from difflib import SequenceMatcher
 from discord.ext import commands
 from discord import app_commands
 from services.utils import embed_service
+from services.utils.embed_service import NonVitalRenderError
 from services.core import lang_service
 
 logger = logging.getLogger(__name__)
@@ -26,6 +27,15 @@ class GlobalErrorHandler(commands.Cog):
         
         lang = await self._get_lang(ctx)
         error_title = lang_service.get_text("error_title", lang)
+
+        # Manejar fallos en renderizado no vital (ej. gender)
+        actual_error = error.original if isinstance(error, commands.CommandInvokeError) else error
+        if isinstance(actual_error, NonVitalRenderError):
+            logger.warning(f"⚠️ Renderizado parcial en comando de prefijo '{ctx.command}': {actual_error}")
+            embed = actual_error.embed
+            warning_msg = lang_service.get_text("embed_render_warning", lang, field=actual_error.field_name)
+            embed.add_field(name="⚠️ Warning", value=warning_msg, inline=False)
+            return await ctx.send(embed=embed, view=actual_error.view)
 
         if isinstance(error, commands.CommandNotFound):
             invoked_with = ctx.invoked_with
@@ -95,6 +105,21 @@ class GlobalErrorHandler(commands.Cog):
         # Extraer el error real si está envuelto en CommandInvokeError
         if isinstance(error, app_commands.CommandInvokeError):
             error = error.original
+
+        # Manejar fallos en renderizado no vital (ej. gender)
+        if isinstance(error, NonVitalRenderError):
+            logger.warning(f"⚠️ Renderizado parcial en Slash Command: {error}")
+            embed = error.embed
+            warning_msg = lang_service.get_text("embed_render_warning", lang, field=error.field_name)
+            embed.add_field(name="⚠️ Warning", value=warning_msg, inline=False)
+            try:
+                if interaction.response.is_done():
+                    await interaction.followup.send(embed=embed, view=error.view)
+                else:
+                    await interaction.response.send_message(embed=embed, view=error.view)
+            except Exception:
+                pass
+            return
 
         # Ignorar errores de interacción desconocida (común en autocompletado rápido)
         if isinstance(error, discord.NotFound) and error.code == 10062:

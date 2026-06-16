@@ -2,13 +2,15 @@ import discord
 from config import settings
 from services.core import lang_service
 from services.utils import embed_service
+from services.utils.embed_service import NonVitalRenderError
 
 def get_general_embed(target: discord.Member, user_data: dict, lang: str) -> discord.Embed:
     """Genera el embed de información general (global)."""
-    desc = user_data['description'] if user_data else lang_service.get_text("profile_desc", lang)
-    cumple = user_data['birthday'] if user_data and user_data['birthday'] else lang_service.get_text("profile_no_bday", lang)
-    prefix = user_data['custom_prefix'] if user_data and user_data['custom_prefix'] else settings.CONFIG["bot_config"]["prefix"]
-    coins = user_data['coins'] if user_data else 0
+    user_dict = dict(user_data) if user_data else {}
+    desc = user_dict.get('description') or lang_service.get_text("profile_desc", lang)
+    cumple = user_dict.get('birthday') or lang_service.get_text("profile_no_bday", lang)
+    prefix = user_dict.get('custom_prefix') or settings.CONFIG["bot_config"]["prefix"]
+    coins = user_dict.get('coins') or 0
     
     title = lang_service.get_text("profile_title", lang, user=target.display_name)
     embed = discord.Embed(title=title, color=target.color)
@@ -19,10 +21,14 @@ def get_general_embed(target: discord.Member, user_data: dict, lang: str) -> dis
     embed.add_field(name=lang_service.get_text("profile_field_prefix", lang), value=f"`{prefix}`", inline=True)
     embed.add_field(name=lang_service.get_text("profile_field_coins", lang), value=f"`{coins}`", inline=True)
 
-    if user_data and user_data.get('gender') and user_data['gender'] != "none":
-        gender_key = f"gender_{user_data['gender'].lower()}"
-        gender_val = lang_service.get_text(gender_key, lang)
-        embed.add_field(name=lang_service.get_text("profile_field_gender", lang), value=gender_val, inline=True)
+    try:
+        gender = user_dict.get('gender')
+        if gender and gender != "none":
+            gender_key = f"gender_{gender.lower()}"
+            gender_val = lang_service.get_text(gender_key, lang)
+            embed.add_field(name=lang_service.get_text("profile_field_gender", lang), value=gender_val, inline=True)
+    except Exception as e:
+        raise NonVitalRenderError(embed, e, "gender")
 
     return embed
 
@@ -58,11 +64,12 @@ def get_messages_embed(target: discord.Member, user_data: dict, lang: str) -> di
 
     msgs = ""
     if user_data:
+        user_dict = dict(user_data)
         limit = settings.UI_CONFIG["MSG_PREVIEW_TRUNCATE"]
-        if user_data['personal_level_msg']: 
-            msgs += lang_service.get_text("profile_preview_lvl", lang, msg=user_data['personal_level_msg'][:limit]) + "\n"
-        if user_data['personal_birthday_msg']: 
-            msgs += lang_service.get_text("profile_preview_bday", lang, msg=user_data['personal_birthday_msg'][:limit]) + "\n"
+        if user_dict.get('personal_level_msg'): 
+            msgs += lang_service.get_text("profile_preview_lvl", lang, msg=user_dict['personal_level_msg'][:limit]) + "\n"
+        if user_dict.get('personal_birthday_msg'): 
+            msgs += lang_service.get_text("profile_preview_bday", lang, msg=user_dict['personal_birthday_msg'][:limit]) + "\n"
     
     embed.description = msgs if msgs else lang_service.get_text("log_none", lang)
     return embed

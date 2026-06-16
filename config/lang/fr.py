@@ -286,6 +286,9 @@ FR = {
     "dev_db_maint_success": "✅ Base de données optimisée (VACUUM terminé).",
     "dev_restart_msg": "🔄 Redémarrage des systèmes...",
     "dev_servers_format": "**{name}**\n🆔 `{id}` | 👥 **{members}** | 👑 <@{owner}>\n\n",
+    "dev_edit_title_success": "⚙️ Édition de Développeur",
+    "dev_edit_success": "Le champ **{field}** a été mis à jour avec succès : `{value}`.",
+    "embed_render_warning": "⚠️ Certaines données non essentielles ({field}) n'ont pas pu être chargées.",
     
     # --- BOTINFO LABELS ---
     "botinfo_config_title": "⚙️ Configuration et État",

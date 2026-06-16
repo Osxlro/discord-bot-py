@@ -166,5 +166,44 @@ class Developer(commands.Cog):
             await ctx.send(lang_service.get_text("dev_reload_error", lang, extension=extension, error=str(e)))
             logger.error(f"❌ Error recargando {extension}: {e}")
 
+    @commands.hybrid_group(name="devedit", description="Comandos de edición de estadísticas para desarrolladores (Solo Owner).")
+    @commands.is_owner()
+    async def devedit_group(self, ctx: commands.Context):
+        """Grupo de comandos para manipular estadísticas de usuarios."""
+        if ctx.invoked_subcommand is None:
+            await ctx.send_help(ctx.command)
+
+    @devedit_group.command(name="coins", description="Establece las monedas de un usuario.")
+    @app_commands.describe(usuario="El usuario a editar", cantidad="Cantidad de monedas")
+    async def devedit_coins(self, ctx: commands.Context, usuario: discord.Member, cantidad: int):
+        await ctx.defer(ephemeral=True)
+        lang = await lang_service.get_guild_lang(ctx.guild.id if ctx.guild else None)
+        embed = await developer_service.handle_edit_coins(usuario.id, cantidad, lang)
+        await ctx.send(embed=embed, ephemeral=True)
+
+    @devedit_group.command(name="xp", description="Establece la XP y el nivel de un usuario en el servidor.")
+    @app_commands.describe(usuario="El usuario a editar", xp="Cantidad de XP", nivel="Nivel del usuario")
+    async def devedit_xp(self, ctx: commands.Context, usuario: discord.Member, xp: int, nivel: int):
+        await ctx.defer(ephemeral=True)
+        lang = await lang_service.get_guild_lang(ctx.guild.id if ctx.guild else None)
+        if xp < 0 or nivel < 1:
+            return await ctx.send("La XP debe ser >= 0 y el nivel >= 1.", ephemeral=True)
+        embed = await developer_service.handle_edit_xp(ctx.guild.id, usuario.id, xp, nivel, lang)
+        await ctx.send(embed=embed, ephemeral=True)
+
+    @devedit_group.command(name="profile", description="Modifica campos del perfil de un usuario.")
+    @app_commands.describe(
+        usuario="El usuario a editar",
+        campo="Campo del perfil a modificar",
+        valor="Nuevo valor (para cumpleaños usa DD/MM, para género usa Hombre/Mujer/etc, para descripción usa texto)"
+    )
+    async def devedit_profile(self, ctx: commands.Context, usuario: discord.Member, campo: Literal["descripcion", "cumpleanos", "genero"], valor: str):
+        await ctx.defer(ephemeral=True)
+        lang = await lang_service.get_guild_lang(ctx.guild.id if ctx.guild else None)
+        embed, error = await developer_service.handle_edit_profile(usuario.id, campo, valor, lang)
+        if error:
+            return await ctx.send(embed=embed_service.error(lang_service.get_text("title_error", lang), error, lite=True), ephemeral=True)
+        await ctx.send(embed=embed, ephemeral=True)
+
 async def setup(bot):
     await bot.add_cog(Developer(bot))

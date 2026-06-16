@@ -32,7 +32,7 @@ def get_rank_embed(target: discord.Member, stats: dict, xp_next: int, lang: str)
     
     return embed_service.info(title, description, thumbnail=target.display_avatar.url)
 
-def get_leaderboard_pages(guild: discord.Guild, rows: list, lang: str, author_rank_data: tuple = None) -> list[discord.Embed]:
+def get_leaderboard_pages(guild: discord.Guild, rows: list, lang: str) -> list[discord.Embed]:
     """Procesa los datos de la DB y genera los embeds paginados para el ranking."""
     chunk_size = settings.LEVELS_CONFIG["LEADERBOARD_CHUNK_SIZE"]
     chunks = [rows[i:i + chunk_size] for i in range(0, len(rows), chunk_size)]
@@ -60,16 +60,6 @@ def get_leaderboard_pages(guild: discord.Guild, rows: list, lang: str, author_ra
                 lines.append(f"> `#{j:02d}` **{name}** • {rebirth_text}{lvl_lbl}**{row['level']}** • `{xp_fmt}` XP")
         
         description = "\n\n".join(lines)
-        
-        # Agregar rango de autor al final
-        if author_rank_data:
-            rank, stats = author_rank_data
-            xp_fmt_author = f"{stats['xp']:,}"
-            your_rank_str = lang_service.get_text("leaderboard_your_rank", lang, rank=rank, level=stats['level'], xp=xp_fmt_author)
-        else:
-            your_rank_str = lang_service.get_text("leaderboard_no_rank", lang)
-            
-        description += f"\n\n──────────────────\n{your_rank_str}"
         
         embed = embed_service.info(title, description, thumbnail=guild.icon.url if guild.icon else None)
         embed.set_footer(text=lang_service.get_text("leaderboard_footer", lang, current=i+1, total=len(chunks)))

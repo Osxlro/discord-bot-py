@@ -73,3 +73,12 @@ def fun(title: str, description: str, lite: bool = False, thumbnail: str = None,
     if image:
         embed.set_image(url=image)
     return embed
+
+class NonVitalRenderError(Exception):
+    """Excepción lanzada cuando falla un campo no vital al renderizar un embed, permitiendo enviarlo parcialmente."""
+    def __init__(self, embed: discord.Embed, original_error: Exception, field_name: str, view: discord.ui.View = None):
+        super().__init__(f"Error no vital al renderizar campo '{field_name}': {original_error}")
+        self.embed = embed
+        self.original_error = original_error
+        self.field_name = field_name
+        self.view = view
