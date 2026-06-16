@@ -12,55 +12,28 @@ logger = logging.getLogger(__name__)
 class Chaos(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        # Memoria RAM: {guild_id: {'enabled': bool, 'prob': float}}
-        self.cache = {}
-
-    async def get_config(self, guild_id: int):
-        """
-        Obtiene la config desde la memoria RAM.
-        Si no existe, la busca en la DB y la guarda en RAM.
-        """
-        if guild_id not in self.cache:
-            row = await db_service.fetch_one("SELECT chaos_enabled, chaos_probability FROM guild_config WHERE guild_id = ?", (guild_id,))
-            if row:
-                self.cache[guild_id] = {
-                    'enabled': bool(row['chaos_enabled']),
-                    'prob': float(row['chaos_probability'])
-                }
-            else:
-                # Valores por defecto si no está configurado
-                defaults = settings.CHAOS_CONFIG
-                self.cache[guild_id] = {
-                    'enabled': defaults.get("DEFAULT_ENABLED", True), 
-                    'prob': defaults.get("DEFAULT_PROB", 0.01)
-                }
-        
-        return self.cache[guild_id]
 
     def update_local_config(self, guild_id: int, enabled: bool, prob: float):
-        """Método público para actualizar la caché instantáneamente desde otro comando."""
-        self.cache[guild_id] = {'enabled': enabled, 'prob': prob}
+        """Método obsoleto para mantener compatibilidad con setup_service."""
+        pass
 
-    @commands.Cog.listener()
-    async def on_message(self, message: discord.Message):
-        if message.author.bot or not message.guild: return
+    async def process_message_chaos(self, message: discord.Message, lang: str, config: dict):
+        """Procesa la ruleta de caos usando la configuración provista."""
+        enabled = bool(config.get("chaos_enabled", 1))
+        if not enabled:
+            return
 
-        # 1. Leemos de RAM (¡Ultra rápido!)
-        config = await self.get_config(message.guild.id)
-        
-        if not config['enabled']: return
+        prob = float(config.get("chaos_probability", 0.01))
 
-        # 2. Verificamos suerte
-        if random_service.verificar_suerte(config['prob']):
+        # Verificamos suerte
+        if random_service.verificar_suerte(prob):
             try:
-                lang = await lang_service.get_guild_lang(message.guild.id)
-                
                 # Timeout del usuario
                 await message.author.timeout(datetime.timedelta(minutes=1), reason="Chaos Roulette")
                 
                 # Mensaje visual
                 title = lang_service.get_text("chaos_title", lang)
-                txt = lang_service.get_text("chaos_bang", lang, user=message.author.name, prob=int(config['prob']*100))
+                txt = lang_service.get_text("chaos_bang", lang, user=message.author.name, prob=int(prob*100))
                 await message.channel.send(embed=embed_service.info(title, txt))
                 logger.info(f"Chaos activado para {message.author} en {message.guild.name}")
             except discord.Forbidden:

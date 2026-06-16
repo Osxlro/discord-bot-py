@@ -19,7 +19,7 @@ class StreamAlertsTask(commands.Cog):
     async def youtube_check_loop(self):
         """Loop periódico para verificar nuevos vídeos de YouTube en canales configurados."""
         try:
-            logger.info("Bucle de alertas de YouTube: Iniciando comprobación...")
+            logger.debug("Bucle de alertas de YouTube: Iniciando comprobación...")
             alerts = await stream_alert_service.get_all_stream_alerts()
             if not alerts:
                 return

@@ -17,12 +17,8 @@ class LevelEvents(commands.Cog):
             commands.BucketType.user
         )
 
-    @commands.Cog.listener()
-    async def on_message(self, message: discord.Message):
-        # 1. Filtros rápidos (Sin coste de CPU/DB)
-        if message.author.bot or not message.guild or not message.content: 
-            return
-            
+    async def process_message_xp(self, message: discord.Message, lang: str, config: dict):
+        """Procesa la asignación de XP por mensajes."""
         if len(message.content) < 5: # Ignorar mensajes muy cortos (spam de emojis/letras)
             return
         

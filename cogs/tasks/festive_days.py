@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands, tasks
 import datetime
 import logging
-from services.core import db_service, lang_service
+from services.core import db_service, lang_service, persistence_service
 from services.utils import embed_service
 
 logger = logging.getLogger(__name__)
@@ -52,10 +52,7 @@ class FestiveDaysTask(commands.Cog):
                 persistence_key = f"{guild_id}:{year}:{holiday_key}"
                 
                 # Comprobar si ya se envió hoy
-                already_sent = await db_service.fetch_one(
-                    "SELECT 1 FROM bot_persistence WHERE namespace = ? AND key = ?",
-                    ("festive_days", persistence_key)
-                )
+                already_sent = await persistence_service.load("festive_days", persistence_key)
                 if already_sent:
                     continue
 
@@ -90,10 +87,7 @@ class FestiveDaysTask(commands.Cog):
                     await channel.send(content=content, embed=embed)
                     
                     # Registrar que ya se envió para este servidor
-                    await db_service.execute(
-                        "INSERT OR REPLACE INTO bot_persistence (namespace, key, data) VALUES (?, ?, ?)",
-                        ("festive_days", persistence_key, b"1")
-                    )
+                    await persistence_service.store("festive_days", persistence_key, True)
                     logger.info(f"Anuncio festivo '{holiday_key}' enviado a guild {guild_id}")
                 except discord.Forbidden:
                     logger.warning(f"Sin permisos para enviar anuncio festivo en canal {channel_id} de guild {guild_id}")
