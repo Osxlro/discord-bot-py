@@ -19,6 +19,12 @@ for log_file in data_dir.glob("discord.log*"):
     except Exception: pass
 
 discord.utils.setup_logging(level=logging.INFO)
+
+# Silenciar librerías externas ruidosas en consola
+logging.getLogger("discord").setLevel(logging.WARNING)
+logging.getLogger("wavelink").setLevel(logging.WARNING)
+logging.getLogger("aiohttp").setLevel(logging.WARNING)
+
 file_handler = logging.handlers.RotatingFileHandler(filename=data_dir / 'discord.log', encoding='utf-8', maxBytes=5*1024*1024, backupCount=5)
 logging.getLogger().addHandler(file_handler)
 
@@ -112,6 +118,7 @@ class BotPersonal(commands.AutoShardedBot):
     async def _load_extensions(self):
         logger.info("--- ⚙️  CARGANDO EXTENSIONES ---")
         cogs_dir = pathlib.Path("./cogs")
+        loaded_count = 0
         
         for file in cogs_dir.rglob("*.py"):
             if file.name == "__init__.py": continue
@@ -119,9 +126,11 @@ class BotPersonal(commands.AutoShardedBot):
             extension_name = ".".join(file.parts).replace(".py", "")
             try:
                 await self.load_extension(extension_name)
-                logger.info(f'✅ Extensión cargada: {extension_name}')
+                logger.debug(f'✅ Extensión cargada: {extension_name}')
+                loaded_count += 1
             except Exception:
                 logger.exception(f'❌ Error cargando {extension_name}')
+        logger.info(f"⚙️  Se cargaron {loaded_count} extensiones de forma exitosa.")
 
     async def _sync_commands(self):
         logger.info("--- 🔄 SINCRONIZANDO COMANDOS ---")

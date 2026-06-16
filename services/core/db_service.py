@@ -13,6 +13,7 @@ get_db = database.get_db
 execute = database.execute
 fetch_one = database.fetch_one
 fetch_all = database.fetch_all
+DB_PATH = database.DB_PATH
 
 REQUIRED_TABLES = {
     "users", "guild_stats", "guild_config", "bot_persistence",
@@ -215,3 +216,17 @@ def clear_memory_cache():
         loop.create_task(cache.clear())
     except RuntimeError:
         asyncio.run(cache.clear())
+
+async def prune_old_persistence(days: int = 7):
+    """Elimina datos de persistencia más antiguos que X días."""
+    await database.execute("DELETE FROM bot_persistence WHERE created_at < datetime('now', ?) OR created_at IS NULL", (f'-{days} days',))
+    logger.info(f"🧹 [DB Service] Persistencia antigua eliminada ({days} días).")
+
+async def get_persistence_stats() -> dict:
+    """Obtiene estadísticas de uso de la tabla de persistencia."""
+    row = await database.fetch_one("SELECT COUNT(*) as count, SUM(LENGTH(data)) as size FROM bot_persistence")
+    return {"count": row['count'] or 0, "size_kb": (row['size'] or 0) / 1024 if row and row['size'] else 0}
+
+def clear_xp_cache_safe():
+    """Limpia entradas de XP en memoria sin cambios pendientes para evitar fugas de memoria."""
+    XpRepository.clear_xp_cache_safe()

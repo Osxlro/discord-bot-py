@@ -8,10 +8,11 @@ El proyecto está diseñado de forma modular utilizando un patrón de diseño po
 
 - **`/cogs/` (Capa de Presentación y Enrutamiento):**
   - **`commands/`**: Contiene la definición de comandos tradicionales y Slash Commands. Los cogs aquí solo deben manejar el parsing de argumentos, delegar la ejecución a los servicios y devolver la respuesta al usuario. No incluir consultas SQL ni lógica pesada.
-  - **`events/`**: Listeners para los eventos de Discord (e.g., `on_message`, `on_member_join`).
+  - **`events/`**: Listeners para los eventos de Discord. **Crítico:** El evento `on_message` debe canalizarse únicamente a través del despachador centralizado `dispatcher.py` para evitar consultas redundantes de base de datos.
   - **`tasks/`**: Tareas en segundo plano (background loops) utilizando `discord.ext.tasks`.
 - **`/services/` (Lógica de Negocio y Persistencia):**
-  - **`core/`**: Servicios base como la conexión a la base de datos (`db_service.py`) y el sistema multi-idioma (`lang_service.py`).
+  - **`core/`**: Servicios base y compartidos como el motor de base de datos (`database.py`), la fachada de base de datos (`db_service.py`), el sistema de traducción (`lang_service.py`) y la abstracción de caché (`cache_service.py`).
+  - **`repositories/`**: Repositorios que encapsulan el acceso SQL directo y las operaciones de caché específicas (`config_repository.py`, `xp_repository.py`, `user_repository.py`).
   - **`features/`**: Lógica detallada por característica (e.g., niveles, economía, música, moderación).
   - **`integrations/`**: Comunicación con servicios de terceros (APIs externas).
   - **`utils/`**: Clases y funciones utilitarias (generación de embeds, paginación, etc.).
@@ -86,10 +87,37 @@ La persistencia del bot se maneja a través de SQLite3 utilizando `db_service.py
    - `reason` (TEXT) - Razón de la advertencia
    - `timestamp` (DATETIME DEFAULT CURRENT_TIMESTAMP)
 
-### Caché y Operaciones en db_service.py
-- **`_xp_cache`**: Almacena temporalmente la XP ganada. Se vuelca a la base de datos de manera diferida llamando a `flush_xp_cache()` de forma periódica en un background task para evitar bloqueos por escritura constante en disco.
-- **`_config_cache`**: Mantiene en memoria las configuraciones de los servidores para evitar lecturas constantes de disco. Cualquier cambio mediante `update_guild_config()` actualiza tanto la base de datos como esta caché.
-- **`_prefix_cache`**: Caché en memoria para las consultas del prefijo personalizado de cada usuario.
+### Capa de Repositorios y Caché Abstracta (services/repositories/ & services/core/cache_service.py)
+Para soportar despliegues de gran escala y sharding, el bot cuenta con una arquitectura de persistencia optimizada y desacoplada de `db_service.py`:
+
+1. **Abstracción de Caché (`cache_service.py`)**:
+   - Define la interfaz `CacheBackend` con operaciones asíncronas para lectura, escritura, eliminación e invalidación.
+   - Implementa `MemoryCacheBackend` (almacenamiento local en RAM) y `RedisCacheBackend` (almacenamiento distribuido rápido en Redis), con un mecanismo automático de fallback a memoria local en caso de error o ausencia de la librería cliente de Redis.
+
+2. **Capa de Repositorios (`services/repositories/`)**:
+   - **`ConfigRepository`**: Gestiona las lecturas de configuraciones de servidor mediante caching read-through.
+   - **`UserRepository`**: Centraliza las preferencias globales del usuario (cumpleaños, género, monedas) y gestiona la caché de prefijos.
+   - **`XpRepository`**: Implementa el almacenamiento diferido (write-behind) para XP/niveles (`_xp_cache`) para agrupar escrituras en disco a través de la tarea de volcado periódico (`flush_xp_cache()`).
+
+3. **Database Core (`database.py`) y Fachada Retrocompatible (`db_service.py`)**:
+   - `database.py` expone la conexión física SQLite, el pool en modo WAL y los reintentos asíncronos en caso de bloqueo (`execute_with_retry`).
+   - `db_service.py` funciona como una fachada de compatibilidad hacia atrás que redirige todas las llamadas de la aplicación a sus repositorios correspondientes, preservando el 100% de las firmas y evitando actualizar los comandos existentes del bot.
+
+---
+
+## ⚡ Despachador de Eventos Centralizado (Event Dispatcher)
+
+Para optimizar el rendimiento y evitar múltiples accesos concurrentes a la base de datos por cada mensaje recibido, el bot implementa un patrón **Middleware Dispatcher** para el evento `on_message`:
+
+- **Componente Central (`cogs/events/dispatcher.py`)**:
+  - Escucha el evento `on_message` global del bot de manera unificada.
+  - Realiza validaciones iniciales rápidas (descartar bots, mensajes vacíos, o mensajes fuera de servidores).
+  - Consulta la base de datos o caché **una sola vez** para recuperar la configuración del servidor y el idioma localizado.
+  - Despacha secuencial o concurrentemente el mensaje, el idioma y la configuración a los métodos lógicos específicos de cada Cog:
+    - **XP/Niveles**: `level_events.py` ➔ `process_message_xp(message, lang, config)`
+    - **Caos**: `chaos.py` ➔ `process_message_chaos(message, lang, config)`
+    - **Menciones**: `mencion.py` ➔ `process_message_mention(message, lang, config)`
+- **Regla de Desarrollo**: Ningún Cog de evento individual debe implementar un listener `@commands.Cog.listener("on_message")`. Toda lógica gatillada por mensajes entrantes en servidores debe registrarse y despacharse a través de `dispatcher.py`.
 
 ---
 
