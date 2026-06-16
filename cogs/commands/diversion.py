@@ -137,6 +137,20 @@ class Diversion(commands.Cog):
         
         view.message = await ctx.reply(embed=embed, view=view)
 
+    @commands.hybrid_command(name="anime", description="Muestra una imagen o gif de anime aleatorio.")
+    async def anime(self, ctx: commands.Context):
+        """Muestra una imagen de anime aleatoria de NekosAPI."""
+        lang = await lang_service.get_guild_lang(ctx.guild.id if ctx.guild else None)
+        await ctx.defer()
+        
+        embed, error = await diversion_service.handle_anime(lang)
+        if error:
+            return await ctx.reply(embed=embed_service.error(
+                lang_service.get_text("title_error", lang), error, lite=True
+            ))
+            
+        await ctx.reply(embed=embed)
+
 async def setup(bot: commands.Bot):
     """Función de entrada para cargar el Cog en el bot."""
     await bot.add_cog(Diversion(bot))

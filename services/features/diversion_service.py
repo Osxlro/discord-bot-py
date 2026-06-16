@@ -2,8 +2,8 @@ import discord
 import random
 from ui import diversion_ui
 from services.utils import random_service, embed_service
-from services.integrations import emojimixer_service
 from services.core import db_service, lang_service
+from services.integrations import emojimixer_service, nekos_api_service
 
 async def handle_jumbo(emoji_str: str, lang: str):
     try:
@@ -40,3 +40,33 @@ def handle_8ball(pregunta: str, lang: str):
     respuestas = lang_service.get_text("8ball_responses", lang).split("|")
     respuesta = random.choice(respuestas)
     return diversion_ui.get_8ball_embed(lang, pregunta, respuesta)
+
+async def handle_anime(lang: str):
+    """
+    Obtiene una imagen anime aleatoria desde el servicio NekosAPI
+    y construye el embed con la descripción correspondiente.
+    """
+    image_data = await nekos_api_service.get_random_image(rating="safe")
+    if not image_data:
+        return None, lang_service.get_text("anime_error_fetch", lang)
+
+    url = image_data.get("url")
+    artist = image_data.get("artist_name")
+    source = image_data.get("source_url")
+    tags = image_data.get("tags", [])
+
+    desc_parts = []
+    if artist:
+        lbl_artist = lang_service.get_text("anime_lbl_artist", lang)
+        desc_parts.append(f"> **🎨 {lbl_artist}:** {artist}")
+    if source:
+        lbl_source = lang_service.get_text("anime_lbl_source", lang)
+        desc_parts.append(f"> **🔗 {lbl_source}:** [Pixiv/Source]({source})")
+    if tags:
+        lbl_tags = lang_service.get_text("anime_lbl_tags", lang)
+        tags_str = ", ".join(f"`{t}`" for t in tags[:5])
+        desc_parts.append(f"> **🏷️ {lbl_tags}:** {tags_str}")
+
+    description = "\n".join(desc_parts) if desc_parts else ""
+    embed = diversion_ui.get_anime_embed(lang, url, description)
+    return embed, None

@@ -32,3 +32,7 @@ def get_8ball_embed(lang: str, pregunta: str, respuesta: str) -> discord.Embed:
     title = lang_service.get_text("eightball_title", lang)
     desc = lang_service.get_text("diversion_8ball_qa", lang, pregunta=pregunta, respuesta=respuesta)
     return embed_service.fun(title, desc, lite=True)
+
+def get_anime_embed(lang: str, url: str, description: str) -> discord.Embed:
+    title = lang_service.get_text("anime_embed_title", lang)
+    return embed_service.fun(title, description, image=url)

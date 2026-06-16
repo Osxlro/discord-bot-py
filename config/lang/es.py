@@ -474,4 +474,9 @@ ES = {
     "serverinfo_cat_systems": "🎮 Sistemas Activos",
     "serverinfo_cat_alerts": "🎥 Alertas de Contenido",
     "setup_streamalert_msg_label": "Mensaje",
+    "anime_error_fetch": "❌ No se pudo obtener la imagen de anime. Inténtalo de nuevo.",
+    "anime_lbl_artist": "Artista",
+    "anime_lbl_source": "Fuente",
+    "anime_lbl_tags": "Etiquetas",
+    "anime_embed_title": "🖼️ Imagen de Anime",
 }

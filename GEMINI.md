@@ -155,6 +155,32 @@ Para mantener la consistencia estética y la identidad del bot, **todas las resp
 
 ---
 
+## 🖼️ Integración de NekosAPI (Búsqueda de Imágenes Anime)
+
+Para la obtención de imágenes y GIFs de anime, el bot se integra con **NekosAPI v4**. Las directrices, estructura y consideraciones técnicas son las siguientes:
+
+### Detalles del API:
+* **Base URL:** `https://api.nekosapi.com/v4`
+* **Servicio Desacoplado:** Toda la lógica de consulta y conexión HTTP debe residir de manera independiente en el servicio [nekos_api_service.py](file:///c:/Users/PC/Documents/GitHub/discord-bot-py/services/integrations/nekos_api_service.py).
+* **Parámetros de Entrada Clave:**
+  - `rating`: Control de contenido (`safe`, `suggestive`, `borderline`, `explicit`). Por defecto y seguridad del servidor, se debe usar siempre `safe`.
+  - `tags`: Filtro opcional por etiquetas (cadena separada por comas).
+
+### Estructura de Respuesta JSON (Schema):
+Las consultas a `/images/random` o `/images/{id}` retornan un objeto JSON (o lista de objetos en el caso de random) con los siguientes campos útiles:
+* `id` (int): Identificador único de la imagen.
+* `url` (str): Enlace directo de la imagen/gif (comúnmente formato `.webp`).
+* `rating` (str): Nivel de seguridad de la imagen.
+* `artist_name` (str o null): Nombre del artista de la ilustración.
+* `tags` (list de str): Etiquetas/categorías descriptivas (ej: `girl`, `blue_hair`).
+* `source_url` (str o null): Enlace original de la ilustración (ej: Pixiv).
+
+### Reglas de Diseño de Embeds Anime:
+1. **Omitir Atributos Nulos:** Si `artist_name`, `source_url` o `tags` son nulos o están vacíos en el JSON, no se deben renderizar en el embed (skipear).
+2. **Presentación Visual:** Mostrar la ilustración usando el método `image` del embed (no thumbnail) para que se aprecie a pantalla completa dentro del canal.
+
+---
+
 ## 🔒 Buenas Prácticas y Seguridad
 
 - **Variables de Entorno:** Nunca introducir tokens u otras credenciales en el código. Estas siempre se inyectan a través del archivo `.env`.
