@@ -45,7 +45,7 @@ class Niveles(commands.Cog):
         lang = await lang_service.get_guild_lang(ctx.guild.id)
         
         # El servicio recupera los datos y genera las páginas de embeds para el ranking
-        pages = await level_service.handle_leaderboard(ctx.guild, lang)
+        pages = await level_service.handle_leaderboard(ctx.guild, lang, ctx.author.id)
 
         if not pages:
             # Si nadie tiene XP aún en el servidor

@@ -47,5 +47,23 @@ class Perfil(commands.Cog):
         embed = await profile_service.handle_update_personal_message(ctx.author.id, tipo, texto, lang)
         await ctx.reply(embed=embed)
 
+    @perfil.command(name="gender", description="Define tu género en tu perfil.")
+    @app_commands.describe(opcion="Elige tu género (o 'none' para ocultar)")
+    async def set_gender(self, ctx: commands.Context, opcion: Literal["Hombre", "Mujer", "No Binario", "Extraterrestre", "none"]):
+        """Actualiza el género que se muestra en tu tarjeta de perfil."""
+        lang = await lang_service.get_guild_lang(ctx.guild.id if ctx.guild else None)
+        
+        mapping = {
+            "Hombre": "hombre",
+            "Mujer": "mujer",
+            "No Binario": "no_binario",
+            "Extraterrestre": "extraterrestre",
+            "none": "none"
+        }
+        val = mapping.get(opcion, "none")
+        
+        embed = await profile_service.handle_update_gender(ctx.author.id, val, lang)
+        await ctx.reply(embed=embed)
+
 async def setup(bot: commands.Bot):
     await bot.add_cog(Perfil(bot))

@@ -32,7 +32,7 @@ def get_rank_embed(target: discord.Member, stats: dict, xp_next: int, lang: str)
     
     return embed_service.info(title, description, thumbnail=target.display_avatar.url)
 
-def get_leaderboard_pages(guild: discord.Guild, rows: list, lang: str) -> list[discord.Embed]:
+def get_leaderboard_pages(guild: discord.Guild, rows: list, lang: str, author_rank_data: tuple = None) -> list[discord.Embed]:
     """Procesa los datos de la DB y genera los embeds paginados para el ranking."""
     chunk_size = settings.LEVELS_CONFIG["LEADERBOARD_CHUNK_SIZE"]
     chunks = [rows[i:i + chunk_size] for i in range(0, len(rows), chunk_size)]
@@ -52,11 +52,26 @@ def get_leaderboard_pages(guild: discord.Guild, rows: list, lang: str) -> list[d
             if j <= 3:
                 medal = medals[j-1]
                 prefix = "👑" if j == 1 else ("🛡️" if j == 2 else "⚔️")
-                lines.append(f"{medal} **{name}**\n> {prefix} {rebirth_text}{lvl_lbl} **{row['level']}** • ✨ `{xp_fmt}` XP")
+                lines.append(
+                    f"{medal} **{name}**\n"
+                    f"┗━━ {prefix} {rebirth_text}{lvl_lbl} **{row['level']}** • ✨ `{xp_fmt}` XP"
+                )
             else:
-                lines.append(f"`#{j}` **{name}** • {rebirth_text}{lvl_lbl} {row['level']} • `{xp_fmt}` XP")
+                lines.append(f"> `#{j:02d}` **{name}** • {rebirth_text}{lvl_lbl}**{row['level']}** • `{xp_fmt}` XP")
         
-        embed = embed_service.info(title, "\n\n".join(lines), thumbnail=guild.icon.url if guild.icon else None)
+        description = "\n\n".join(lines)
+        
+        # Agregar rango de autor al final
+        if author_rank_data:
+            rank, stats = author_rank_data
+            xp_fmt_author = f"{stats['xp']:,}"
+            your_rank_str = lang_service.get_text("leaderboard_your_rank", lang, rank=rank, level=stats['level'], xp=xp_fmt_author)
+        else:
+            your_rank_str = lang_service.get_text("leaderboard_no_rank", lang)
+            
+        description += f"\n\n──────────────────\n{your_rank_str}"
+        
+        embed = embed_service.info(title, description, thumbnail=guild.icon.url if guild.icon else None)
         embed.set_footer(text=lang_service.get_text("leaderboard_footer", lang, current=i+1, total=len(chunks)))
         pages.append(embed)
     return pages

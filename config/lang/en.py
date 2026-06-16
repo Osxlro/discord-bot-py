@@ -479,4 +479,13 @@ EN = {
     "anime_lbl_source": "Source",
     "anime_lbl_tags": "Tags",
     "anime_embed_title": "🖼️ Anime Image",
+    "leaderboard_your_rank": "👤 Your Position: **#{rank}** (Level **{level}** • ✨ `{xp}` XP)",
+    "leaderboard_no_rank": "👤 Your Position: *No rank yet*",
+    "profile_field_gender": "Gender",
+    "gender_hombre": "Male ♂️",
+    "gender_mujer": "Female ♀️",
+    "gender_no_binario": "Non-Binary ⚧️",
+    "gender_extraterrestre": "Alien 👽",
+    "profile_gender_saved": "✅ Gender successfully updated.",
+    "help_desc_roleplay": "Interaction and roleplay commands.",
 }

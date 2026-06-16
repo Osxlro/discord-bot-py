@@ -16,7 +16,7 @@ async def get_random_image(rating: str = "safe", tag: str = None) -> dict | None
         tag (str): Opcional. Filtra por etiqueta específica.
         
     Returns:
-        dict: Los metadatos de la imagen (id, url, artist_name, tags, source_url) o None si falla.
+        dict: Los metadatos de la imagen o None si falla.
     """
     url = f"{NEKOS_API_BASE}/images/random"
     params = {
@@ -26,7 +26,6 @@ async def get_random_image(rating: str = "safe", tag: str = None) -> dict | None
     if tag:
         params["tags"] = tag
 
-    # Crear contexto SSL permisivo para evitar fallos de certificados locales en entornos de hosting
     ssl_context = ssl.create_default_context()
     ssl_context.check_hostname = False
     ssl_context.verify_mode = ssl.CERT_NONE

@@ -68,5 +68,11 @@ async def handle_anime(lang: str):
         desc_parts.append(f"> **🏷️ {lbl_tags}:** {tags_str}")
 
     description = "\n".join(desc_parts) if desc_parts else ""
-    embed = diversion_ui.get_anime_embed(lang, url, description)
+    
+    # Generar Kaomoji aleatorio en el título
+    kaomojis = ["(◕‿◕)", "(´• ω •`)", "(つ✧ω✧)つ", "(o^▽^o)", "(≧◡≦)", "(⌒‿⌒)", "(^人^)", "(✿◠‿◠)", "(｀▽´)", "(◕‿◕✿)", "(*^ω^*)"]
+    kaomoji = random.choice(kaomojis)
+    title = f"Anime {kaomoji}"
+    
+    embed = diversion_ui.get_anime_embed(lang, url, description, title=title)
     return embed, None

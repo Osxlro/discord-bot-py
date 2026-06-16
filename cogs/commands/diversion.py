@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands
 from discord import app_commands
+from typing import Literal
 from services.features import diversion_service, trivia_service
 from services.core import lang_service
 from services.utils import embed_service
@@ -137,7 +138,7 @@ class Diversion(commands.Cog):
         
         view.message = await ctx.reply(embed=embed, view=view)
 
-    @commands.hybrid_command(name="anime", description="Muestra una imagen o gif de anime aleatorio.")
+    @commands.hybrid_command(name="anime", description="Muestra una imagen de anime aleatoria.")
     async def anime(self, ctx: commands.Context):
         """Muestra una imagen de anime aleatoria de NekosAPI."""
         lang = await lang_service.get_guild_lang(ctx.guild.id if ctx.guild else None)

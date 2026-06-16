@@ -479,4 +479,13 @@ FR = {
     "anime_lbl_source": "Source",
     "anime_lbl_tags": "Tags",
     "anime_embed_title": "🖼️ Image d'Anime",
+    "leaderboard_your_rank": "👤 Votre Position: **#{rank}** (Niveau **{level}** • ✨ `{xp}` XP)",
+    "leaderboard_no_rank": "👤 Votre Position: *Pas encore classé*",
+    "profile_field_gender": "Genre",
+    "gender_hombre": "Homme ♂️",
+    "gender_mujer": "Femme ♀️",
+    "gender_no_binario": "Non-Binaire ⚧️",
+    "gender_extraterrestre": "Extraterrestre 👽",
+    "profile_gender_saved": "✅ Genre mis à jour avec succès.",
+    "help_desc_roleplay": "Commandes d'interaction et de jeu de rôle.",
 }

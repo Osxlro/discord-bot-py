@@ -19,6 +19,11 @@ def get_general_embed(target: discord.Member, user_data: dict, lang: str) -> dis
     embed.add_field(name=lang_service.get_text("profile_field_prefix", lang), value=f"`{prefix}`", inline=True)
     embed.add_field(name=lang_service.get_text("profile_field_coins", lang), value=f"`{coins}`", inline=True)
 
+    if user_data and user_data.get('gender') and user_data['gender'] != "none":
+        gender_key = f"gender_{user_data['gender'].lower()}"
+        gender_val = lang_service.get_text(gender_key, lang)
+        embed.add_field(name=lang_service.get_text("profile_field_gender", lang), value=gender_val, inline=True)
+
     return embed
 
 def get_stats_embed(target: discord.Member, guild_data: dict, xp_next: int, lang: str) -> discord.Embed:

@@ -45,3 +45,13 @@ async def handle_update_personal_message(user_id: int, msg_type: str, text: str,
     await db_service.execute(query, (user_id, val))
     
     return profile_ui.get_profile_update_success_embed(lang, "profile_msg_saved")
+
+async def handle_update_gender(user_id: int, gender: str, lang: str):
+    """Maneja la actualización del género del usuario en la base de datos."""
+    val = None if gender == "none" else gender
+    
+    await db_service.execute(
+        "INSERT INTO users (user_id, gender) VALUES (?, ?) ON CONFLICT(user_id) DO UPDATE SET gender = excluded.gender",
+        (user_id, val)
+    )
+    return profile_ui.get_profile_update_success_embed(lang, "profile_gender_saved")

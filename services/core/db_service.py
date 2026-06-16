@@ -82,7 +82,8 @@ async def init_db():
         description TEXT DEFAULT 'Sin descripción.',
         personal_level_msg TEXT DEFAULT NULL,
         personal_birthday_msg TEXT DEFAULT NULL,
-        coins INTEGER DEFAULT 0
+        coins INTEGER DEFAULT 0,
+        gender TEXT DEFAULT NULL
     )
     """)
     
@@ -182,6 +183,7 @@ async def init_db():
     
     # --- MIGRACIONES ROBUSTAS ---
     await _ensure_column("users", "coins", "INTEGER DEFAULT 0")
+    await _ensure_column("users", "gender", "TEXT DEFAULT NULL")
     await _ensure_column("guild_stats", "rebirths", "INTEGER DEFAULT 0")
     await _ensure_column("guild_config", "language", "TEXT DEFAULT 'es'")
     await _ensure_column("guild_config", "server_goodbye_msg", "TEXT DEFAULT NULL")
