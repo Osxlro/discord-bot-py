@@ -145,7 +145,7 @@ class GlobalErrorHandler(commands.Cog):
         try:
             embed = embed_service.error(error_title, msg)
             if interaction.response.is_done():
-                await interaction.followup.send(embed=embed, ephemeral=True)
+                await interaction.edit_original_response(embed=embed)
             else:
                 await interaction.response.send_message(embed=embed, ephemeral=True)
         except Exception: pass

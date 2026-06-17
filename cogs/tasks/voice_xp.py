@@ -19,6 +19,22 @@ class VoiceXP(commands.Cog):
     async def voice_xp_loop(self):
         await self.bot.wait_until_ready()
 
+        import asyncio
+        async def process_member(guild, member, channel):
+            try:
+                nuevo_nivel, subio = await db_service.add_xp(
+                    guild.id, 
+                    member.id, 
+                    settings.XP_CONFIG["VOICE_AMOUNT"]
+                )
+                
+                if subio:
+                    await level_service.notify_level_up(guild, member, nuevo_nivel, fallback_channel=channel)
+                    
+            except Exception:
+                logger.exception(f"Error VoiceXP en {guild.name} para {member.name}")
+
+        tasks = []
         for guild in self.bot.guilds:
             for channel in guild.voice_channels:
                 if len(channel.members) < 2: continue
@@ -28,18 +44,10 @@ class VoiceXP(commands.Cog):
                     if member.bot: continue
                     if member.voice.self_mute or member.voice.self_deaf or member.voice.deaf: continue
 
-                    try:
-                        nuevo_nivel, subio = await db_service.add_xp(
-                            guild.id, 
-                            member.id, 
-                            settings.XP_CONFIG["VOICE_AMOUNT"]
-                        )
-                        
-                        if subio:
-                            await level_service.notify_level_up(guild, member, nuevo_nivel, fallback_channel=channel)
-                            
-                    except Exception:
-                        logger.exception(f"Error VoiceXP en {guild.name}")
+                    tasks.append(process_member(guild, member, channel))
+
+        if tasks:
+            await asyncio.gather(*tasks)
 
 async def setup(bot):
     await bot.add_cog(VoiceXP(bot))

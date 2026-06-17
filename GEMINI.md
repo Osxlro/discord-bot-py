@@ -103,6 +103,9 @@ Para soportar despliegues de gran escala y sharding, el bot cuenta con una arqui
    - `database.py` expone la conexión física SQLite, el pool en modo WAL y los reintentos asíncronos en caso de bloqueo (`execute_with_retry`).
    - `db_service.py` funciona como una fachada de compatibilidad hacia atrás que redirige todas las llamadas de la aplicación a sus repositorios correspondientes, preservando el 100% de las firmas y evitando actualizar los comandos existentes del bot.
 
+4. **Desacoplamiento de Servicios de Características (e.g., `profile_service.py`)**:
+   - Los servicios de características (`services/features/`) deben consumir datos a través de los repositorios de datos correspondientes (como `UserRepository.get_user_data` y `XpRepository.get_user_guild_data`) en lugar de realizar consultas SQL SELECT crudas directamente a la base de datos.
+
 ---
 
 ## ⚡ Despachador de Eventos Centralizado (Event Dispatcher)

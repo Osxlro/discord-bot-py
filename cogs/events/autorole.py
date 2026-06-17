@@ -1,7 +1,10 @@
 import discord
+import logging
 from discord.ext import commands
 from services.core import lang_service
 from services.core import db_service
+
+logger = logging.getLogger(__name__)
 
 class AutoRole(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -27,9 +30,9 @@ class AutoRole(commands.Cog):
                 lang = await lang_service.get_guild_lang(member.guild.id)
                 await member.add_roles(role, reason=lang_service.get_text("autorole_reason", lang))
             except discord.Forbidden:
-                print(f"❌ Error AutoRol: No tengo permisos para dar el rol {role.name} en {member.guild.name}")
-            except Exception as e:
-                print(f"❌ Error AutoRol: {e}")
+                logger.warning(f"❌ Error AutoRol: No tengo permisos para dar el rol {role.name} en {member.guild.name}")
+            except Exception:
+                logger.exception("❌ Error AutoRol en on_member_join")
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(AutoRole(bot))

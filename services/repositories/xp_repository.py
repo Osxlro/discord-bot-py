@@ -17,12 +17,15 @@ class XpRepository:
         """Añade XP a un usuario en memoria (Write-behind)."""
         key = (guild_id, user_id)
         
+        import time
         if key not in _xp_cache:
             row = await database.fetch_one("SELECT xp, level, rebirths FROM guild_stats WHERE guild_id = ? AND user_id = ?", (guild_id, user_id))
             if row:
-                _xp_cache[key] = {'xp': row['xp'], 'level': row['level'], 'rebirths': row['rebirths'], 'dirty': False}
+                _xp_cache[key] = {'xp': row['xp'], 'level': row['level'], 'rebirths': row['rebirths'], 'dirty': False, 'last_access': time.time()}
             else:
-                _xp_cache[key] = {'xp': 0, 'level': 1, 'rebirths': 0, 'dirty': False}
+                _xp_cache[key] = {'xp': 0, 'level': 1, 'rebirths': 0, 'dirty': False, 'last_access': time.time()}
+        else:
+            _xp_cache[key]['last_access'] = time.time()
         
         data = _xp_cache[key]
         data['xp'] += amount
@@ -53,6 +56,10 @@ class XpRepository:
         """Establece directamente la XP, nivel y opcionalmente rebirths de un usuario, sincronizando caché."""
         key = (guild_id, user_id)
         
+        # Guardar cualquier XP pendiente antes de sobrescribir
+        if key in _xp_cache and _xp_cache[key]['dirty']:
+            await cls.flush_xp_cache()
+            
         if rebirths is None:
             if key in _xp_cache:
                 rebirths = _xp_cache[key]['rebirths']
@@ -66,11 +73,13 @@ class XpRepository:
             (guild_id, user_id, xp, level, rebirths)
         )
         
+        import time
         _xp_cache[key] = {
             'xp': xp,
             'level': level,
             'rebirths': rebirths,
-            'dirty': False
+            'dirty': False,
+            'last_access': time.time()
         }
 
     @classmethod
@@ -102,7 +111,8 @@ class XpRepository:
         # Actualizar caché
         key = (guild_id, user_id)
         if key in _xp_cache:
-            _xp_cache[key].update({'level': 1, 'xp': 0, 'rebirths': new_reb, 'dirty': False})
+            import time
+            _xp_cache[key].update({'level': 1, 'xp': 0, 'rebirths': new_reb, 'dirty': False, 'last_access': time.time()})
             
         return True, new_reb
 
@@ -141,9 +151,26 @@ class XpRepository:
         cls.clear_xp_cache_safe()
 
     @staticmethod
-    def clear_xp_cache_safe():
-        """Limpia entradas de XP en memoria sin cambios pendientes para evitar fugas de memoria."""
+    def clear_xp_cache_safe(ttl: int = 600):
+        """Limpia entradas de XP en memoria sin cambios pendientes y que han estado inactivas por más de 10 minutos (TTL)."""
         global _xp_cache
-        keys_to_remove = [k for k, v in _xp_cache.items() if not v['dirty']]
+        import time
+        now = time.time()
+        keys_to_remove = [k for k, v in _xp_cache.items() if not v['dirty'] and (now - v.get('last_access', now) > ttl)]
         for k in keys_to_remove:
             del _xp_cache[k]
+
+    @classmethod
+    async def get_user_guild_data(cls, guild_id: int, user_id: int) -> dict:
+        """Obtiene la XP, nivel y rebirths de un usuario (con caché write-behind)."""
+        key = (guild_id, user_id)
+        import time
+        if key not in _xp_cache:
+            row = await database.fetch_one("SELECT xp, level, rebirths FROM guild_stats WHERE guild_id = ? AND user_id = ?", (guild_id, user_id))
+            if row:
+                _xp_cache[key] = {'xp': row['xp'], 'level': row['level'], 'rebirths': row['rebirths'], 'dirty': False, 'last_access': time.time()}
+            else:
+                _xp_cache[key] = {'xp': 0, 'level': 1, 'rebirths': 0, 'dirty': False, 'last_access': time.time()}
+        else:
+            _xp_cache[key]['last_access'] = time.time()
+        return _xp_cache[key]

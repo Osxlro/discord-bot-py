@@ -141,7 +141,7 @@ async def handle_edit_profile(user_id: int, campo: str, valor: str, lang: str):
             "ON CONFLICT(user_id) DO UPDATE SET gender = excluded.gender",
             (user_id, db_val)
         )
-    elif campo == "cumpleaños":
+    elif campo in ("cumpleaños", "cumpleanos"):
         if valor.lower() in ["reset", "none"]:
             await db_service.execute("UPDATE users SET birthday = NULL WHERE user_id = ?", (user_id,))
         else:

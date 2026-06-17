@@ -1,5 +1,7 @@
 from config import settings
 from services.core import db_service, lang_service
+from services.repositories.user_repository import UserRepository
+from services.repositories.xp_repository import XpRepository, calculate_xp_required
 from ui import profile_ui
 
 # Re-exportar con envoltura de compatibilidad para HealthCheck/Legacy
@@ -12,15 +14,15 @@ from services.utils.embed_service import NonVitalRenderError
 
 async def handle_profile(guild, target, lang, author_id: int):
     """Orquesta la obtención de datos y generación del embed y vista de perfil."""
-    user_data = await db_service.fetch_one("SELECT * FROM users WHERE user_id = ?", (target.id,))
+    user_data = await UserRepository.get_user_data(target.id)
     
     if guild:
-        guild_data = await db_service.fetch_one("SELECT xp, level, rebirths FROM guild_stats WHERE guild_id = ? AND user_id = ?", (guild.id, target.id))
+        guild_data = await XpRepository.get_user_guild_data(guild.id, target.id)
     else:
         guild_data = None
     
     nivel = guild_data['level'] if guild_data else 1
-    xp_next = db_service.calculate_xp_required(nivel)
+    xp_next = calculate_xp_required(nivel)
     
     try:
         embed = profile_ui.get_general_embed(target, user_data, lang)

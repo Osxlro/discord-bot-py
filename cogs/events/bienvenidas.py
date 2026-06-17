@@ -15,6 +15,11 @@ class Bienvenidas(commands.Cog):
         if not channel_id: return
         
         channel = self.bot.get_channel(channel_id)
+        if not channel:
+            try:
+                channel = await self.bot.fetch_channel(channel_id)
+            except discord.HTTPException:
+                return
         if channel:
             lang = await lang_service.get_guild_lang(member.guild.id)
             title = lang_service.get_text("welcome_title", lang, user=member.name)
@@ -32,6 +37,11 @@ class Bienvenidas(commands.Cog):
         if not channel_id: return
 
         channel = self.bot.get_channel(channel_id)
+        if not channel:
+            try:
+                channel = await self.bot.fetch_channel(channel_id)
+            except discord.HTTPException:
+                return
         if channel:
             lang = await lang_service.get_guild_lang(member.guild.id)
             title = lang_service.get_text("goodbye_title", lang)

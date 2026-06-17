@@ -1,6 +1,5 @@
 import aiohttp
 import logging
-import ssl
 
 logger = logging.getLogger(__name__)
 
@@ -26,13 +25,8 @@ async def get_random_image(rating: str = "safe", tag: str = None) -> dict | None
     if tag:
         params["tags"] = tag
 
-    ssl_context = ssl.create_default_context()
-    ssl_context.check_hostname = False
-    ssl_context.verify_mode = ssl.CERT_NONE
-    connector = aiohttp.TCPConnector(ssl=ssl_context)
-
     try:
-        async with aiohttp.ClientSession(connector=connector) as session:
+        async with aiohttp.ClientSession() as session:
             async with session.get(url, params=params, timeout=10) as resp:
                 if resp.status == 200:
                     data = await resp.json()

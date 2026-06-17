@@ -27,11 +27,16 @@ class StreamAlertsTask(commands.Cog):
             # Agrupar alertas por canal de YouTube para consultar cada feed una sola vez
             unique_channels = set(alert["channel_name"] for alert in alerts if alert["platform"] == "youtube")
             
-            feeds = {}
-            for channel_id in unique_channels:
-                feed_data = await stream_alert_service.check_youtube_feed(channel_id)
-                if feed_data:
-                    feeds[channel_id] = feed_data
+            import asyncio
+            sem = asyncio.Semaphore(5)
+            
+            async def safe_check(channel_id):
+                async with sem:
+                    return channel_id, await stream_alert_service.check_youtube_feed(channel_id)
+            
+            tasks = [safe_check(c) for c in unique_channels]
+            results = await asyncio.gather(*tasks)
+            feeds = {cid: data for cid, data in results if data}
 
             # Procesar las alertas de cada servidor
             for alert in alerts:

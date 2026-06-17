@@ -59,3 +59,9 @@ class UserRepository:
             "ON CONFLICT(user_id) DO UPDATE SET coins = excluded.coins",
             (user_id, amount)
         )
+
+    @classmethod
+    async def get_user_data(cls, user_id: int) -> dict | None:
+        """Obtiene toda la información de perfil y preferencias de un usuario en base de datos."""
+        row = await database.fetch_one("SELECT * FROM users WHERE user_id = ?", (user_id,))
+        return dict(row) if row else None

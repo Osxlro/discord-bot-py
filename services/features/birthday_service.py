@@ -37,7 +37,11 @@ async def notify_guild_birthdays(guild: discord.Guild, users_rows: list):
     genericos = []
     for row in users_rows:
         member = guild.get_member(row['user_id'])
-        if not member: continue
+        if not member:
+            try:
+                member = await guild.fetch_member(row['user_id'])
+            except discord.HTTPException:
+                continue
 
         if row['personal_birthday_msg']:
             embed = birthday_ui.get_personal_birthday_embed(lang, member, row['personal_birthday_msg'])
