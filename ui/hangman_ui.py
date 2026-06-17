@@ -173,10 +173,25 @@ class HangmanConfigView(discord.ui.View):
     def get_embed(self) -> discord.Embed:
         title = lang_service.get_text("hangman_config_title", self.lang)
         
+        diff_key_map = {
+            "fácil": "hangman_diff_easy",
+            "medio": "hangman_diff_medium",
+            "difícil": "hangman_diff_hard",
+            "cualquiera": "hangman_diff_any"
+        }
+        cat_key_map = {
+            "cualquiera": "hangman_cat_any",
+            "animal": "hangman_cat_animal",
+            "country": "hangman_cat_country",
+            "food": "hangman_cat_food",
+            "plant": "hangman_cat_plant",
+            "sport": "hangman_cat_sport"
+        }
+        
         # Traducir los valores para mostrarlos bonito en el embed
         mode_display = lang_service.get_text(f"hangman_mode_{self.mode[:5]}", self.lang)
-        diff_display = self.difficulty.capitalize()
-        cat_display = lang_service.get_text(f"hangman_cat_{self.category}", self.lang) if self.category != "country" else lang_service.get_text("hangman_cat_country", self.lang)
+        diff_display = lang_service.get_text(diff_key_map.get(self.difficulty, "hangman_diff_any"), self.lang)
+        cat_display = lang_service.get_text(cat_key_map.get(self.category, "hangman_cat_any"), self.lang)
         
         desc = (
             f"> **{lang_service.get_text('hangman_config_mode', self.lang)}:** {mode_display}\n"
@@ -229,6 +244,7 @@ class HangmanGameView(discord.ui.View):
         self.lang = lang
         self.surrendered = False
         self.is_solo = is_solo
+        self.active_task = None
         
         if not is_solo:
             # En multijugador no se permite rendirse individualmente por botón
@@ -243,6 +259,13 @@ class HangmanGameView(discord.ui.View):
 
     @discord.ui.button(label="Rendirse", style=discord.ButtonStyle.danger, custom_id="hangman_surrender_btn")
     async def surrender(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.defer()
         self.surrendered = True
         self.stop()
-        await interaction.response.defer()
+        if self.active_task and not self.active_task.done():
+            self.active_task.cancel()
+
+    async def on_timeout(self):
+        self.stop()
+        if self.active_task and not self.active_task.done():
+            self.active_task.cancel()

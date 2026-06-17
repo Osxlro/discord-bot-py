@@ -182,6 +182,12 @@ class Diversion(commands.Cog):
                 self._active_hangman_channels.discard(ctx.channel.id)
                 return
                 
+            # Eliminar mensaje de configuración para limpiar el canal
+            try:
+                await config_view.message.delete()
+            except Exception:
+                pass
+                
             mode = config_view.mode
             difficulty = config_view.difficulty
             category = config_view.category
@@ -236,82 +242,70 @@ class Diversion(commands.Cog):
             
             desc = (
                 f"{pic}\n"
-                f"> **{lang_service.get_text('hangman_game_word', lang)}:** {word_display}\n"
-                f"> **{lang_service.get_text('hangman_game_category', lang)}:** {category.capitalize()}\n"
-                f"> **{lang_service.get_text('hangman_game_hint', lang)}:** {hint}\n"
-                f"> **{lang_service.get_text('hangman_game_guesses', lang)}:** {guessed_display}\n"
-                f"> **{lang_service.get_text('hangman_game_lives', lang)}:** {lives} / 6 ❤️\n"
+                f"📝 **{lang_service.get_text('hangman_game_word', lang)}**\n"
+                f"> {word_display}\n\n"
+                f"📋 **Información de la Partida**\n"
+                f"> 📂 **{lang_service.get_text('hangman_game_category', lang)}:** {category.capitalize()}\n"
+                f"> 💡 **{lang_service.get_text('hangman_game_hint', lang)}:** {hint}\n"
+                f"> ❤️ **{lang_service.get_text('hangman_game_lives', lang)}:** {lives} / 6\n\n"
+                f"🔠 **{lang_service.get_text('hangman_game_guesses', lang)}**\n"
+                f"> {guessed_display}\n"
             )
             if hint_letter:
-                desc += f"> **💡 {lang_service.get_text('hangman_hint_label', lang)}:** `{hint_letter.upper()}`\n"
+                desc = desc.replace("📋 Información de la Partida", f"💡 **Pista inicial:** `{hint_letter.upper()}`\n\n📋 Información de la Partida")
                 
             desc += f"\n{lang_service.get_text('hangman_game_input_instruction', lang)}"
             return embed_service.fun(title, desc)
             
         game_view = HangmanGameView(ctx.author, lang, is_solo=True)
+        game_view.active_task = asyncio.current_task()
+        
         embed = make_embed(lives, guessed_word, hint, category, guessed_letters, hint_letter)
         msg = await ctx.send(embed=embed, view=game_view)
         
         def check(m):
             return m.author.id == ctx.author.id and m.channel.id == ctx.channel.id and len(m.content.strip()) > 0
             
-        while lives > 0 and "_" in guessed_word and not game_view.surrendered:
-            msg_task = asyncio.create_task(self.bot.wait_for('message', check=check))
-            view_task = asyncio.create_task(game_view.wait())
-            
-            done, pending = await asyncio.wait(
-                [msg_task, view_task],
-                timeout=60.0,
-                return_when=asyncio.FIRST_COMPLETED
-            )
-            
-            for t in pending:
-                t.cancel()
-                
-            if not done:
-                # Timeout
-                break
-                
-            if game_view.surrendered:
-                break
-                
-            if msg_task in done:
+        try:
+            while lives > 0 and "_" in guessed_word:
                 try:
-                    guess_msg = msg_task.result()
-                    try:
-                        await guess_msg.delete()
-                    except Exception:
-                        pass
-                        
-                    guess = guess_msg.content.strip().lower()
-                    guess_norm = normalize_word(guess)
+                    guess_msg = await self.bot.wait_for('message', check=check, timeout=60.0)
+                except asyncio.TimeoutError:
+                    break
+                
+                try:
+                    await guess_msg.delete()
+                except Exception:
+                    pass
                     
-                    if not guess_norm.isalpha():
+                guess = guess_msg.content.strip().lower()
+                guess_norm = normalize_word(guess)
+                
+                if not guess_norm.strip():
+                    continue
+                    
+                if len(guess_norm) == 1:
+                    if guess_norm in guessed_letters:
                         continue
-                        
-                    if len(guess_norm) == 1:
-                        if guess_norm in guessed_letters:
-                            continue
-                        guessed_letters.add(guess_norm)
-                        
-                        if guess_norm in normalized_word:
-                            for i, char in enumerate(normalized_word):
-                                if char == guess_norm:
-                                    guessed_word[i] = word[i]
-                        else:
-                            lives -= 1
-                    else:
-                        if guess_norm == normalized_word:
-                            guessed_word = list(word)
-                        else:
-                            lives -= 1
-                            
-                    embed = make_embed(lives, guessed_word, hint, category, guessed_letters, hint_letter)
-                    await msg.edit(embed=embed, view=game_view)
-                except Exception as e:
-                    logger.error(f"Error procesando intento en Ahorcado: {e}")
+                    guessed_letters.add(guess_norm)
                     
-        # Finalizar juego
+                    if guess_norm in normalized_word:
+                        for i, char in enumerate(normalized_word):
+                            if char == guess_norm:
+                                guessed_word[i] = word[i]
+                    else:
+                        lives -= 1
+                else:
+                    if guess_norm == normalized_word:
+                        guessed_word = list(word)
+                    else:
+                        lives -= 1
+                        
+                embed = make_embed(lives, guessed_word, hint, category, guessed_letters, hint_letter)
+                await msg.edit(embed=embed, view=game_view)
+        except asyncio.CancelledError:
+            pass
+            
         try:
             await msg.edit(view=None)
         except Exception:
@@ -403,17 +397,21 @@ class Diversion(commands.Cog):
             scores_display = "\n".join([f"> **{player_names[pid]}:** {pts} pts" for pid, pts in sorted(scores.items(), key=lambda x: x[1], reverse=True)])
             
             desc = (
-                f"> **{lang_service.get_text('hangman_game_word', lang)}:** {word_display}\n"
-                f"> **{lang_service.get_text('hangman_game_category', lang)}:** {category.capitalize()}\n"
-                f"> **{lang_service.get_text('hangman_game_hint', lang)}:** {hint}\n"
-                f"> **{lang_service.get_text('hangman_game_guesses', lang)}:** {guessed_display}\n"
-                f"> **⏱️ Tiempo de Juego:** {max(0, int(300 - elapsed_time))}s restantes\n\n"
-                f"**🏆 Puntajes:**\n{scores_display}\n\n"
+                f"📝 **{lang_service.get_text('hangman_game_word', lang)}**\n"
+                f"> {word_display}\n\n"
+                f"📋 **Información de la Partida**\n"
+                f"> 📂 **{lang_service.get_text('hangman_game_category', lang)}:** {category.capitalize()}\n"
+                f"> 💡 **{lang_service.get_text('hangman_game_hint', lang)}:** {hint}\n"
+                f"> ⏱️ **Tiempo de Juego:** {max(0, int(300 - elapsed_time))}s restantes\n\n"
+                f"🔠 **{lang_service.get_text('hangman_game_guesses', lang)}**\n"
+                f"> {guessed_display}\n\n"
+                f"🏆 **Puntajes**\n"
+                f"{scores_display}\n\n"
                 f"🎯 **{lang_service.get_text('hangman_multi_turn', lang, user=current_player.mention)}**\n"
                 f"💡 {lang_service.get_text('hangman_multi_turn_time', lang)}"
             )
             if hint_letter:
-                desc = desc.replace("🏆 Puntajes:", f"💡 **Pista inicial:** `{hint_letter.upper()}`\n\n🏆 Puntajes:")
+                desc = desc.replace("📋 Información de la Partida", f"💡 **Pista inicial:** `{hint_letter.upper()}`\n\n📋 Información de la Partida")
                 
             return embed_service.fun(title, desc)
             
