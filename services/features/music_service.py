@@ -18,14 +18,21 @@ _is_connecting = False
 # =============================================================================
 # BotPlayer y Registro Centralizado de Datos del Player
 # =============================================================================
+_next_connection_node = None
+
 class BotPlayer(wavelink.Player):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        global _next_connection_node
+        if _next_connection_node:
+            self._node = _next_connection_node  # _node es el atributo privado real (node es solo lectura)
+            _next_connection_node = None  # Resetear después de asignar
         self.home = None
         self.last_msg = None
         self.last_view = None
         self.smart_autoplay = False
         self.last_track_error = False
+
 
 _player_data = {}
 
@@ -196,11 +203,28 @@ async def ensure_player(ctx, lang: str) -> wavelink.Player | None:
         await ctx.send(embed=embed_service.error(lang_service.get_text("title_error", lang), lang_service.get_text("voice_error_perms", lang)))
         return None
 
+    failed_node_ids = set()
+    global _next_connection_node
+
     for i in range(3):
+        chosen_node = None
         try:
             # Ensure voice_service doesn't interfere
             if ctx.guild.id in voice_service.voice_targets:
                 voice_service.voice_targets.pop(ctx.guild.id)
+
+            # Obtener todos los nodos conectados y filtrar los fallidos
+            connected_nodes = [n for n in wavelink.Pool.nodes.values() if n.status == wavelink.NodeStatus.CONNECTED]
+            available_nodes = [n for n in connected_nodes if n.identifier not in failed_node_ids]
+
+            if not available_nodes:
+                available_nodes = connected_nodes
+
+            if available_nodes:
+                # Seleccionar el nodo con menos jugadores para balancear carga
+                chosen_node = min(available_nodes, key=lambda n: len(n.players))
+                _next_connection_node = chosen_node
+                logger.debug(f"🎵 [Music Service] Intento {i+1}/3. Nodo seleccionado para conexión: {chosen_node.identifier}")
 
             player: BotPlayer = ctx.voice_client
 
@@ -220,6 +244,9 @@ async def ensure_player(ctx, lang: str) -> wavelink.Player | None:
                     await player.move_to(channel)
                 
                 if not player.connected:
+                    if chosen_node:
+                        player._node = chosen_node  # _node es el atributo privado real (node es solo lectura)
+                        logger.debug(f"🎵 [Music Service] Asignando nodo {chosen_node.identifier} al player existente.")
                     logger.debug(f"🎵 [Music Service] Reconectando player existente (intento {i+1}/3)...")
                     await player.connect(self_deaf=True, timeout=20)
 
@@ -230,18 +257,41 @@ async def ensure_player(ctx, lang: str) -> wavelink.Player | None:
             return player
 
         except (asyncio.TimeoutError, wavelink.exceptions.ChannelTimeoutException):
+            # Agregar el nodo fallido a la lista de exclusión
+            failed_node = None
+            if ctx.voice_client:
+                failed_node = ctx.voice_client._node
+            if not failed_node:
+                failed_node = chosen_node
+
+            if failed_node:
+                failed_node_ids.add(failed_node.identifier)
+                logger.warning(f"⚠️ [Music Service] El nodo {failed_node.identifier} falló al conectar. Excluido para reintentos.")
+
+            # Limpiar siempre la conexión zombi antes del siguiente reintento
+            if ctx.voice_client:
+                try:
+                    await ctx.voice_client.disconnect(force=True)
+                except Exception:
+                    pass
+                await asyncio.sleep(0.5)  # Dar tiempo al gateway para liberar el estado
+
             if i < 2:
                 logger.warning(f"🎵 [Music Service] Timeout al conectar (intento {i+1}/3). Reintentando en 2s...")
                 await asyncio.sleep(2)
             else:
-                logger.exception("❌ [Music Service] Timeout final al conectar.")
+                logger.error("❌ [Music Service] Timeout final al conectar.")
                 err_msg = lang_service.get_text("music_error_network", lang)
                 await ctx.send(embed=embed_service.error(lang_service.get_text("title_error", lang), err_msg))
                 return None
         except Exception as e:
             logger.exception("❌ [Music Service] Error inesperado en ensure_player.")
+            if ctx.voice_client:
+                try: await ctx.voice_client.disconnect(force=True)
+                except Exception: pass
             await ctx.send(embed=embed_service.error(lang_service.get_text("title_error", lang), str(e)))
             return None
+
     
     return None
 
