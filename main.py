@@ -75,8 +75,13 @@ class BotPersonal(commands.AutoShardedBot):
         # 2. Extensiones: Carga todos los Cogs (comandos, eventos, tareas).
         await self._load_extensions()
 
-        # 3. Sincronización: Registra los Slash Commands en la API de Discord.
-        await self._sync_commands()
+        # 3. Sincronización: Registra los Slash Commands en la API de Discord si está activado
+        import os
+        if os.getenv("SYNC_COMMANDS", "False").lower() == "true":
+            await self._sync_commands()
+        else:
+            self.synced_commands_cache = {}
+            logger.info("ℹ️ Sincronización automática de comandos desactivada (usa SYNC_COMMANDS=True o el comando !sync para sincronizar).")
 
     async def check_global_cooldown(self, ctx):
         """Verifica el cooldown global para comandos de prefijo."""
@@ -152,13 +157,18 @@ class BotPersonal(commands.AutoShardedBot):
         self.loop.create_task(music_service.restore_players(self))
 
 async def main():
+    from services.utils import http_client
     bot = BotPersonal()
-    async with bot:
-        try:
+    try:
+        async with bot:
             await bot.start(settings.TOKEN)
-        finally:
-            logger.info("--- 🛑 APAGANDO SERVICIOS ---")
-            await db_service.close_db()
+    except Exception as e:
+        logger.error(f"❌ Error inesperado al iniciar el bot: {e}")
+    finally:
+        logger.info("--- 🛑 APAGANDO SERVICIOS ---")
+        await db_service.close_db()
+        await http_client.close_session()
+
 
 if __name__ == '__main__':
     try:

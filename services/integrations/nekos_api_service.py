@@ -1,5 +1,5 @@
-import aiohttp
 import logging
+from services.utils import http_client
 
 logger = logging.getLogger(__name__)
 
@@ -26,15 +26,11 @@ async def get_random_image(rating: str = "safe", tag: str = None) -> dict | None
         params["tags"] = tag
 
     try:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url, params=params, timeout=10) as resp:
-                if resp.status == 200:
-                    data = await resp.json()
-                    if data and isinstance(data, list) and len(data) > 0:
-                        return data[0]
-                    logger.warning("NekosAPI devolvió una lista vacía para la consulta.")
-                else:
-                    logger.warning(f"NekosAPI respondió con código de estado HTTP {resp.status}")
+        data = await http_client.fetch_json(url, params=params, timeout=10)
+        if data and isinstance(data, list) and len(data) > 0:
+            return data[0]
+        logger.warning("NekosAPI devolvió una respuesta vacía o con formato inesperado.")
     except Exception as e:
         logger.error(f"Error al conectar con NekosAPI: {e}", exc_info=True)
     return None
+

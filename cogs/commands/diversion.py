@@ -166,7 +166,8 @@ class Diversion(commands.Cog):
         
         # Evitar múltiples juegos en el mismo canal
         if ctx.channel.id in self._active_hangman_channels:
-            return await ctx.reply("❌ Ya hay una partida de Ahorcado activa en este canal.", ephemeral=True)
+            return await ctx.reply(lang_service.get_text("hangman_active_error", lang), ephemeral=True)
+
             
         self._active_hangman_channels.add(ctx.channel.id)
         
@@ -240,24 +241,30 @@ class Diversion(commands.Cog):
             else:
                 hint_display = lang_service.get_text("hangman_hint_hidden", lang)
                 
+            info_label = lang_service.get_text("hangman_game_info", lang)
+            time_label = lang_service.get_text("hangman_game_time", lang)
+            remaining_val = max(0, int(remaining))
+            remaining_display = lang_service.get_text("hangman_time_remaining", lang, time=remaining_val)
+            
             desc = (
                 f"{pic}\n"
                 f"📝 **{lang_service.get_text('hangman_game_word', lang)}**\n"
                 f"> {word_display}\n\n"
-                f"📋 **Información de la Partida**\n"
+                f"{info_label}\n"
                 f"> 📂 **{lang_service.get_text('hangman_game_category', lang)}:** {category.capitalize()}\n"
                 f"> 💡 **{lang_service.get_text('hangman_game_hint', lang)}:** {hint_display}\n"
                 f"> ❤️ **{lang_service.get_text('hangman_game_lives', lang)}:** {lives} / 6\n"
-                f"> ⏱️ **Tiempo de Juego:** {max(0, int(remaining))}s restantes\n\n"
+                f"> {time_label}: {remaining_display}\n\n"
                 f"🔠 **{lang_service.get_text('hangman_game_guesses', lang)}**\n"
                 f"> {guessed_display}\n"
             )
             if hint_letter:
                 pista_revelada_label = lang_service.get_text("hangman_hint_label", lang)
-                desc = desc.replace("📋 Información de la Partida", f"💡 **{pista_revelada_label}:** `{hint_letter.upper()}`\n\n📋 Información de la Partida")
+                desc = desc.replace(info_label, f"💡 **{pista_revelada_label}:** `{hint_letter.upper()}`\n\n{info_label}")
                 
             desc += f"\n{lang_service.get_text('hangman_game_input_instruction', lang)}"
             return embed_service.fun(title, desc)
+
             
         game_view = HangmanGameView(ctx.author, lang, is_solo=True)
         game_view.active_task = asyncio.current_task()
@@ -442,25 +449,32 @@ class Diversion(commands.Cog):
             else:
                 hint_display = lang_service.get_text("hangman_hint_hidden", lang)
                 
+            info_label = lang_service.get_text("hangman_game_info", lang)
+            time_label = lang_service.get_text("hangman_game_time", lang)
+            remaining_val = max(0, int(remaining))
+            remaining_display = lang_service.get_text("hangman_time_remaining", lang, time=remaining_val)
+            scores_label = lang_service.get_text("hangman_scores", lang)
+            
             desc = (
                 f"📝 **{lang_service.get_text('hangman_game_word', lang)}**\n"
                 f"> {word_display}\n\n"
-                f"📋 **Información de la Partida**\n"
+                f"{info_label}\n"
                 f"> 📂 **{lang_service.get_text('hangman_game_category', lang)}:** {category.capitalize()}\n"
                 f"> 💡 **{lang_service.get_text('hangman_game_hint', lang)}:** {hint_display}\n"
-                f"> ⏱️ **Tiempo de Juego:** {int(remaining)}s restantes\n\n"
+                f"> {time_label}: {remaining_display}\n\n"
                 f"🔠 **{lang_service.get_text('hangman_game_guesses', lang)}**\n"
                 f"> {guessed_display}\n\n"
-                f"🏆 **Puntajes**\n"
+                f"{scores_label}\n"
                 f"{scores_display}\n\n"
                 f"🎯 **{lang_service.get_text('hangman_multi_turn', lang, user=current_player.mention)}**\n"
                 f"💡 {lang_service.get_text('hangman_multi_turn_time', lang)}"
             )
             if hint_letter:
                 pista_revelada_label = lang_service.get_text("hangman_hint_label", lang)
-                desc = desc.replace("📋 Información de la Partida", f"💡 **{pista_revelada_label}:** `{hint_letter.upper()}`\n\n📋 Información de la Partida")
+                desc = desc.replace(info_label, f"💡 **{pista_revelada_label}:** `{hint_letter.upper()}`\n\n{info_label}")
                 
             return embed_service.fun(title, desc)
+
             
         start_time = asyncio.get_event_loop().time()
         current_player_idx = 0
@@ -473,8 +487,9 @@ class Diversion(commands.Cog):
             if remaining <= 0:
                 await ctx.send(embed=embed_service.warning(
                     lang_service.get_text("hangman_multi_global_timeout", lang),
-                    f"La palabra era: **{word}**"
+                    lang_service.get_text("hangman_word_was", lang, word=word)
                 ))
+
                 break
                 
             # Revelar pista si queda 1 minuto o menos
