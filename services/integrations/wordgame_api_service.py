@@ -1,5 +1,5 @@
+import aiohttp
 import logging
-from services.utils import http_client
 
 logger = logging.getLogger(__name__)
 
@@ -32,15 +32,15 @@ async def fetch_words(category: str = None, min_letters: int = None, max_letters
         params["maxLetters"] = max_letters
         
     try:
-        data = await http_client.fetch_json(url, params=params, timeout=10)
-        if isinstance(data, dict):
-            words = data.get("words", [])
-            return words
-        elif isinstance(data, list):
-            # En caso de que devuelva una lista de palabras directamente
-            return data
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, params=params, timeout=10) as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    words = data.get("words", [])
+                    return words
+                else:
+                    logger.warning(f"WordGameDB API respondió con código de estado HTTP {resp.status}")
     except Exception as e:
         logger.error(f"Error al conectar con WordGameDB API: {e}", exc_info=True)
         
     return []
-

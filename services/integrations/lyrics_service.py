@@ -1,6 +1,6 @@
+import aiohttp
 import logging
 import re
-from services.utils import http_client
 
 logger = logging.getLogger(__name__)
 
@@ -17,17 +17,20 @@ async def get_lyrics(title: str, artist: str) -> str:
         params = {"artist_name": artist, "track_name": title_clean}
         url = "https://lrclib.net/api/get"
         
-        data = await http_client.fetch_json(url, params=params, timeout=10)
-        if data and isinstance(data, dict):
-            return data.get("plainLyrics") or data.get("syncedLyrics")
-            
-        # Intento de búsqueda más amplia si falla o no existe (404)
-        search_url = "https://lrclib.net/api/search"
-        params_search = {"q": f"{title_clean} {artist}"}
-        data_search = await http_client.fetch_json(search_url, params=params_search, timeout=10)
-        if data_search and isinstance(data_search, list) and len(data_search) > 0:
-            return data_search[0].get("plainLyrics")
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, params=params) as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    return data.get("plainLyrics") or data.get("syncedLyrics")
+                elif resp.status == 404:
+                    # Intento de búsqueda más amplia si falla la exacta
+                    search_url = "https://lrclib.net/api/search"
+                    params_search = {"q": f"{title_clean} {artist}"}
+                    async with session.get(search_url, params=params_search) as resp_search:
+                        if resp_search.status == 200:
+                            data_search = await resp_search.json()
+                            if data_search and isinstance(data_search, list) and len(data_search) > 0:
+                                return data_search[0].get("plainLyrics")
     except Exception as e:
         logger.error(f"Error fetching lyrics: {e}")
     return None
-

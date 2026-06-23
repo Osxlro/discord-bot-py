@@ -548,10 +548,4 @@ FR = {
     "hangman_multi_rematch_fail": "❌ Revanche refusée ou temps limite écoulé.",
     "hangman_hint_hidden": "Masqué jusqu'à la dernière minute",
     "hangman_hint_revealed_chat": "💡 **Indice :** La lettre `{letter}` a été révélée avec moins d'une minute restante.",
-    "hangman_active_error": "❌ Il y a déjà une partie du Pendu active dans ce salon.",
-    "hangman_game_info": "📋 **Informations sur la partie**",
-    "hangman_game_time": "⏱️ **Temps de jeu**",
-    "hangman_time_remaining": "{time}s restantes",
-    "hangman_scores": "🏆 **Tableau des scores**",
-    "hangman_word_was": "Le mot était : **{word}**",
 }

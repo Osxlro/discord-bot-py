@@ -75,13 +75,8 @@ class BotPersonal(commands.AutoShardedBot):
         # 2. Extensiones: Carga todos los Cogs (comandos, eventos, tareas).
         await self._load_extensions()
 
-        # 3. Sincronización: Registra los Slash Commands en la API de Discord si está activado
-        import os
-        if os.getenv("SYNC_COMMANDS", "False").lower() == "true":
-            await self._sync_commands()
-        else:
-            self.synced_commands_cache = {}
-            logger.info("ℹ️ Sincronización automática de comandos desactivada (usa SYNC_COMMANDS=True o el comando !sync para sincronizar).")
+        # 3. Sincronización: Registra los Slash Commands en la API de Discord.
+        await self._sync_commands()
 
     async def check_global_cooldown(self, ctx):
         """Verifica el cooldown global para comandos de prefijo."""
@@ -157,18 +152,36 @@ class BotPersonal(commands.AutoShardedBot):
         self.loop.create_task(music_service.restore_players(self))
 
 async def main():
-    from services.utils import http_client
-    bot = BotPersonal()
+    max_retries = 10
+    base_delay = 5.0
     try:
-        async with bot:
-            await bot.start(settings.TOKEN)
-    except Exception as e:
-        logger.error(f"❌ Error inesperado al iniciar el bot: {e}")
+        for attempt in range(1, max_retries + 1):
+            bot = BotPersonal()
+            try:
+                async with bot:
+                    await bot.start(settings.TOKEN)
+                break
+            except discord.HTTPException as e:
+                if e.status == 429:
+                    delay = min(base_delay * (2 ** (attempt - 1)), 60.0)
+                    logger.warning(
+                        f"⚠️ [HTTP 429] Demasiadas peticiones / Límite de IP Cloudflare detectado. "
+                        f"Reintentando conexión en {delay}s... (Intento {attempt}/{max_retries})"
+                    )
+                    await asyncio.sleep(delay)
+                else:
+                    logger.error(f"❌ Error de HTTP al iniciar el bot: {e}")
+                    if attempt == max_retries:
+                        raise e
+                    await asyncio.sleep(5.0)
+            except Exception as e:
+                logger.error(f"❌ Error inesperado al iniciar el bot: {e}")
+                if attempt == max_retries:
+                    raise e
+                await asyncio.sleep(5.0)
     finally:
         logger.info("--- 🛑 APAGANDO SERVICIOS ---")
         await db_service.close_db()
-        await http_client.close_session()
-
 
 if __name__ == '__main__':
     try:

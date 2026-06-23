@@ -548,10 +548,4 @@ ES = {
     "hangman_multi_rematch_fail": "❌ Revancha rechazada o tiempo límite expirado.",
     "hangman_hint_hidden": "Oculta hasta el último minuto",
     "hangman_hint_revealed_chat": "💡 **Pista:** Se ha revelado la letra `{letter}` al quedar menos de 1 minuto.",
-    "hangman_active_error": "❌ Ya hay una partida de Ahorcado activa en este canal.",
-    "hangman_game_info": "📋 **Información de la Partida**",
-    "hangman_game_time": "⏱️ **Tiempo de Juego**",
-    "hangman_time_remaining": "{time}s restantes",
-    "hangman_scores": "🏆 **Puntajes**",
-    "hangman_word_was": "La palabra era: **{word}**",
 }

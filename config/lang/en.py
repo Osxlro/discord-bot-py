@@ -548,10 +548,4 @@ EN = {
     "hangman_multi_rematch_fail": "❌ Rematch declined or timed out.",
     "hangman_hint_hidden": "Hidden until the last minute",
     "hangman_hint_revealed_chat": "💡 **Hint:** Letter `{letter}` has been revealed with less than 1 minute remaining.",
-    "hangman_active_error": "❌ There is already an active Hangman game in this channel.",
-    "hangman_game_info": "📋 **Game Info**",
-    "hangman_game_time": "⏱️ **Game Time**",
-    "hangman_time_remaining": "{time}s remaining",
-    "hangman_scores": "🏆 **Scoreboard**",
-    "hangman_word_was": "The word was: **{word}**",
 }
