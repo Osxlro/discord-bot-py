@@ -155,30 +155,7 @@ async def main():
     bot = BotPersonal()
     async with bot:
         try:
-            max_retries = 10
-            base_delay = 5.0
-            for attempt in range(1, max_retries + 1):
-                try:
-                    await bot.start(settings.TOKEN)
-                    break
-                except discord.HTTPException as e:
-                    if e.status == 429:
-                        delay = min(base_delay * (2 ** (attempt - 1)), 60.0)
-                        logger.warning(
-                            f"⚠️ [HTTP 429] Demasiadas peticiones / Límite de IP Cloudflare detectado. "
-                            f"Reintentando conexión en {delay}s... (Intento {attempt}/{max_retries})"
-                        )
-                        await asyncio.sleep(delay)
-                    else:
-                        logger.error(f"❌ Error de HTTP al iniciar el bot: {e}")
-                        if attempt == max_retries:
-                            raise e
-                        await asyncio.sleep(5.0)
-                except Exception as e:
-                    logger.error(f"❌ Error inesperado al iniciar el bot: {e}")
-                    if attempt == max_retries:
-                        raise e
-                    await asyncio.sleep(5.0)
+            await bot.start(settings.TOKEN)
         finally:
             logger.info("--- 🛑 APAGANDO SERVICIOS ---")
             await db_service.close_db()
