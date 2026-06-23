@@ -18,15 +18,52 @@ for log_file in data_dir.glob("discord.log*"):
     try: log_file.unlink()
     except Exception: pass
 
-discord.utils.setup_logging(level=logging.INFO)
+# Formateador detallado para el archivo
+file_formatter = logging.Formatter(
+    fmt="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S"
+)
+file_handler = logging.handlers.RotatingFileHandler(
+    filename=data_dir / 'discord.log',
+    encoding='utf-8',
+    maxBytes=5*1024*1024,
+    backupCount=5
+)
+file_handler.setFormatter(file_formatter)
+file_handler.setLevel(logging.INFO)
+
+# Formateador limpio y estético para la consola
+class CleanConsoleFormatter(logging.Formatter):
+    def format(self, record):
+        if record.levelno == logging.INFO:
+            return record.getMessage()
+        elif record.levelno == logging.WARNING:
+            msg = record.getMessage()
+            if not msg.startswith("⚠️"):
+                return f"⚠️ {msg}"
+            return msg
+        elif record.levelno >= logging.ERROR:
+            msg = record.getMessage()
+            if not msg.startswith("❌") and not msg.startswith("🚨"):
+                return f"❌ {msg}"
+            return msg
+        return f"[{record.levelname}] {record.getMessage()}"
+
+console_handler = logging.StreamHandler()
+console_handler.setFormatter(CleanConsoleFormatter())
+console_handler.setLevel(logging.INFO)
+
+# Configurar el logger raíz
+root_logger = logging.getLogger()
+root_logger.setLevel(logging.INFO)
+root_logger.addHandler(file_handler)
+root_logger.addHandler(console_handler)
 
 # Silenciar librerías externas ruidosas en consola
 logging.getLogger("discord").setLevel(logging.WARNING)
 logging.getLogger("wavelink").setLevel(logging.WARNING)
 logging.getLogger("aiohttp").setLevel(logging.WARNING)
 
-file_handler = logging.handlers.RotatingFileHandler(filename=data_dir / 'discord.log', encoding='utf-8', maxBytes=5*1024*1024, backupCount=5)
-logging.getLogger().addHandler(file_handler)
 
 logger = logging.getLogger("bot")
 

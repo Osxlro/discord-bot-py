@@ -23,12 +23,18 @@ class Bienvenidas(commands.Cog):
         if channel:
             lang = await lang_service.get_guild_lang(member.guild.id)
             title = lang_service.get_text("welcome_title", lang, user=member.name)
-            desc = lang_service.get_text("welcome_desc", lang, mention=member.mention, server=member.guild.name)
+            
+            welcome_msg = config.get('server_welcome_msg')
+            if welcome_msg:
+                desc = welcome_msg.replace("{user}", member.name).replace("{mention}", member.mention).replace("{server}", member.guild.name)
+            else:
+                desc = lang_service.get_text("welcome_desc", lang, mention=member.mention, server=member.guild.name)
             
             # Corregimos el error: success() no acepta 'thumbnail'. Lo añadimos manualmente al objeto embed.
             embed = embed_service.success(title, desc)
             embed.set_thumbnail(url=member.display_avatar.url)
             await channel.send(embed=embed)
+
 
     @commands.Cog.listener()
     async def on_member_remove(self, member: discord.Member):

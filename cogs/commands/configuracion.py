@@ -112,16 +112,18 @@ class Configuracion(commands.Cog):
         tipo="El tipo de mensaje a configurar",
         texto="Contenido del mensaje (deja vacío o escribe 'reset' para desactivar)"
     )
-    async def setup_message(self, ctx: commands.Context, tipo: Literal["goodbye"], texto: str = None):
+    async def setup_message(self, ctx: commands.Context, tipo: Literal["goodbye", "bienvenida"], texto: str = None):
         """Personaliza textos y mensajes de salida del servidor."""
         lang = await lang_service.get_guild_lang(ctx.guild.id)
         
         col_map = {
-            "goodbye": "server_goodbye_msg"
+            "goodbye": "server_goodbye_msg",
+            "bienvenida": "server_welcome_msg"
         }
         
         label_map = {
-            "goodbye": "goodbye_title"
+            "goodbye": "goodbye_title",
+            "bienvenida": "setup_label_welcome"
         }
         
         col = col_map[tipo]
@@ -131,6 +133,7 @@ class Configuracion(commands.Cog):
         display = val if val else lang_service.get_text("setup_disabled", lang)
         
         await self._apply_setup(ctx, {col: val}, label, display)
+
 
     @setup.command(name="system", description="Configura e inicializa sistemas generales del bot.")
     @app_commands.describe(

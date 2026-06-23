@@ -84,7 +84,9 @@ async def init_db():
         server_birthday_msg TEXT DEFAULT NULL,
         server_kick_msg TEXT DEFAULT NULL,
         server_ban_msg TEXT DEFAULT NULL,
+        server_welcome_msg TEXT DEFAULT NULL,
         server_goodbye_msg TEXT DEFAULT NULL,
+
         minecraft_channel_id INTEGER DEFAULT 0,
         wordday_channel_id INTEGER DEFAULT 0,
         wordday_role_id INTEGER DEFAULT 0,
@@ -148,7 +150,9 @@ async def init_db():
     
     await _ensure_column("guild_stats", "rebirths", "INTEGER DEFAULT 0")
     
+    await _ensure_column("guild_config", "server_welcome_msg", "TEXT DEFAULT NULL")
     await _ensure_column("guild_config", "server_goodbye_msg", "TEXT DEFAULT NULL")
+
     await _ensure_column("guild_config", "minecraft_channel_id", "INTEGER DEFAULT 0")
     await _ensure_column("guild_config", "wordday_channel_id", "INTEGER DEFAULT 0")
     await _ensure_column("guild_config", "wordday_role_id", "INTEGER DEFAULT 0")
@@ -207,6 +211,10 @@ async def do_rebirth(guild_id: int, user_id: int) -> tuple[bool, any]:
 
 async def flush_xp_cache():
     await XpRepository.flush_xp_cache()
+
+async def get_user_guild_data(guild_id: int, user_id: int) -> dict:
+    return await XpRepository.get_user_guild_data(guild_id, user_id)
+
 
 def clear_memory_cache():
     """Limpia el caché de configuración de la RAM para liberar memoria."""

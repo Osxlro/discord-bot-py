@@ -17,16 +17,14 @@ def get_leaderboard_pages(guild, rows, lang):
 
 async def handle_rank(guild: discord.Guild, target: discord.Member, lang: str):
     """Maneja la lógica para obtener el rango de un usuario."""
-    stats = await db_service.fetch_one(
-        "SELECT xp, level, rebirths FROM guild_stats WHERE guild_id = ? AND user_id = ?",
-        (guild.id, target.id)
-    )
+    stats = await db_service.get_user_guild_data(guild.id, target.id)
     
     if not stats:
         return None
 
     xp_next = db_service.calculate_xp_required(stats['level'])
     return level_ui.get_rank_embed(target, stats, xp_next, lang)
+
 
 async def handle_leaderboard(guild: discord.Guild, lang: str):
     """Maneja la lógica para obtener el leaderboard del servidor."""
@@ -53,12 +51,15 @@ async def handle_rebirth(guild_id: int, user_id: int, lang: str):
 
 async def get_level_up_message(member: discord.Member, nuevo_nivel: int, lang: str) -> str:
     """Obtiene y formatea el mensaje de subida de nivel según prioridades (Usuario > Servidor > Default)."""
-    user_conf = await db_service.fetch_one("SELECT personal_level_msg FROM users WHERE user_id = ?", (member.id,))
+    from services.repositories.user_repository import UserRepository
+    user_data = await UserRepository.get_user_data(member.id)
+    user_msg = user_data.get('personal_level_msg') if user_data else None
+    
     guild_conf = await db_service.get_guild_config(member.guild.id)
     
     msg_raw = None
-    if user_conf and user_conf['personal_level_msg']:
-        msg_raw = user_conf['personal_level_msg']
+    if user_msg:
+        msg_raw = user_msg
     elif guild_conf.get('server_level_msg'):
         msg_raw = guild_conf['server_level_msg']
     else:
@@ -67,6 +68,7 @@ async def get_level_up_message(member: discord.Member, nuevo_nivel: int, lang: s
     return msg_raw.replace("{user}", member.mention)\
                   .replace("{level}", str(nuevo_nivel))\
                   .replace("{server}", member.guild.name)
+
 
 async def notify_level_up(guild: discord.Guild, member: discord.Member, nuevo_nivel: int, fallback_channel=None):
     """Centraliza la notificación de subida de nivel para eventos y tareas."""
