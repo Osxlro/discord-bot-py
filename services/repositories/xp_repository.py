@@ -174,3 +174,15 @@ class XpRepository:
         else:
             _xp_cache[key]['last_access'] = time.time()
         return _xp_cache[key]
+
+    @classmethod
+    async def get_leaderboard(cls, guild_id: int, limit: int) -> list[dict]:
+        """Obtiene la lista de los mejores usuarios ordenados por rebirths, level y xp (vuelca la caché primero)."""
+        await cls.flush_xp_cache()
+        rows = await database.fetch_all(
+            "SELECT user_id, level, xp, rebirths FROM guild_stats WHERE guild_id = ? "
+            "ORDER BY rebirths DESC, level DESC, xp DESC LIMIT ?",
+            (guild_id, limit)
+        )
+        return [dict(row) for row in rows]
+

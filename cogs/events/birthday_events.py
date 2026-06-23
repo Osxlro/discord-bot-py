@@ -1,7 +1,7 @@
 import datetime
 from discord.ext import commands
 from services.features import birthday_service
-from services.core import db_service
+from services.repositories.user_repository import UserRepository
 
 class BirthdayEvents(commands.Cog):
     """Eventos relacionados con cumpleaños."""
@@ -15,12 +15,9 @@ class BirthdayEvents(commands.Cog):
         hoy = datetime.date.today()
         fecha_str = f"{hoy.day}/{hoy.month}"
         
-        user_row = await db_service.fetch_one(
-            "SELECT user_id, personal_birthday_msg FROM users WHERE user_id = ? AND birthday = ? AND celebrate = 1", 
-            (member.id, fecha_str)
-        )
-        if user_row:
-            await birthday_service.notify_guild_birthdays(member.guild, [user_row])
+        user_data = await UserRepository.get_user_data(member.id)
+        if user_data and user_data.get('birthday') == fecha_str and user_data.get('celebrate') == 1:
+            await birthday_service.notify_guild_birthdays(member.guild, [user_data])
 
 async def setup(bot: commands.Bot):
-    await bot.add_cog(BirthdayEvents(bot))
+    await bot.add_cog(BirthdayEvents(bot))

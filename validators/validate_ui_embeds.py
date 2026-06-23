@@ -41,8 +41,12 @@ def validate_ui_embeds():
 
     target_dirs = [
         os.path.join(root_dir, "cogs", "commands"),
+        os.path.join(root_dir, "cogs", "tasks"),
+        os.path.join(root_dir, "cogs", "events"),
+        os.path.join(root_dir, "services", "features"),
         os.path.join(root_dir, "ui")
     ]
+
 
     files_to_check = []
     for directory in target_dirs:

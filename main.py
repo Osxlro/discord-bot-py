@@ -18,7 +18,10 @@ for log_file in data_dir.glob("discord.log*"):
     try: log_file.unlink()
     except Exception: pass
 
-# Formateador detallado para el archivo
+# Configurar el logging de consola por defecto (con colores y formato bonito)
+discord.utils.setup_logging(level=logging.INFO)
+
+# Configurar el logger de archivo detallado en segundo plano
 file_formatter = logging.Formatter(
     fmt="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S"
@@ -32,32 +35,8 @@ file_handler = logging.handlers.RotatingFileHandler(
 file_handler.setFormatter(file_formatter)
 file_handler.setLevel(logging.INFO)
 
-# Formateador limpio y estético para la consola
-class CleanConsoleFormatter(logging.Formatter):
-    def format(self, record):
-        if record.levelno == logging.INFO:
-            return record.getMessage()
-        elif record.levelno == logging.WARNING:
-            msg = record.getMessage()
-            if not msg.startswith("⚠️"):
-                return f"⚠️ {msg}"
-            return msg
-        elif record.levelno >= logging.ERROR:
-            msg = record.getMessage()
-            if not msg.startswith("❌") and not msg.startswith("🚨"):
-                return f"❌ {msg}"
-            return msg
-        return f"[{record.levelname}] {record.getMessage()}"
-
-console_handler = logging.StreamHandler()
-console_handler.setFormatter(CleanConsoleFormatter())
-console_handler.setLevel(logging.INFO)
-
-# Configurar el logger raíz
-root_logger = logging.getLogger()
-root_logger.setLevel(logging.INFO)
-root_logger.addHandler(file_handler)
-root_logger.addHandler(console_handler)
+# Añadir el file handler al logger raíz
+logging.getLogger().addHandler(file_handler)
 
 # Silenciar librerías externas ruidosas en consola
 logging.getLogger("discord").setLevel(logging.WARNING)
@@ -66,6 +45,7 @@ logging.getLogger("aiohttp").setLevel(logging.WARNING)
 
 
 logger = logging.getLogger("bot")
+
 
 # Configuración de Intents
 intents = discord.Intents.default()

@@ -670,11 +670,16 @@ def get_queue_pages(player: wavelink.Player, lang: str) -> list[discord.Embed]:
                 idx = (i * chunk_size) + j + 1
                 desc += f"`{idx}.` {track.title} - *{track.author}*\n"
         
-        embed = discord.Embed(title=lang_service.get_text("music_queue_title", lang), description=desc, color=settings.COLORS["INFO"])
-        embed.set_footer(text=lang_service.get_text("music_queue_footer", lang, current=i+1, total=len(chunks), tracks=len(player.queue)))
+        embed = embed_service.info(
+            title=lang_service.get_text("music_queue_title", lang),
+            description=desc,
+            footer=lang_service.get_text("music_queue_footer", lang, current=i+1, total=len(chunks), tracks=len(player.queue)),
+            lite=True
+        )
         pages.append(embed)
     
     return pages
+
 
 async def sync_ui(player: wavelink.Player):
     """Sincroniza el estado visual de la última vista activa del reproductor."""

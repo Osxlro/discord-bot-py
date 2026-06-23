@@ -49,9 +49,18 @@ class ConfigRepository:
         await cache.set(cache_key, current)
 
     @classmethod
+    async def get_festive_servers(cls) -> list[dict]:
+        """Obtiene la configuración de todos los servidores que tienen activado el sistema de días festivos."""
+        rows = await database.fetch_all(
+            "SELECT guild_id, festivedays_channel_id, festivedays_role_id, language FROM guild_config WHERE festivedays_enabled = 1"
+        )
+        return [dict(row) for row in rows]
+
+    @classmethod
     async def clear_cache(cls, guild_id: int = None):
         if guild_id:
             await cache.delete(cls._get_cache_key(guild_id))
         else:
             # Limpiar caché completo (no es muy usado en prod pero sí en pruebas/desarrollo)
             pass
+

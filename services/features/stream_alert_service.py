@@ -3,6 +3,7 @@ import re
 import xml.etree.ElementTree as ET
 import logging
 from services.core import db_service
+from services.repositories.stream_alert_repository import StreamAlertRepository
 
 logger = logging.getLogger(__name__)
 
@@ -36,18 +37,11 @@ async def add_stream_alert(guild_id: int, platform: str, channel_name: str, disc
             return False, "youtube_resolver_error"
 
     # Verificar si ya existe
-    existing = await db_service.fetch_one(
-        "SELECT 1 FROM stream_alerts WHERE guild_id = ? AND platform = ? AND channel_name = ?",
-        (guild_id, platform, resolved_id)
-    )
-    if existing:
+    if await StreamAlertRepository.exists_alert(guild_id, platform, resolved_id):
         return False, "already_exists"
 
     # Insertar en base de datos
-    await db_service.execute(
-        "INSERT INTO stream_alerts (guild_id, platform, channel_name, discord_channel_id, role_id, custom_message) VALUES (?, ?, ?, ?, ?, ?)",
-        (guild_id, platform, resolved_id, discord_channel_id, role_id, custom_message)
-    )
+    await StreamAlertRepository.add_alert(guild_id, platform, resolved_id, discord_channel_id, role_id, custom_message)
     return True, resolved_id
 
 async def remove_stream_alert(guild_id: int, platform: str, channel_name: str) -> bool:
@@ -55,47 +49,32 @@ async def remove_stream_alert(guild_id: int, platform: str, channel_name: str) -
     platform = platform.lower()
     
     # Intentamos borrar directamente (buscamos por channel_name o handle si es que se guardó así)
-    res = await db_service.execute(
-        "DELETE FROM stream_alerts WHERE guild_id = ? AND platform = ? AND (channel_name = ? OR channel_name = ?)",
-        (guild_id, platform, channel_name, f"@{channel_name}")
-    )
+    rows_affected = await StreamAlertRepository.remove_alert_by_names(guild_id, platform, channel_name, f"@{channel_name}")
     
     # Si no se borró nada y no empieza por UC, intentamos resolver el ID y volver a intentar
-    if res.rowcount == 0 and platform == "youtube" and not channel_name.startswith("UC"):
+    if rows_affected == 0 and platform == "youtube" and not channel_name.startswith("UC"):
         handle = channel_name if channel_name.startswith("@") else f"@{channel_name}"
         try:
             resolved_id = await resolve_youtube_channel_id(handle)
             if resolved_id:
-                res = await db_service.execute(
-                    "DELETE FROM stream_alerts WHERE guild_id = ? AND platform = ? AND channel_name = ?",
-                    (guild_id, platform, resolved_id)
-                )
+                rows_affected = await StreamAlertRepository.remove_alert(guild_id, platform, resolved_id)
         except Exception:
             pass
 
-    return res.rowcount > 0
+    return rows_affected > 0
 
 async def get_stream_alerts(guild_id: int) -> list[dict]:
     """Obtiene todas las alertas configuradas para un servidor."""
-    rows = await db_service.fetch_all(
-        "SELECT platform, channel_name, discord_channel_id, role_id, custom_message, last_status FROM stream_alerts WHERE guild_id = ?",
-        (guild_id,)
-    )
-    return [dict(row) for row in rows]
+    return await StreamAlertRepository.get_stream_alerts(guild_id)
 
 async def get_all_stream_alerts() -> list[dict]:
     """Obtiene todas las alertas globales registradas para el background task."""
-    rows = await db_service.fetch_all(
-        "SELECT guild_id, platform, channel_name, discord_channel_id, role_id, custom_message, last_status FROM stream_alerts"
-    )
-    return [dict(row) for row in rows]
+    return await StreamAlertRepository.get_all_stream_alerts()
 
 async def update_stream_status(guild_id: int, platform: str, channel_name: str, status: str):
     """Actualiza el último estado/video ID notificado para evitar duplicados."""
-    await db_service.execute(
-        "UPDATE stream_alerts SET last_status = ?, last_check = datetime('now') WHERE guild_id = ? AND platform = ? AND channel_name = ?",
-        (status, guild_id, platform.lower(), channel_name)
-    )
+    await StreamAlertRepository.update_stream_status(guild_id, platform, channel_name, status)
+
 
 async def resolve_youtube_channel_id(handle: str) -> str | None:
     """

@@ -5,6 +5,8 @@ import sys
 import discord
 from services.core import db_service
 from services.core import lang_service
+from services.repositories.status_repository import StatusRepository
+from services.repositories.user_repository import UserRepository
 from ui import developer_ui
 
 logger = logging.getLogger(__name__)
@@ -37,13 +39,14 @@ async def get_psutil_info():
 
 async def add_bot_status(tipo: str, texto: str, author_name: str):
     """Añade un nuevo estado a la base de datos."""
-    await db_service.execute("INSERT INTO bot_statuses (type, text) VALUES (?, ?)", (tipo, texto))
+    await StatusRepository.add_status(tipo, texto)
     logger.info(f"Status agregado: [{tipo}] {texto} por {author_name}")
 
 async def delete_bot_status(status_id: int, author_name: str):
     """Elimina un estado de la base de datos."""
-    await db_service.execute("DELETE FROM bot_statuses WHERE id = ?", (status_id,))
+    await StatusRepository.delete_status(status_id)
     logger.info(f"Status eliminado (ID: {status_id}) por {author_name}")
+
 
 async def perform_db_maintenance():
     """Ejecuta el comando VACUUM en la base de datos."""
@@ -119,11 +122,7 @@ async def handle_edit_profile(user_id: int, campo: str, valor: str, lang: str):
     if campo == "descripcion":
         if len(valor) > 200:
             return None, lang_service.get_text("error_max_chars", lang, max=200)
-        await db_service.execute(
-            "INSERT INTO users (user_id, description) VALUES (?, ?) "
-            "ON CONFLICT(user_id) DO UPDATE SET description = excluded.description",
-            (user_id, valor)
-        )
+        await UserRepository.update_description(user_id, valor)
     elif campo == "genero":
         mapping = {
             "hombre": "hombre",
@@ -136,14 +135,10 @@ async def handle_edit_profile(user_id: int, campo: str, valor: str, lang: str):
         if not val:
             return None, "Género no válido. Opciones: Hombre, Mujer, No Binario, Extraterrestre, none"
         db_val = None if val == "none" else val
-        await db_service.execute(
-            "INSERT INTO users (user_id, gender) VALUES (?, ?) "
-            "ON CONFLICT(user_id) DO UPDATE SET gender = excluded.gender",
-            (user_id, db_val)
-        )
+        await UserRepository.update_gender(user_id, db_val)
     elif campo in ("cumpleaños", "cumpleanos"):
         if valor.lower() in ["reset", "none"]:
-            await db_service.execute("UPDATE users SET birthday = NULL WHERE user_id = ?", (user_id,))
+            await UserRepository.set_user_birthday(user_id, None)
         else:
             import re
             match = re.match(r"^(\d{1,2})[/-](\d{1,2})$", valor)
@@ -156,12 +151,8 @@ async def handle_edit_profile(user_id: int, campo: str, valor: str, lang: str):
             except ValueError:
                 return None, lang_service.get_text("bday_invalid", lang)
             fecha = f"{dia}/{mes}"
-            await db_service.execute(
-                "INSERT INTO users (user_id, birthday) VALUES (?, ?) "
-                "ON CONFLICT(user_id) DO UPDATE SET birthday = excluded.birthday",
-                (user_id, fecha)
-            )
+            await UserRepository.set_user_birthday(user_id, fecha)
     else:
         return None, "Campo no válido."
 
-    return developer_ui.get_dev_edit_success_embed(lang, f"profile_{campo}", valor), None
+    return developer_ui.get_dev_edit_success_embed(lang, f"profile_{campo}", valor), None

@@ -65,3 +65,68 @@ class UserRepository:
         """Obtiene toda la información de perfil y preferencias de un usuario en base de datos."""
         row = await database.fetch_one("SELECT * FROM users WHERE user_id = ?", (user_id,))
         return dict(row) if row else None
+
+    @classmethod
+    async def update_description(cls, user_id: int, description: str):
+        """Actualiza la descripción de la biografía de perfil del usuario."""
+        await database.execute(
+            "INSERT INTO users (user_id, description) VALUES (?, ?) "
+            "ON CONFLICT(user_id) DO UPDATE SET description = excluded.description",
+            (user_id, description)
+        )
+
+    @classmethod
+    async def update_personal_message(cls, user_id: int, msg_type: str, text: str | None):
+        """Actualiza el mensaje personalizado de nivel o de cumpleaños de un usuario."""
+        column = "personal_level_msg" if msg_type == "Nivel" else "personal_birthday_msg"
+        await database.execute(
+            f"INSERT INTO users (user_id, {column}) VALUES (?, ?) "
+            f"ON CONFLICT(user_id) DO UPDATE SET {column} = excluded.{column}",
+            (user_id, text)
+        )
+
+    @classmethod
+    async def update_gender(cls, user_id: int, gender: str | None):
+        """Actualiza el género de perfil de un usuario."""
+        await database.execute(
+            "INSERT INTO users (user_id, gender) VALUES (?, ?) ON CONFLICT(user_id) DO UPDATE SET gender = excluded.gender",
+            (user_id, gender)
+        )
+
+    @classmethod
+    async def set_user_birthday(cls, user_id: int, birthday: str | None, celebrate: bool = True):
+        """Establece o elimina el cumpleaños de un usuario, y activa la felicitación si se establece."""
+        if birthday is None:
+            await database.execute("UPDATE users SET birthday = NULL WHERE user_id = ?", (user_id,))
+        else:
+            await database.execute(
+                "INSERT INTO users (user_id, birthday, celebrate) VALUES (?, ?, ?) "
+                "ON CONFLICT(user_id) DO UPDATE SET birthday = excluded.birthday, celebrate = excluded.celebrate",
+                (user_id, birthday, 1 if celebrate else 0)
+            )
+
+    @classmethod
+    async def set_user_celebrate(cls, user_id: int, celebrate: bool):
+        """Establece si el usuario desea que se celebre su cumpleaños."""
+        await database.execute(
+            "UPDATE users SET celebrate = ? WHERE user_id = ?",
+            (1 if celebrate else 0, user_id)
+        )
+
+    @classmethod
+    async def get_users_with_birthday(cls, birthday_str: str) -> list[dict]:
+        """Obtiene la lista de usuarios que cumplen años hoy y tienen activada la celebración."""
+        rows = await database.fetch_all(
+            "SELECT user_id, personal_birthday_msg FROM users WHERE birthday = ? AND celebrate = 1",
+            (birthday_str,)
+        )
+        return [dict(row) for row in rows]
+
+    @classmethod
+    async def get_all_active_birthdays(cls) -> list[dict]:
+        """Obtiene la lista de todos los cumpleaños activos registrados (birthday no nulo y celebrate=1)."""
+        rows = await database.fetch_all(
+            "SELECT user_id, birthday FROM users WHERE birthday IS NOT NULL AND celebrate = 1"
+        )
+        return [dict(row) for row in rows]
+

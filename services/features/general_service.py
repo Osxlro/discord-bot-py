@@ -31,8 +31,9 @@ async def handle_calc(operacion: str, num1: float, num2: float, lang: str):
 
 async def handle_serverinfo(guild: discord.Guild, lang: str, author_id: int):
     config = await db_service.get_guild_config(guild.id)
-    stream_alerts = await db_service.fetch_all("SELECT platform, channel_name, discord_channel_id, role_id FROM stream_alerts WHERE guild_id = ?", (guild.id,))
-    stream_alerts_list = [dict(row) for row in stream_alerts] if stream_alerts else []
+    from services.repositories.stream_alert_repository import StreamAlertRepository
+    stream_alerts_list = await StreamAlertRepository.get_stream_alerts(guild.id)
+
     
     stats = {
         'roles': len(guild.roles),

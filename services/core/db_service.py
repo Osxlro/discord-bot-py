@@ -5,8 +5,12 @@ from services.core import database
 from services.repositories.config_repository import ConfigRepository
 from services.repositories.xp_repository import XpRepository, calculate_xp_required
 from services.repositories.user_repository import UserRepository
+from services.repositories.warn_repository import WarnRepository
+from services.repositories.stream_alert_repository import StreamAlertRepository
+from services.repositories.status_repository import StatusRepository
 
 logger = logging.getLogger(__name__)
+
 
 # Re-exportar funciones y variables basales para retrocompatibilidad
 get_db = database.get_db

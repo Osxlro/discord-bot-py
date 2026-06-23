@@ -2,6 +2,7 @@ import datetime
 import discord
 import logging
 from services.core import db_service, lang_service
+from services.repositories.user_repository import UserRepository
 from ui import birthday_ui
 
 logger = logging.getLogger(__name__)
@@ -14,11 +15,9 @@ async def process_daily_birthdays(bot):
     hoy = datetime.date.today()
     fecha_str = f"{hoy.day}/{hoy.month}"
     
-    users = await db_service.fetch_all(
-        "SELECT user_id, personal_birthday_msg FROM users WHERE birthday = ? AND celebrate = 1", 
-        (fecha_str,)
-    )
+    users = await UserRepository.get_users_with_birthday(fecha_str)
     if not users: return
+
 
     for guild in bot.guilds:
         await notify_guild_birthdays(guild, users)
@@ -58,25 +57,21 @@ async def handle_establish_birthday(user_id: int, dia: int, mes: int, lang: str)
     try:
         datetime.date(2000, mes, dia)
         fecha = f"{dia}/{mes}"
-        await db_service.execute(
-            "INSERT INTO users (user_id, birthday, celebrate) VALUES (?, ?, 1) "
-            "ON CONFLICT(user_id) DO UPDATE SET birthday = excluded.birthday, celebrate = 1",
-            (user_id, fecha)
-        )
+        await UserRepository.set_user_birthday(user_id, fecha, celebrate=True)
         return birthday_ui.get_birthday_saved_embed(lang, fecha), None
     except ValueError:
         return None, lang_service.get_text("bday_invalid", lang)
 
 async def handle_delete_birthday(target_id: int, lang: str):
     """Lógica para eliminar un cumpleaños."""
-    await db_service.execute("UPDATE users SET birthday = NULL WHERE user_id = ?", (target_id,))
+    await UserRepository.set_user_birthday(target_id, None)
     return birthday_ui.get_birthday_removed_embed(lang)
 
 async def handle_privacy_update(user_id: int, val: int, lang: str):
     """Lógica para actualizar la privacidad."""
-    await db_service.execute("UPDATE users SET celebrate = ? WHERE user_id = ?", (val, user_id))
+    await UserRepository.set_user_celebrate(user_id, val == 1)
     return birthday_ui.get_birthday_privacy_embed(lang, val)
 
 async def handle_get_upcoming_list(guild: discord.Guild, lang: str):
     """Lógica para obtener la lista de próximos cumpleaños."""
-    return await birthday_ui.get_upcoming_birthdays_embed(guild, lang)
+    return await birthday_ui.get_upcoming_birthdays_embed(guild, lang)

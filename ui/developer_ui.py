@@ -7,6 +7,7 @@ import time
 import asyncio
 from config import settings
 from services.core import lang_service, db_service
+from services.repositories.status_repository import StatusRepository
 from services.utils import embed_service
 
 def _make_bar(percent, length=settings.UI_CONFIG["BAR_LENGTH"]):
@@ -106,7 +107,8 @@ async def get_config_embed(lang: str) -> discord.Embed:
     p_stats = await db_service.get_persistence_stats()
     log_size = f"{os.path.getsize(settings.LOG_FILE)/1024:.1f} KB" if os.path.exists(settings.LOG_FILE) else "0 KB"
     
-    rows = await db_service.fetch_all("SELECT type, text FROM bot_statuses")
+    rows = await StatusRepository.get_statuses()
+
     status_txt = "\n".join([f">  • [{r['type']}] {r['text']}" for r in rows[:5]]) + (f"\n>  • {lang_service.get_text('dev_status_more', lang, count=len(rows)-5)}" if len(rows) > 5 else "") if rows else f">  • {lang_service.get_text('log_none', lang)}"
     
     description = (
@@ -119,7 +121,8 @@ async def get_config_embed(lang: str) -> discord.Embed:
 
 async def get_status_list_embed(lang: str) -> discord.Embed:
     """Genera un embed con la lista de estados configurados."""
-    rows = await db_service.fetch_all("SELECT type, text FROM bot_statuses")
+    rows = await StatusRepository.get_statuses()
+
     
     if not rows:
         return embed_service.warning(lang_service.get_text("title_status", lang), lang_service.get_text("status_empty", lang))
@@ -132,8 +135,9 @@ async def get_status_list_embed(lang: str) -> discord.Embed:
     return embed_service.info(title, desc)
 
 async def get_status_delete_options(lang):
-    rows = await db_service.fetch_all(f"SELECT id, type, text FROM bot_statuses ORDER BY id DESC LIMIT {settings.DEV_CONFIG['STATUS_LIMIT']}")
+    rows = await StatusRepository.get_statuses_limited(settings.DEV_CONFIG['STATUS_LIMIT'])
     if not rows: return None
+
 
     options = []
     for row in rows:

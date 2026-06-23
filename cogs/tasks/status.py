@@ -2,7 +2,7 @@ import discord
 import aiohttp
 import logging
 from discord.ext import commands, tasks
-from services.core import db_service
+from services.repositories.status_repository import StatusRepository
 
 logger = logging.getLogger(__name__)
 
@@ -26,13 +26,14 @@ class Status(commands.Cog):
             
         try:
             # Obtenemos un estado aleatorio de la DB
-            row = await db_service.fetch_one("SELECT type, text FROM bot_statuses ORDER BY RANDOM() LIMIT 1")
+            row = await StatusRepository.get_random_status()
             
             if row:
                 act_type = self._get_type(row['type'])
                 await self.bot.change_presence(activity=discord.Activity(type=act_type, name=row['text']))
         except (aiohttp.client_exceptions.ClientConnectionResetError, ConnectionError, discord.ConnectionClosed):
             pass # Ignoramos el error de forma silenciosa si ocurre justo en una reconexión
+
         except Exception as e:
             logger.debug(f"Error cambiando el estado del bot: {e}")
 

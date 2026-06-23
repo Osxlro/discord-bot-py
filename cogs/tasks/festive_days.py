@@ -3,6 +3,7 @@ from discord.ext import commands, tasks
 import datetime
 import logging
 from services.core import db_service, lang_service, persistence_service
+from services.repositories.config_repository import ConfigRepository
 from services.utils import embed_service
 
 logger = logging.getLogger(__name__)
@@ -38,15 +39,14 @@ class FestiveDaysTask(commands.Cog):
             year = now.year
 
             # Obtener todos los servidores que tienen activado el sistema
-            configs = await db_service.fetch_all(
-                "SELECT guild_id, festivedays_channel_id, festivedays_role_id, language FROM guild_config WHERE festivedays_enabled = 1"
-            )
+            configs = await ConfigRepository.get_festive_servers()
             
             for conf in configs:
                 guild_id = conf["guild_id"]
                 channel_id = conf["festivedays_channel_id"]
                 role_id = conf["festivedays_role_id"]
                 lang = conf["language"] or "es"
+
 
                 # Clave única para evitar notificar varias veces al día
                 persistence_key = f"{guild_id}:{year}:{holiday_key}"

@@ -2,13 +2,13 @@ import datetime
 import discord
 from services.utils import embed_service
 from config import settings
-from services.core import db_service, lang_service
+from services.core import lang_service
+from services.repositories.user_repository import UserRepository
 
 async def get_upcoming_birthdays_embed(guild: discord.Guild, lang: str) -> discord.Embed:
     """Genera el embed con la lista de próximos cumpleaños."""
-    rows = await db_service.fetch_all(
-        "SELECT user_id, birthday FROM users WHERE birthday IS NOT NULL AND celebrate = 1"
-    )
+    rows = await UserRepository.get_all_active_birthdays()
+
     
     lista = []
     hoy = datetime.date.today()

@@ -8,9 +8,10 @@ from services.features import help_service
 from config import settings
 from services.core import db_service, lang_service, persistence_service
 from services.features import developer_service, level_service, moderation_service, profile_service, diversion_service, setup_service, birthday_service
-from services.utils import algorithm_service, voice_service
+from services.utils import algorithm_service, voice_service, embed_service
 
 logger = logging.getLogger(__name__)
+
 
 class HealthCheck(commands.Cog):
     """
@@ -267,13 +268,14 @@ class HealthCheck(commands.Cog):
             error_list = "\n".join([f"• {err}" for err in errors])
             desc = lang_service.get_text("health_check_report_desc", lang, errors=error_list)
             
-            embed = discord.Embed(
+            embed = embed_service.error(
                 title=title,
                 description=desc,
-                color=discord.Color.red()
+                lite=True
             )
             await owner.send(embed=embed)
         except Exception:
+
             logger.exception("No se pudo notificar al dueño sobre los errores")
 
 async def setup(bot):
