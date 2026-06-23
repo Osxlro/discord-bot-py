@@ -22,20 +22,6 @@ class Diversion(commands.Cog):
         self.bot = bot
         self._active_hangman_channels = set()
 
-    async def _temp_disable_command(self, command_name: str, cooldown_seconds: int = 300):
-        """Inhabilita un comando de forma temporal si su API no responde."""
-        command = self.bot.get_command(command_name)
-        if command and command.enabled:
-            command.enabled = False
-            logger.error(f"❌ API externa no responde. Comando /{command_name} inhabilitado temporalmente por {cooldown_seconds}s.")
-            
-            async def re_enable():
-                await asyncio.sleep(cooldown_seconds)
-                command.enabled = True
-                logger.info(f"🔄 Comando /{command_name} re-habilitado tras tiempo de espera.")
-                
-            self.bot.loop.create_task(re_enable())
-
     @commands.hybrid_command(name="jumbo", description="Muestra la imagen de un emoji en grande.")
     @app_commands.describe(emoji="Pon aquí el emoji personalizado")
     async def jumbo(self, ctx: commands.Context, emoji: str):
@@ -125,7 +111,6 @@ class Diversion(commands.Cog):
         
         question_data = await trivia_service.fetch_trivia_question(lang)
         if not question_data:
-            await self._temp_disable_command("trivia")
             return await ctx.reply(embed=embed_service.error(
                 lang_service.get_text("title_error", lang),
                 lang_service.get_text("trivia_error_api", lang),
@@ -168,7 +153,6 @@ class Diversion(commands.Cog):
         
         embed, error = await diversion_service.handle_anime(lang)
         if error:
-            await self._temp_disable_command("anime")
             return await ctx.reply(embed=embed_service.error(
                 lang_service.get_text("title_error", lang), error, lite=True
             ))
@@ -217,7 +201,6 @@ class Diversion(commands.Cog):
                 
             word_data = await HangmanService.get_word(difficulty, category, lang, ctx.guild.id if ctx.guild else None)
             if not word_data:
-                await self._temp_disable_command("hangman")
                 self._active_hangman_channels.discard(ctx.channel.id)
                 return await ctx.send(embed=embed_service.error(
                     lang_service.get_text("title_error", lang),
