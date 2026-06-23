@@ -548,4 +548,10 @@ PT = {
     "hangman_multi_rematch_fail": "❌ Revanche recusada ou tempo limite expirado.",
     "hangman_hint_hidden": "Oculto até o último minuto",
     "hangman_hint_revealed_chat": "💡 **Dica:** A letra `{letter}` foi revelada com menos de 1 minuto restante.",
+    "hangman_active_error": "❌ Já existe um jogo da Forca ativo neste canal.",
+    "hangman_game_info": "📋 **Informações da Partida**",
+    "hangman_game_time": "⏱️ **Tempo de Jogo**",
+    "hangman_time_remaining": "{time}s restantes",
+    "hangman_scores": "🏆 **Placar**",
+    "hangman_word_was": "A palavra era: **{word}**",
 }
