@@ -1,6 +1,6 @@
 import discord
 import logging
-from ui import general_ui
+from ui.shared import general_ui
 from services.core import db_service, lang_service
 from services.integrations import translator_service
 from config import settings

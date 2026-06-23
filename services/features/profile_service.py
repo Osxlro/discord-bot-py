@@ -2,7 +2,7 @@ from config import settings
 from services.core import db_service, lang_service
 from services.repositories.user_repository import UserRepository
 from services.repositories.xp_repository import XpRepository, calculate_xp_required
-from ui import profile_ui
+from ui.social import profile_ui
 
 # Re-exportar con envoltura de compatibilidad para HealthCheck/Legacy
 async def get_profile_embed(bot, guild, target, lang):

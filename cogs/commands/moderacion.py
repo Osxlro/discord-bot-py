@@ -75,7 +75,7 @@ class Moderacion(commands.Cog):
         razon = razon or lang_service.get_text("mod_reason_default", lang)
         
         # El servicio orquesta la expulsión y la generación del embed (soporta mensajes personalizados)
-        embed, error = await moderation_service.handle_kick(ctx.author, usuario, razon, lang)
+        embed, error = await moderation_service.handle_kick(ctx.guild.id, ctx.author, usuario, razon, lang)
         if error:
             # Determinar si el error es informativo (auto-acción) o crítico (jerarquía)
             title = lang_service.get_text("title_info", lang) if "self" in error else lang_service.get_text("title_error", lang)
@@ -90,7 +90,7 @@ class Moderacion(commands.Cog):
         razon = razon or lang_service.get_text("mod_reason_default", lang)
         
         # El servicio orquesta el baneo
-        embed, error = await moderation_service.handle_ban(ctx.author, usuario, razon, lang)
+        embed, error = await moderation_service.handle_ban(ctx.guild.id, ctx.author, usuario, razon, lang)
         if error:
             title = lang_service.get_text("title_info", lang) if "self" in error else lang_service.get_text("title_error", lang)
             return await ctx.reply(embed=embed_service.error(title, error, lite=True), ephemeral=True)

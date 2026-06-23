@@ -1,6 +1,6 @@
 import discord
 from services.core import db_service
-from ui import setup_ui
+from ui.admin import setup_ui
 
 async def handle_setup_update(guild_id: int, updates: dict, lang: str, label: str, value_display: str) -> discord.Embed:
     """Actualiza la configuración y delega el embed de éxito a la UI."""

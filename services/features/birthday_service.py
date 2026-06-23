@@ -3,7 +3,7 @@ import discord
 import logging
 from services.core import db_service, lang_service
 from services.repositories.user_repository import UserRepository
-from ui import birthday_ui
+from ui.social import birthday_ui
 
 logger = logging.getLogger(__name__)
 

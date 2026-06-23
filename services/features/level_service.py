@@ -1,8 +1,9 @@
 import discord
 import logging
 from services.core import db_service, lang_service
+from services.repositories.xp_repository import XpRepository
 from config import settings
-from ui import level_ui
+from ui.social import level_ui
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +27,7 @@ async def handle_rank(guild: discord.Guild, target: discord.Member, lang: str):
     return level_ui.get_rank_embed(target, stats, xp_next, lang)
 
 
-from services.repositories.xp_repository import XpRepository
+
 
 async def handle_leaderboard(guild: discord.Guild, lang: str):
     """Maneja la lógica para obtener el leaderboard del servidor."""

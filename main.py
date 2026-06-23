@@ -65,6 +65,10 @@ async def get_prefix(bot, message):
         logger.exception("Error obteniendo prefijo dinámico")
     return settings.CONFIG["bot_config"]["prefix"]
 
+class _MockMessage:
+    def __init__(self, u):
+        self.author = u
+
 class BotPersonal(commands.AutoShardedBot):
     def __init__(self):
         super().__init__(
@@ -124,10 +128,7 @@ class BotPersonal(commands.AutoShardedBot):
         if await self.is_owner(interaction.user): return True
 
         # Adaptador: Creamos un objeto dummy porque CooldownMapping espera un mensaje con atributo .author
-        class MockMsg:
-            def __init__(self, u): self.author = u
-            
-        bucket = self.global_cd.get_bucket(MockMsg(interaction.user))
+        bucket = self.global_cd.get_bucket(_MockMessage(interaction.user))
         retry_after = bucket.update_rate_limit()
         if retry_after:
             raise app_commands.CommandOnCooldown(bucket, retry_after)

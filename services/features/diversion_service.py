@@ -1,9 +1,10 @@
 import discord
 import random
-from ui import diversion_ui
+from ui.games import diversion_ui
 from services.utils import random_service, embed_service
 from services.core import db_service, lang_service
 from services.integrations import emojimixer_service, nekos_api_service
+from config import settings
 
 async def handle_jumbo(emoji_str: str, lang: str):
     try:
@@ -70,8 +71,7 @@ async def handle_anime(lang: str):
     description = "\n".join(desc_parts) if desc_parts else ""
     
     # Generar Kaomoji aleatorio en el título
-    kaomojis = ["(◕‿◕)", "(´• ω •`)", "(つ✧ω✧)つ", "(o^▽^o)", "(≧◡≦)", "(⌒‿⌒)", "(^人^)", "(✿◠‿◠)", "(｀▽´)", "(◕‿◕✿)", "(*^ω^*)"]
-    kaomoji = random.choice(kaomojis)
+    kaomoji = random.choice(settings.DIVERSION_CONFIG["KAOMOJIS"])
     title = f"Anime {kaomoji}"
     
     embed = diversion_ui.get_anime_embed(lang, url, description, title=title)

@@ -8,7 +8,8 @@ from services.features import help_service
 from config import settings
 from services.core import db_service, lang_service, persistence_service
 from services.features import developer_service, level_service, moderation_service, profile_service, diversion_service, setup_service, birthday_service
-from services.utils import algorithm_service, voice_service, embed_service
+from services.utils import embed_service, voice_service
+from services.features import voice_chill_service, music_algorithm_service
 
 logger = logging.getLogger(__name__)
 
@@ -100,7 +101,7 @@ class HealthCheck(commands.Cog):
         # 3. APIs Externas (Spotify)
         if settings.LAVALINK_CONFIG["SPOTIFY"]["CLIENT_ID"]:
             try:
-                engine = algorithm_service.RecommendationEngine()
+                engine = music_algorithm_service.RecommendationEngine()
                 token = await engine._get_spotify_token()
                 if not token:
                     errors.append("Spotify API: No se pudo obtener token de acceso.")
@@ -208,7 +209,7 @@ class HealthCheck(commands.Cog):
 
             # Prueba lógica de Algoritmo de Música
             try:
-                engine = algorithm_service.RecommendationEngine()
+                engine = music_algorithm_service.RecommendationEngine()
                 class MockTrack:
                     def __init__(self, t, a, l, i): self.title, self.author, self.length, self.identifier = t, a, l, i
                 seed, cand = MockTrack("A", "A", 100, "1"), MockTrack("B", "B", 100, "2")
@@ -236,7 +237,7 @@ class HealthCheck(commands.Cog):
 
         # Verificación de consistencia de Voz
         try:
-            for guild_id in list(voice_service.voice_targets.keys()):
+            for guild_id in list(voice_chill_service.voice_targets.keys()):
                 guild = self.bot.get_guild(guild_id)
                 if not guild or not guild.voice_client:
                     warnings.append(f"Voice Consistency: Target set for {guild_id} but no voice client found.")

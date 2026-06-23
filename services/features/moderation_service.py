@@ -1,7 +1,7 @@
 import re
 import discord
 import datetime
-from ui import moderation_ui
+from ui.admin import moderation_ui
 from services.core import db_service, lang_service
 from services.repositories.warn_repository import WarnRepository
 
@@ -80,28 +80,28 @@ async def handle_untimeout(target: discord.Member, lang: str):
     except Exception as e:
         return None, str(e)
 
-async def handle_kick(author: discord.Member, target: discord.Member, reason: str, lang: str):
+async def handle_kick(guild_id: int, author: discord.Member, target: discord.Member, reason: str, lang: str):
     """Maneja la lógica de expulsión."""
     if target.id == author.id:
         return None, lang_service.get_text("error_self_action", lang)
     
     try:
         await target.kick(reason=reason)
-        config = await db_service.get_guild_config(author.guild.id)
+        config = await db_service.get_guild_config(guild_id)
         return moderation_ui.get_mod_embed(author.guild, target.name, "kick", reason, lang, config), None
     except discord.Forbidden:
         return None, lang_service.get_text("error_hierarchy", lang)
     except Exception as e:
         return None, str(e)
 
-async def handle_ban(author: discord.Member, target: discord.Member, reason: str, lang: str):
+async def handle_ban(guild_id: int, author: discord.Member, target: discord.Member, reason: str, lang: str):
     """Maneja la lógica de baneo."""
     if target.id == author.id:
         return None, lang_service.get_text("error_self_action", lang)
     
     try:
         await target.ban(reason=reason)
-        config = await db_service.get_guild_config(author.guild.id)
+        config = await db_service.get_guild_config(guild_id)
         return moderation_ui.get_mod_embed(author.guild, target.name, "ban", reason, lang, config), None
     except discord.Forbidden:
         return None, lang_service.get_text("error_hierarchy", lang)

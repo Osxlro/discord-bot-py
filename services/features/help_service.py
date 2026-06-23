@@ -1,5 +1,5 @@
 import discord
-from ui import help_ui
+from ui.shared import help_ui
 from services.core import lang_service
 
 # Re-exportamos para mantener compatibilidad con cualquier módulo que aún use help_service

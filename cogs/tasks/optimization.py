@@ -5,7 +5,7 @@ import wavelink
 from discord.ext import commands, tasks
 from services.core import db_service
 from services.features import music_service
-from services.utils import voice_service
+from services.features import voice_chill_service
 from config import settings
 
 logger = logging.getLogger(__name__)
@@ -82,7 +82,7 @@ class OptimizationTasks(commands.Cog):
                 # 1. Comprobación de canal vacío (sin humanos)
                 if player.channel:
                     # Si el guild está en voice_targets, es un modo AFK intencional. No desconectar.
-                    if guild.id in voice_service.voice_targets:
+                    if guild.id in voice_chill_service.voice_targets:
                         continue
 
                     human_members = [m for m in player.channel.members if not m.bot]
@@ -107,7 +107,7 @@ class OptimizationTasks(commands.Cog):
                     
                     if is_inactive:
                         # Inicializar timestamp de inactividad si no existe
-                        if not hasattr(player, "inactive_since") or player.inactive_since is None:
+                        if player.inactive_since is None:
                             player.inactive_since = asyncio.get_event_loop().time()
                         else:
                             # Comprobar si superó el límite

@@ -12,7 +12,7 @@ from services.utils import embed_service, pagination_service
 
 logger = logging.getLogger(__name__)
 
-URL_RX = re.compile(r'https?://(?:www\.)?.+')
+
 
 class Music(commands.Cog):
     def __init__(self, bot):
@@ -40,17 +40,7 @@ class Music(commands.Cog):
         if not busqueda:
             return await ctx.send(embed=embed_service.warning(lang_service.get_text("title_error", lang), lang_service.get_text("error_missing_args", lang)))
 
-        # Verificación y conexión bajo demanda si los nodos están caídos
-        if not wavelink.Pool.nodes or not any(n.status == wavelink.NodeStatus.CONNECTED for n in wavelink.Pool.nodes.values()):
-            logger.debug("▶️ [/play] Nodos desconectados. Intentando reconexión...")
-            await ctx.send(embed=embed_service.info(lang_service.get_text("title_info", lang), lang_service.get_text("music_connecting", lang), lite=True))
-            await music_service.connect_nodes(self.bot)
-            
-            if not wavelink.Pool.nodes or not any(n.status == wavelink.NodeStatus.CONNECTED for n in wavelink.Pool.nodes.values()):
-                logger.error("▶️ [/play] Falla crítica: No se pudo conectar a ningún nodo Lavalink.")
-                return await ctx.send(embed=embed_service.error(lang_service.get_text("title_error", lang), lang_service.get_text("music_err_lavalink_nodes", lang)))
-
-        logger.debug("▶️ [/play] Nodos OK. Asegurando reproductor (ensure_player)...")
+        logger.debug("▶️ [/play] Asegurando reproductor (ensure_player)...")
         player = await music_service.ensure_player(ctx, lang)
         if not player:
             logger.debug("▶️ [/play] ensure_player devolvió None. Abortando comando.")
@@ -77,6 +67,7 @@ class Music(commands.Cog):
 
     @commands.hybrid_command(name="previous", description="Vuelve a la canción anterior o reinicia la actual.")
     async def previous(self, ctx: commands.Context):
+        await ctx.defer()
         lang = await lang_service.get_guild_lang(ctx.guild.id)
         if not await music_service.check_voice(ctx): return
         
@@ -105,6 +96,7 @@ class Music(commands.Cog):
 
     @commands.hybrid_command(name="stop", description="Detiene la música y desconecta al bot.")
     async def stop(self, ctx: commands.Context):
+        await ctx.defer()
         lang = await lang_service.get_guild_lang(ctx.guild.id)
         if not await music_service.check_voice(ctx): return
 
@@ -123,6 +115,7 @@ class Music(commands.Cog):
 
     @commands.hybrid_command(name="skip", description="Salta la canción actual.")
     async def skip(self, ctx: commands.Context):
+        await ctx.defer()
         lang = await lang_service.get_guild_lang(ctx.guild.id)
         if not await music_service.check_voice(ctx): return
 
@@ -152,6 +145,7 @@ class Music(commands.Cog):
 
     @commands.hybrid_command(name="pause", description="Pausa o reanuda la música.")
     async def pause(self, ctx: commands.Context):
+        await ctx.defer()
         lang = await lang_service.get_guild_lang(ctx.guild.id)
         if not await music_service.check_voice(ctx): return
         if not ctx.voice_client or not ctx.voice_client.playing:
@@ -206,6 +200,7 @@ class Music(commands.Cog):
 
     @commands.hybrid_command(name="loop", description="Cambia el modo de repetición (Pista / Cola / Apagado).")
     async def loop(self, ctx: commands.Context):
+        await ctx.defer()
         lang = await lang_service.get_guild_lang(ctx.guild.id)
         if not await music_service.check_voice(ctx): return
         if not ctx.voice_client or not ctx.voice_client.playing:
@@ -229,6 +224,7 @@ class Music(commands.Cog):
     @commands.hybrid_command(name="volume", description="Ajusta el volumen (0-100).")
     @app_commands.describe(nivel="Nivel de volumen")
     async def volume(self, ctx: commands.Context, nivel: int):
+        await ctx.defer()
         lang = await lang_service.get_guild_lang(ctx.guild.id)
         if not await music_service.check_voice(ctx): return
         if not ctx.voice_client:
@@ -248,6 +244,7 @@ class Music(commands.Cog):
     @commands.hybrid_command(name="seek", description="Salta a una posición específica de la canción (ej: 1:30).")
     @app_commands.describe(tiempo="Tiempo en formato MM:SS o segundos")
     async def seek(self, ctx: commands.Context, tiempo: str):
+        await ctx.defer()
         lang = await lang_service.get_guild_lang(ctx.guild.id)
         if not await music_service.check_voice(ctx): return
         
@@ -295,7 +292,7 @@ class Music(commands.Cog):
             return await ctx.send(embed=embed_service.error(lang_service.get_text("title_error", lang), lang_service.get_text("music_error_nothing", lang), lite=True), ephemeral=True)
 
         # Mensaje temporal de búsqueda
-        searching_msg = await ctx.send(embed=embed_service.info(lang_service.get_text("title_info", lang), f"🔍 {lang_service.get_text('music_lyrics_searching', lang)}...", lite=True))
+        searching_msg = await ctx.send(embed=embed_service.info(lang_service.get_text("title_info", lang), f"{lang_service.get_text('music_lyrics_searching', lang)}...", lite=True))
 
         lyrics = await lyrics_service.get_lyrics(title, artist)
         await searching_msg.delete()

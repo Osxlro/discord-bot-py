@@ -1,45 +1,46 @@
 import logging
 import os
 import json
+from typing import Any, Optional
 
 logger = logging.getLogger(__name__)
 
 class CacheBackend:
     """Clase base abstracta para el backend de caché."""
-    async def get(self, key: str) -> any:
+    async def get(self, key: str) -> Optional[Any]:
         raise NotImplementedError()
 
-    async def set(self, key: str, value: any, ttl: int = None):
+    async def set(self, key: str, value: Any, ttl: Optional[int] = None) -> None:
         raise NotImplementedError()
 
-    async def delete(self, key: str):
+    async def delete(self, key: str) -> None:
         raise NotImplementedError()
 
-    async def clear(self):
+    async def clear(self) -> None:
         raise NotImplementedError()
 
 class MemoryCacheBackend(CacheBackend):
     """Implementación de caché en memoria RAM local."""
-    def __init__(self):
+    def __init__(self) -> None:
         self._store = {}
 
-    async def get(self, key: str) -> any:
+    async def get(self, key: str) -> Optional[Any]:
         return self._store.get(key)
 
-    async def set(self, key: str, value: any, ttl: int = None):
+    async def set(self, key: str, value: Any, ttl: Optional[int] = None) -> None:
         # En memoria local omitimos el TTL por simplicidad de desarrollo
         self._store[key] = value
 
-    async def delete(self, key: str):
+    async def delete(self, key: str) -> None:
         if key in self._store:
             del self._store[key]
 
-    async def clear(self):
+    async def clear(self) -> None:
         self._store.clear()
 
 class RedisCacheBackend(CacheBackend):
     """Implementación de caché usando Redis (distribuido y escalable)."""
-    def __init__(self, redis_url: str):
+    def __init__(self, redis_url: str) -> None:
         self.redis_url = redis_url
         self._redis = None
         self._fallback = MemoryCacheBackend()
@@ -47,13 +48,12 @@ class RedisCacheBackend(CacheBackend):
         
         try:
             import redis.asyncio as aioredis
-            # Inicialización diferida del cliente Redis
             self._aioredis = aioredis
         except ImportError:
             logger.warning("⚠️ La librería 'redis' no está instalada. Usando fallback de caché en memoria RAM.")
             self._aioredis = None
 
-    async def _get_client(self):
+    async def _get_client(self) -> CacheBackend:
         if not self._aioredis:
             return self._fallback
             
@@ -69,7 +69,7 @@ class RedisCacheBackend(CacheBackend):
                 
         return self._redis
 
-    async def get(self, key: str) -> any:
+    async def get(self, key: str) -> Optional[Any]:
         client = await self._get_client()
         if not self._active:
             return await client.get(key)
@@ -81,7 +81,7 @@ class RedisCacheBackend(CacheBackend):
             logger.exception(f"Error al leer de Redis (key: {key})")
             return await self._fallback.get(key)
 
-    async def set(self, key: str, value: any, ttl: int = None):
+    async def set(self, key: str, value: Any, ttl: Optional[int] = None) -> None:
         client = await self._get_client()
         if not self._active:
             await client.set(key, value, ttl)
@@ -97,7 +97,7 @@ class RedisCacheBackend(CacheBackend):
             logger.exception(f"Error al escribir en Redis (key: {key})")
             await self._fallback.set(key, value, ttl)
 
-    async def delete(self, key: str):
+    async def delete(self, key: str) -> None:
         client = await self._get_client()
         if not self._active:
             await client.delete(key)
@@ -109,7 +109,7 @@ class RedisCacheBackend(CacheBackend):
             logger.exception(f"Error al borrar de Redis (key: {key})")
             await self._fallback.delete(key)
 
-    async def clear(self):
+    async def clear(self) -> None:
         client = await self._get_client()
         if not self._active:
             await client.clear()

@@ -386,32 +386,32 @@ class MiConfiguracion(commands.Cog):
 
 Para prevenir errores de sintaxis, variables indefinidas o discrepancias de internacionalización, es **obligatorio** ejecutar la suite de validación estática local después de realizar cualquier cambio en el código, comandos o traducciones, y antes de hacer commits o desplegar en producción.
 
-La suite se compone de cinco validadores en el directorio `/validators/`:
+La suite se compone de cinco validadores en el directorio `/tools/`:
 
-1. **Validación de Código (`validators/validate_code.py`)**:
+1. **Validación de Código (`tools/validate_code.py`)**:
    - Analiza estáticamente la sintaxis de todos los archivos de código del bot y busca nombres de variables indefinidos (`NameError`) en todos los bloques locales y globales.
-   - *Ejecución:* `.venv\Scripts\python.exe validators/validate_code.py`
+   - *Ejecución:* `.venv\Scripts\python.exe tools/validate_code.py`
 
-2. **Validación de Comandos y Cogs (`validators/validate_commands.py`)**:
+2. **Validación de Comandos y Cogs (`tools/validate_commands.py`)**:
    - Verifica que todos los Cogs tengan la función `setup(bot)` necesaria para su registro (búsqueda recursiva).
    - Audita que todos los comandos híbridos y slash cumplan estrictamente con las reglas de Discord (nombres en minúsculas, sin espacios, de 1 a 32 caracteres, y descripciones válidas menores a 100 caracteres).
    - Valida que todos los parámetros y argumentos de comandos de barra cumplan las reglas estrictas de nomenclatura de Discord (`^[a-z0-9_-]{1,32}$`).
    - Detecta colisiones o nombres duplicados de comandos y subcomandos.
-   - *Ejecución:* `.venv\Scripts\python.exe validators/validate_commands.py`
+   - *Ejecución:* `.venv\Scripts\python.exe tools/validate_commands.py`
 
-3. **Validación de Internacionalización (`validators/validate_locales.py`)**:
+3. **Validación de Internacionalización (`tools/validate_locales.py`)**:
    - Comprueba la sincronía de llaves y paridad de marcadores de formato (como `{user}`, `{level}`) en todos los archivos de traducción (es, en, pt, fr) para prevenir fallos `KeyError` en producción.
    - Analiza mediante AST el código fuente para asegurar que todas las llamadas `get_text` hagan referencia a claves existentes y que los marcadores pasados en la llamada coincidan exactamente con la firma de la traducción.
-   - *Ejecución:* `.venv\Scripts\python.exe validators/validate_locales.py`
+   - *Ejecución:* `.venv\Scripts\python.exe tools/validate_locales.py`
 
-4. **Validación de Esquema de Base de Datos (`validators/validate_db_schema.py`)**:
+4. **Validación de Esquema de Base de Datos (`tools/validate_db_schema.py`)**:
    - Comprueba que todas las tablas definidas con `CREATE TABLE` en `init_db()` estén debidamente registradas en la constante `REQUIRED_TABLES` para evitar que la limpieza del bot las remueva.
    - Verifica que cualquier columna nueva agregada a la estructura de las tablas tenga su correspondiente llamada a `_ensure_column()` para garantizar la migración automática y segura en bases de datos existentes.
-   - *Ejecución:* `.venv\Scripts\python.exe validators/validate_db_schema.py`
+   - *Ejecución:* `.venv\Scripts\python.exe tools/validate_db_schema.py`
 
-5. **Validación de Normativa de Embeds (`validators/validate_ui_embeds.py`)**:
+5. **Validación de Normativa de Embeds (`tools/validate_ui_embeds.py`)**:
    - Asegura la consistencia de marca y diseño del bot prohibiendo la instanciación directa de `discord.Embed(...)` en comandos o UI, forzando el uso exclusivo de los helpers en `embed_service.py` (excepto en `profile_ui.py`, `general_ui.py` y `music_ui.py` por razones de color dinámico).
-   - *Ejecución:* `.venv\Scripts\python.exe validators/validate_ui_embeds.py`
+   - *Ejecución:* `.venv\Scripts\python.exe tools/validate_ui_embeds.py`
 
 ---
 

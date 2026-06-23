@@ -88,7 +88,8 @@ class GlobalErrorHandler(commands.Cog):
             return await ctx.send(embed=embed_service.error(error_title, msg, lite=True))
 
         if isinstance(error, commands.NSFWChannelRequired):
-            return await ctx.send("🔞 Este comando solo puede usarse en canales NSFW.")
+            msg = lang_service.get_text("error_nsfw", lang)
+            return await ctx.send(embed=embed_service.error(error_title, msg, lite=True))
 
         if isinstance(error, commands.NoPrivateMessage):
             msg = lang_service.get_text("error_guild_only", lang)
@@ -137,6 +138,8 @@ class GlobalErrorHandler(commands.Cog):
             msg = lang_service.get_text("error_bad_arg", lang)
         elif isinstance(error, app_commands.CommandOnCooldown):
             msg = lang_service.get_text("error_cooldown", lang, seconds=round(error.retry_after, 1))
+        elif isinstance(error, app_commands.NSFWChannelRequired):
+            msg = lang_service.get_text("error_nsfw", lang)
         else:
             logger.error(f"🔥 Error en Slash Command: {error}", exc_info=error)
             msg = lang_service.get_text("error_generic", lang)

@@ -3,8 +3,7 @@ import discord
 import wavelink
 import asyncio
 from discord.ext import commands, tasks
-from services.features import music_service
-from services.utils import algorithm_service, voice_service
+from services.features import music_service, voice_chill_service, music_algorithm_service
 
 logger = logging.getLogger(__name__)
 
@@ -13,7 +12,7 @@ class MusicEvents(commands.Cog):
     """Maneja el ciclo de vida de Lavalink y eventos de reproducción."""
     def __init__(self, bot):
         self.bot = bot
-        self.recommender = algorithm_service.RecommendationEngine()
+        self.recommender = music_algorithm_service.RecommendationEngine()
         self.node_monitor.start()
         self.persistence_scheduler.start()
 
@@ -27,12 +26,12 @@ class MusicEvents(commands.Cog):
     @tasks.loop(minutes=1)
     async def node_monitor(self):
         """Monitoreo de salud de nodos movido a eventos."""
-        if not self.bot.is_ready():
-            return
-        await self.bot.wait_until_ready()
-        
         if not wavelink.Pool.nodes or not any(n.status == wavelink.NodeStatus.CONNECTED for n in wavelink.Pool.nodes.values()):
             await music_service.connect_nodes(self.bot)
+
+    @node_monitor.before_loop
+    async def before_node_monitor(self):
+        await self.bot.wait_until_ready()
 
     @tasks.loop(seconds=60)
     async def persistence_scheduler(self):
@@ -112,7 +111,7 @@ class MusicEvents(commands.Cog):
         if player and player.channel and before.channel and before.channel.id == player.channel.id:
             # Si el canal quedó sin humanos (solo bots o vacío)
             # Excluimos el modo AFK intencional (voice_targets)
-            if guild.id not in voice_service.voice_targets:
+            if guild.id not in voice_chill_service.voice_targets:
                 human_members = [m for m in player.channel.members if not m.bot]
                 if not human_members:
                     logger.info(f"🔌 [Music Event] Canal vacío detectado en {guild.name} (se fue el último miembro). Desconectando...")

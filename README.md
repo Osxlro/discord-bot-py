@@ -105,4 +105,4 @@ Configurar el bot es sumamente sencillo gracias al comando `/setup`.
 * `/services` - Capa de lógica de negocio y persistencia (Conexión a DB, multi-idioma, embeds de marca, música, etc.).
 * `/ui` - Componentes interactivos de Discord (`discord.ui.View`, `Button`, `Modal`).
 * `/config` - Archivos de configuración estática y archivos `.py` de traducción de idiomas.
-* `/validators` - Scripts locales de análisis de código AST para validación estática de sintaxis, i18n, comandos y base de datos.
+* `/tools` - Scripts locales de análisis de código AST para validación estática de sintaxis, i18n, comandos y base de datos.

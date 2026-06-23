@@ -121,6 +121,14 @@ def get_color(key: str) -> int:
     """Devuelve el valor hexadecimal del color o blanco como fallback."""
     return COLORS.get(key.upper(), 0xFFFFFF)
 
+DIVERSION_CONFIG = {
+    "KAOMOJIS": ["(◕‿◕)", "(´• ω •`)", "(つ✧ω✧)つ", "(o^▽^o)", "(≧◡≦)", "(⌒‿⌒)", "(^人^)", "(✿◠‿◠)", "(｀▽´)", "(◕‿◕✿)", "(*^ω^*)"],
+    "HANGMAN_EMOJIS": {
+        "REGISTER": "🦅",
+        "REMATCH": "🔄"
+    }
+}
+
 
 # =============================================================================
 # 4. SISTEMA DE MÚSICA (LAVALINK & SOUND CLOUD/SPOTIFY)

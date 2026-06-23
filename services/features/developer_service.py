@@ -7,7 +7,7 @@ from services.core import db_service
 from services.core import lang_service
 from services.repositories.status_repository import StatusRepository
 from services.repositories.user_repository import UserRepository
-from ui import developer_ui
+from ui.admin import developer_ui
 
 logger = logging.getLogger(__name__)
 

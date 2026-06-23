@@ -4,27 +4,31 @@ import random
 import logging
 import aiohttp
 from urllib.parse import urlparse
+from typing import Any, Dict, List, Optional, Union
 
 logger = logging.getLogger(__name__)
 
 class TokenBucket:
-    def __init__(self, capacity: int, fill_rate: float):
+    """Implementa el algoritmo de balde de tokens para limitar tasas de peticiones."""
+    def __init__(self, capacity: int, fill_rate: float) -> None:
         """
-        capacity: Capacidad máxima del balde de tokens.
-        fill_rate: Cantidad de tokens añadidos por segundo.
+        Args:
+            capacity: Capacidad máxima del balde de tokens.
+            fill_rate: Cantidad de tokens añadidos por segundo.
         """
-        self.capacity = capacity
-        self.fill_rate = fill_rate
-        self.tokens = capacity
-        self.last_update = time.monotonic()
-        self.lock = asyncio.Lock()
+        self.capacity: int = capacity
+        self.fill_rate: float = fill_rate
+        self.tokens: float = float(capacity)
+        self.last_update: float = time.monotonic()
+        self.lock: asyncio.Lock = asyncio.Lock()
 
-    async def consume(self, tokens: int = 1):
+    async def consume(self, tokens: int = 1) -> None:
+        """Consume una cantidad de tokens, esperando si no hay suficientes disponibles."""
         async with self.lock:
             now = time.monotonic()
             elapsed = now - self.last_update
             self.last_update = now
-            self.tokens = min(self.capacity, self.tokens + elapsed * self.fill_rate)
+            self.tokens = min(float(self.capacity), self.tokens + elapsed * self.fill_rate)
             
             if self.tokens < tokens:
                 wait_time = (tokens - self.tokens) / self.fill_rate
@@ -32,35 +36,47 @@ class TokenBucket:
                 wait_time += random.uniform(0.01, 0.1)
                 logger.debug(f"Rate limit alcanzado. Esperando {wait_time:.2f}s antes de proceder.")
                 await asyncio.sleep(wait_time)
-                self.tokens = 0
+                self.tokens = 0.0
             else:
                 self.tokens -= tokens
 
 # Limitadores por dominio para no bloquear peticiones de otros servicios
-_LIMITERS = {}
-_SESSION = None
+_LIMITERS: Dict[str, TokenBucket] = {}
+_SESSION: Optional[aiohttp.ClientSession] = None
 
 def get_limiter(domain: str) -> TokenBucket:
+    """Retorna o crea el limitador de tasa para un dominio específico."""
     if domain not in _LIMITERS:
         # Por defecto: Máximo 5 peticiones simultáneas, recupera 0.5 tokens por segundo (1 cada 2 segundos)
         _LIMITERS[domain] = TokenBucket(capacity=5, fill_rate=0.5)
     return _LIMITERS[domain]
 
 async def get_session() -> aiohttp.ClientSession:
+    """Retorna la sesión compartida de aiohttp, creándola si es necesario."""
     global _SESSION
     if _SESSION is None or _SESSION.closed:
         _SESSION = aiohttp.ClientSession()
     return _SESSION
 
-async def close_session():
+async def close_session() -> None:
+    """Cierra la sesión compartida de aiohttp de forma segura."""
     global _SESSION
     if _SESSION and not _SESSION.closed:
         await _SESSION.close()
         _SESSION = None
 
-async def fetch_json(url: str, method: str = "GET", params: dict = None, json_data: dict = None, headers: dict = None, timeout: float = 10.0, max_retries: int = 3, base_delay: float = 2.0) -> dict | list | None:
+async def fetch_json(
+    url: str, 
+    method: str = "GET", 
+    params: Optional[Dict[str, Any]] = None, 
+    json_data: Optional[Dict[str, Any]] = None, 
+    headers: Optional[Dict[str, str]] = None, 
+    timeout: float = 10.0, 
+    max_retries: int = 3, 
+    base_delay: float = 2.0
+) -> Optional[Union[Dict[str, Any], List[Any]]]:
     """
-    Realiza una petición HTTP y retorna el contenido JSON.
+    Realiza una petición HTTP y retorna el contenido JSON decodificado.
     Aplica rate-limiting logic por dominio y exponencial backoff con jitter en caso de error.
     """
     domain = urlparse(url).netloc
