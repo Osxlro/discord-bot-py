@@ -543,7 +543,9 @@ EN = {
     "hangman_multi_end_title": "🏁 Multiplayer Game Over",
     "hangman_multi_end_desc": "The word has been guessed: **{word}**\n\n**Scoreboard:**\n{ranking}",
     "hangman_multi_rematch_title": "🔄 Rematch?",
-    "hangman_multi_rematch_desc": "React with 🔄 in the next 5 seconds to play again with the same configuration.",
-    "hangman_multi_rematch_success": "🔄 Everyone accepted! Starting a new game...",
-    "hangman_multi_rematch_fail": "❌ Not all players accepted the rematch. Game over.",
+    "hangman_multi_rematch_desc": "React with 🔄 in the next 10 seconds to play again with the same configuration.",
+    "hangman_multi_rematch_success": "🔄 Rematch accepted! Starting a new game...",
+    "hangman_multi_rematch_fail": "❌ Rematch declined or timed out.",
+    "hangman_hint_hidden": "Hidden until the last minute",
+    "hangman_hint_revealed_chat": "💡 **Hint:** Letter `{letter}` has been revealed with less than 1 minute remaining.",
 }

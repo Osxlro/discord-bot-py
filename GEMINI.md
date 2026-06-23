@@ -210,6 +210,26 @@ Las consultas a `/images/random` o `/images/{id}` retornan un objeto JSON (o lis
 1. **Omitir Atributos Nulos:** Si `artist_name`, `source_url` o `tags` son nulos o están vacíos en el JSON, no se deben renderizar en el embed (skipear).
 2. **Presentación Visual:** Mostrar la ilustración usando el método `image` del embed (no thumbnail) para que se aprecie a pantalla completa dentro del canal.
 
+
+---
+
+## 🎮 Juego del Ahorcado (`/hangman`)
+
+El bot incluye un módulo interactivo para jugar al Ahorcado, accesible mediante comandos híbridos. Sus características y especificaciones técnicas son:
+
+### ⚙️ Especificaciones de Modos y Temporizadores
+- **Modo SOLO:** Cuenta con un límite de tiempo global de **3 minutos (180s)**.
+- **Modo MULTIPLAYER:** Cuenta con un límite de tiempo global de **5 minutos (300s)** y turnos de 15 segundos por jugador.
+- **Control de Palabras Recientes:** Para evitar repetir palabras, `HangmanService` mantiene un historial en memoria de las últimas 30 palabras jugadas **por servidor (guild)**. Al solicitar una nueva palabra, se filtran las coincidencias.
+- **Pistas Retardadas (Al restar 1 minuto):**
+  - Al iniciar la partida, tanto la pista de definición (`hint`) como la pista de letra inicial (`hint_letter`) se mantienen ocultas. El embed muestra `Oculta hasta el último minuto`.
+  - Cuando el tiempo restante del juego es menor o igual a **60 segundos**, se revela la definición y se elige de forma aleatoria una letra no adivinada aún (`HangmanService.get_initial_hint` filtrando letras ya jugadas) para mostrarla en el tablero y notificarla en el canal de chat.
+
+### 🔄 Flujo Consistente de Revanchas
+- Al finalizar una partida multijugador, se propone una revancha mediante reacciones al emoji `🔄` con un tiempo de espera de **10 segundos**.
+- La revancha se inicia si **al menos uno** de los jugadores originales acepta (reacciona con `🔄`).
+- Al iniciar la revancha, se conserva la lista de participantes de la partida previa y se omite por completo la fase de registro emoji `🦅`, acelerando el inicio de las partidas consecutivas.
+
 ---
 
 ## 🔒 Buenas Prácticas y Seguridad

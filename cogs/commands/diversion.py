@@ -199,7 +199,7 @@ class Diversion(commands.Cog):
             except Exception:
                 pass
                 
-            word_data = await HangmanService.get_word(difficulty, category, lang)
+            word_data = await HangmanService.get_word(difficulty, category, lang, ctx.guild.id if ctx.guild else None)
             if not word_data:
                 self._active_hangman_channels.discard(ctx.channel.id)
                 return await ctx.send(embed=embed_service.error(
@@ -226,33 +226,35 @@ class Diversion(commands.Cog):
         guessed_letters = set()
         guessed_word = ["_" if char.isalpha() else char for char in word]
         
-        # Pista inicial
-        hint_letter = HangmanService.get_initial_hint(normalized_word)
-        if hint_letter:
-            guessed_letters.add(hint_letter)
-            for i, char in enumerate(normalized_word):
-                if char == hint_letter:
-                    guessed_word[i] = word[i]
-                    
-        def make_embed(lives: int, guessed_word: list, hint: str, category: str, guessed_letters: set, hint_letter: str = None) -> discord.Embed:
+        hint_revealed = False
+        hint_letter = None
+        
+        def make_embed(lives: int, guessed_word: list, hint: str, category: str, guessed_letters: set, remaining: float, hint_letter: str = None) -> discord.Embed:
             title = lang_service.get_text("hangman_game_title", lang)
             pic = HANGMAN_PICS[6 - lives]
             word_display = " ".join([f"`{c}`" for c in guessed_word])
             guessed_display = ", ".join([f"`{c.upper()}`" for c in sorted(guessed_letters)]) if guessed_letters else "---"
             
+            if remaining <= 60.0:
+                hint_display = hint
+            else:
+                hint_display = lang_service.get_text("hangman_hint_hidden", lang)
+                
             desc = (
                 f"{pic}\n"
                 f"📝 **{lang_service.get_text('hangman_game_word', lang)}**\n"
                 f"> {word_display}\n\n"
                 f"📋 **Información de la Partida**\n"
                 f"> 📂 **{lang_service.get_text('hangman_game_category', lang)}:** {category.capitalize()}\n"
-                f"> 💡 **{lang_service.get_text('hangman_game_hint', lang)}:** {hint}\n"
-                f"> ❤️ **{lang_service.get_text('hangman_game_lives', lang)}:** {lives} / 6\n\n"
+                f"> 💡 **{lang_service.get_text('hangman_game_hint', lang)}:** {hint_display}\n"
+                f"> ❤️ **{lang_service.get_text('hangman_game_lives', lang)}:** {lives} / 6\n"
+                f"> ⏱️ **Tiempo de Juego:** {max(0, int(remaining))}s restantes\n\n"
                 f"🔠 **{lang_service.get_text('hangman_game_guesses', lang)}**\n"
                 f"> {guessed_display}\n"
             )
             if hint_letter:
-                desc = desc.replace("📋 Información de la Partida", f"💡 **Pista inicial:** `{hint_letter.upper()}`\n\n📋 Información de la Partida")
+                pista_revelada_label = lang_service.get_text("hangman_hint_label", lang)
+                desc = desc.replace("📋 Información de la Partida", f"💡 **{pista_revelada_label}:** `{hint_letter.upper()}`\n\n📋 Información de la Partida")
                 
             desc += f"\n{lang_service.get_text('hangman_game_input_instruction', lang)}"
             return embed_service.fun(title, desc)
@@ -260,7 +262,10 @@ class Diversion(commands.Cog):
         game_view = HangmanGameView(ctx.author, lang, is_solo=True)
         game_view.active_task = asyncio.current_task()
         
-        embed = make_embed(lives, guessed_word, hint, category, guessed_letters, hint_letter)
+        start_time = asyncio.get_event_loop().time()
+        remaining = 180.0
+        
+        embed = make_embed(lives, guessed_word, hint, category, guessed_letters, remaining, None)
         msg = await ctx.send(embed=embed, view=game_view)
         
         def check(m):
@@ -268,10 +273,34 @@ class Diversion(commands.Cog):
             
         try:
             while lives > 0 and "_" in guessed_word:
-                try:
-                    guess_msg = await self.bot.wait_for('message', check=check, timeout=60.0)
-                except asyncio.TimeoutError:
+                elapsed = asyncio.get_event_loop().time() - start_time
+                remaining = 180.0 - elapsed
+                if remaining <= 0:
                     break
+                    
+                # Revelar pista al restar 1 minuto o menos
+                if remaining <= 60.0 and not hint_revealed:
+                    hint_revealed = True
+                    hint_letter = HangmanService.get_initial_hint(normalized_word, guessed_letters)
+                    if hint_letter:
+                        guessed_letters.add(hint_letter)
+                        for i, char in enumerate(normalized_word):
+                            if char == hint_letter:
+                                guessed_word[i] = word[i]
+                        try:
+                            hint_msg_text = lang_service.get_text("hangman_hint_revealed_chat", lang, letter=hint_letter.upper())
+                            await ctx.send(hint_msg_text)
+                        except Exception:
+                            await ctx.send(f"💡 **Pista:** Se ha revelado la letra `{hint_letter.upper()}` al quedar menos de 1 minuto.")
+
+                embed = make_embed(lives, guessed_word, hint, category, guessed_letters, remaining, hint_letter if hint_revealed else None)
+                await msg.edit(embed=embed, view=game_view)
+                
+                timeout_val = min(remaining, 5.0)
+                try:
+                    guess_msg = await self.bot.wait_for('message', check=check, timeout=timeout_val)
+                except asyncio.TimeoutError:
+                    continue
                 
                 try:
                     await guess_msg.delete()
@@ -301,8 +330,19 @@ class Diversion(commands.Cog):
                     else:
                         lives -= 1
                         
-                embed = make_embed(lives, guessed_word, hint, category, guessed_letters, hint_letter)
-                await msg.edit(embed=embed, view=game_view)
+            elapsed = asyncio.get_event_loop().time() - start_time
+            remaining = 180.0 - elapsed
+            if remaining <= 0 and "_" in guessed_word:
+                embed = make_embed(lives, guessed_word, hint, category, guessed_letters, 0.0, hint_letter if hint_revealed else None)
+                try:
+                    await msg.edit(embed=embed, view=None)
+                except Exception:
+                    pass
+                title = lang_service.get_text("hangman_timeout_title", lang)
+                desc = lang_service.get_text("hangman_solo_lose_desc", lang, word=word, coins=0)
+                await ctx.send(embed=embed_service.error(title, desc))
+                return
+
         except asyncio.CancelledError:
             pass
             
@@ -332,42 +372,48 @@ class Diversion(commands.Cog):
             desc = lang_service.get_text("hangman_solo_lose_desc", lang, word=word, coins=coins)
             await ctx.send(embed=embed_service.error(title, desc))
 
-    async def _run_multiplayer_game(self, ctx: commands.Context, word_data: dict, lang: str, difficulty: str, category: str):
-        # 1. Unirse a la partida
-        join_embed = embed_service.fun(
-            lang_service.get_text("hangman_multi_join_title", lang),
-            lang_service.get_text("hangman_multi_join_desc", lang, time=10)
-        )
-        join_msg = await ctx.send(embed=join_embed)
-        await join_msg.add_reaction("🦅")
-        
-        await asyncio.sleep(10.0)
-        
-        try:
-            join_msg = await ctx.channel.fetch_message(join_msg.id)
-            reaction = discord.utils.get(join_msg.reactions, emoji="🦅")
-        except Exception:
-            reaction = None
+    async def _run_multiplayer_game(self, ctx: commands.Context, word_data: dict, lang: str, difficulty: str, category: str, players: list = None):
+        # 1. Unirse a la partida (solo si no se proveen ya los jugadores de una ronda previa)
+        if players is None:
+            join_embed = embed_service.fun(
+                lang_service.get_text("hangman_multi_join_title", lang),
+                lang_service.get_text("hangman_multi_join_desc", lang, time=10)
+            )
+            join_msg = await ctx.send(embed=join_embed)
+            await join_msg.add_reaction("🦅")
             
-        players = []
-        if reaction:
-            async for user in reaction.users():
-                if not user.bot:
-                    players.append(user)
-                    
-        if len(players) < 2:
+            await asyncio.sleep(10.0)
+            
             try:
-                await join_msg.edit(embed=embed_service.error(
-                    lang_service.get_text("title_error", lang),
-                    lang_service.get_text("hangman_multi_no_players", lang)
-                ))
+                join_msg = await ctx.channel.fetch_message(join_msg.id)
+                reaction = discord.utils.get(join_msg.reactions, emoji="🦅")
             except Exception:
-                await ctx.send(embed=embed_service.error(
-                    lang_service.get_text("title_error", lang),
-                    lang_service.get_text("hangman_multi_no_players", lang)
-                ))
-            return
-            
+                reaction = None
+                
+            players = []
+            if reaction:
+                async for user in reaction.users():
+                    if not user.bot:
+                        players.append(user)
+                        
+            if len(players) < 2:
+                try:
+                    await join_msg.edit(embed=embed_service.error(
+                        lang_service.get_text("title_error", lang),
+                        lang_service.get_text("hangman_multi_no_players", lang)
+                    ))
+                except Exception:
+                    await ctx.send(embed=embed_service.error(
+                        lang_service.get_text("title_error", lang),
+                        lang_service.get_text("hangman_multi_no_players", lang)
+                    ))
+                return
+                
+            try:
+                await join_msg.delete()
+            except Exception:
+                pass
+        
         # 2. Loop del juego
         word = word_data["word"]
         normalized_word = word_data["normalized_word"]
@@ -380,29 +426,29 @@ class Diversion(commands.Cog):
         guessed_letters = set()
         guessed_word = ["_" if char.isalpha() else char for char in word]
         
-        # Pista inicial
-        hint_letter = HangmanService.get_initial_hint(normalized_word)
-        if hint_letter:
-            guessed_letters.add(hint_letter)
-            for i, char in enumerate(normalized_word):
-                if char == hint_letter:
-                    guessed_word[i] = word[i]
-                    
+        hint_revealed = False
+        hint_letter = None
+        
         def make_multi_embed(current_player, elapsed_time: float, guessed_word: list, hint: str, category: str, guessed_letters: set, hint_letter: str = None) -> discord.Embed:
             title = lang_service.get_text("hangman_game_title", lang)
             word_display = " ".join([f"`{c}`" for c in guessed_word])
             guessed_display = ", ".join([f"`{c.upper()}`" for c in sorted(guessed_letters)]) if guessed_letters else "---"
             
-            # Ordenar ranking
             scores_display = "\n".join([f"> **{player_names[pid]}:** {pts} pts" for pid, pts in sorted(scores.items(), key=lambda x: x[1], reverse=True)])
             
+            remaining = max(0.0, 300.0 - elapsed_time)
+            if remaining <= 60.0:
+                hint_display = hint
+            else:
+                hint_display = lang_service.get_text("hangman_hint_hidden", lang)
+                
             desc = (
                 f"📝 **{lang_service.get_text('hangman_game_word', lang)}**\n"
                 f"> {word_display}\n\n"
                 f"📋 **Información de la Partida**\n"
                 f"> 📂 **{lang_service.get_text('hangman_game_category', lang)}:** {category.capitalize()}\n"
-                f"> 💡 **{lang_service.get_text('hangman_game_hint', lang)}:** {hint}\n"
-                f"> ⏱️ **Tiempo de Juego:** {max(0, int(300 - elapsed_time))}s restantes\n\n"
+                f"> 💡 **{lang_service.get_text('hangman_game_hint', lang)}:** {hint_display}\n"
+                f"> ⏱️ **Tiempo de Juego:** {int(remaining)}s restantes\n\n"
                 f"🔠 **{lang_service.get_text('hangman_game_guesses', lang)}**\n"
                 f"> {guessed_display}\n\n"
                 f"🏆 **Puntajes**\n"
@@ -411,41 +457,54 @@ class Diversion(commands.Cog):
                 f"💡 {lang_service.get_text('hangman_multi_turn_time', lang)}"
             )
             if hint_letter:
-                desc = desc.replace("📋 Información de la Partida", f"💡 **Pista inicial:** `{hint_letter.upper()}`\n\n📋 Información de la Partida")
+                pista_revelada_label = lang_service.get_text("hangman_hint_label", lang)
+                desc = desc.replace("📋 Información de la Partida", f"💡 **{pista_revelada_label}:** `{hint_letter.upper()}`\n\n📋 Información de la Partida")
                 
             return embed_service.fun(title, desc)
             
         start_time = asyncio.get_event_loop().time()
         current_player_idx = 0
         
-        try:
-            await join_msg.delete()
-        except Exception:
-            pass
-            
-        game_msg = await ctx.send(embed=make_multi_embed(players[0], 0, guessed_word, hint, word_category, guessed_letters, hint_letter))
+        game_msg = await ctx.send(embed=make_multi_embed(players[0], 0, guessed_word, hint, word_category, guessed_letters, None))
         
         while "_" in guessed_word:
             elapsed = asyncio.get_event_loop().time() - start_time
-            if elapsed >= 300.0:
+            remaining = 300.0 - elapsed
+            if remaining <= 0:
                 await ctx.send(embed=embed_service.warning(
                     lang_service.get_text("hangman_multi_global_timeout", lang),
                     f"La palabra era: **{word}**"
                 ))
                 break
                 
+            # Revelar pista si queda 1 minuto o menos
+            if remaining <= 60.0 and not hint_revealed:
+                hint_revealed = True
+                hint_letter = HangmanService.get_initial_hint(normalized_word, guessed_letters)
+                if hint_letter:
+                    guessed_letters.add(hint_letter)
+                    for i, char in enumerate(normalized_word):
+                        if char == hint_letter:
+                            guessed_word[i] = word[i]
+                    try:
+                        hint_msg_text = lang_service.get_text("hangman_hint_revealed_chat", lang, letter=hint_letter.upper())
+                        await ctx.send(hint_msg_text)
+                    except Exception:
+                        await ctx.send(f"💡 **Pista:** Se ha revelado la letra `{hint_letter.upper()}` al quedar menos de 1 minuto.")
+
             current_player = players[current_player_idx]
             
             try:
-                await game_msg.edit(embed=make_multi_embed(current_player, elapsed, guessed_word, hint, word_category, guessed_letters, hint_letter))
+                await game_msg.edit(embed=make_multi_embed(current_player, elapsed, guessed_word, hint, word_category, guessed_letters, hint_letter if hint_revealed else None))
             except Exception:
                 pass
                 
             def check_multi(m):
                 return m.author.id == current_player.id and m.channel.id == ctx.channel.id and len(m.content.strip()) > 0
                 
+            turn_timeout = min(remaining, 15.0)
             try:
-                guess_msg = await self.bot.wait_for('message', check=check_multi, timeout=15.0)
+                guess_msg = await self.bot.wait_for('message', check=check_multi, timeout=turn_timeout)
                 try:
                     await guess_msg.delete()
                 except Exception:
@@ -503,7 +562,8 @@ class Diversion(commands.Cog):
         rematch_msg = await ctx.send(embed=rematch_embed)
         await rematch_msg.add_reaction("🔄")
         
-        await asyncio.sleep(5.0)
+        # Esperar 10 segundos para la revancha
+        await asyncio.sleep(10.0)
         
         try:
             rematch_msg = await ctx.channel.fetch_message(rematch_msg.id)
@@ -517,23 +577,26 @@ class Diversion(commands.Cog):
                 if not user.bot:
                     accepted_players.add(user.id)
                     
-        all_accepted = all(p.id in accepted_players for p in players)
+        # Revancha aceptada si al menos uno de los participantes originales reacciona
+        any_accepted = any(p.id in accepted_players for p in players)
         
-        if all_accepted:
+        if any_accepted:
             await ctx.send(embed=embed_service.success(
                 lang_service.get_text("title_success", lang),
                 lang_service.get_text("hangman_multi_rematch_success", lang)
             ))
             
-            word_data_new = await HangmanService.get_word(difficulty, category, lang)
+            word_data_new = await HangmanService.get_word(difficulty, category, lang, ctx.guild.id if ctx.guild else None)
             if word_data_new:
-                await self._run_multiplayer_game(ctx, word_data_new, lang, difficulty, category)
+                # Volver a ejecutar el juego conservando los jugadores que jugaron (sin registrarse de nuevo)
+                await self._run_multiplayer_game(ctx, word_data_new, lang, difficulty, category, players=players)
         else:
             await ctx.send(embed=embed_service.error(
                 lang_service.get_text("title_error", lang),
                 lang_service.get_text("hangman_multi_rematch_fail", lang),
                 lite=True
             ))
+
 
 async def setup(bot: commands.Bot):
     """Función de entrada para cargar el Cog en el bot."""
