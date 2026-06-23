@@ -20,9 +20,7 @@ def normalize_word(word: str) -> str:
     word = word.lower().strip()
     result = []
     for char in word:
-        if char == 'ñ':
-            result.append('ñ')
-        elif char == 'Ñ':
+        if char in ('ñ', 'Ñ'):
             result.append('ñ')
         else:
             # Descomponer caracteres con acentos
@@ -44,11 +42,14 @@ async def translate_safe(text: str, target_lang: str) -> str:
         return text
 
 class HangmanService:
+    # Historial de palabras usadas recientemente, organizadas por ID de servidor (guild_id)
+    _recently_used_words = {}
+
     @classmethod
-    async def get_word(cls, difficulty: str, category: str, lang: str) -> dict | None:
+    async def get_word(cls, difficulty: str, category: str, lang: str, guild_id: int | None = None) -> dict | None:
         """
         Obtiene una palabra de la API, la traduce al idioma del servidor si es necesario,
-        y genera sus versiones normalizadas.
+        y genera sus versiones normalizadas, evitando repetir palabras recientemente jugadas en el servidor.
         """
         difficulty = difficulty.lower()
         category = category.lower()
@@ -69,7 +70,18 @@ class HangmanService:
         if not words:
             return None
             
-        word_data = random.choice(words)
+        # Filtrar por palabras usadas recientemente en esta guild
+        guild_key = guild_id or 0
+        if guild_key not in cls._recently_used_words:
+            cls._recently_used_words[guild_key] = []
+        recent_list = cls._recently_used_words[guild_key]
+        
+        filtered_words = [w for w in words if normalize_word(w["word"]) not in recent_list]
+        if not filtered_words:
+            logger.info(f"Todas las palabras disponibles de la API fueron usadas recientemente en guild {guild_key}. Ignorando filtro temporalmente.")
+            filtered_words = words
+            
+        word_data = random.choice(filtered_words)
         original_word = word_data["word"]
         original_hint = word_data.get("hint", "No hint available.")
         
@@ -85,6 +97,13 @@ class HangmanService:
         translated_word = translated_word.strip()
         normalized_word = normalize_word(translated_word)
         
+        # Guardar en el historial de esta guild
+        norm_chosen = normalize_word(translated_word)
+        if norm_chosen not in recent_list:
+            recent_list.append(norm_chosen)
+            if len(recent_list) > 30:
+                recent_list.pop(0)
+                
         return {
             "original_word": original_word,
             "original_hint": original_hint,
@@ -95,10 +114,14 @@ class HangmanService:
         }
 
     @staticmethod
-    def get_initial_hint(word_normalized: str) -> str:
-        """Retorna una letra al azar de la palabra como pista inicial."""
-        # Filtrar caracteres que sean letras reales (evitar espacios, guiones)
+    def get_initial_hint(word_normalized: str, guessed_letters: set = None) -> str:
+        """
+        Retorna una letra al azar de la palabra como pista inicial,
+        excluyendo aquellas letras que ya hayan sido adivinadas (si se especifican).
+        """
         letters = [c for c in word_normalized if c.isalpha()]
+        if guessed_letters:
+            letters = [c for c in letters if c not in guessed_letters]
         if not letters:
             return ""
         return random.choice(letters)

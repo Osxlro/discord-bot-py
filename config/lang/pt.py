@@ -543,7 +543,9 @@ PT = {
     "hangman_multi_end_title": "🏁 Fim da Partida Multijogador",
     "hangman_multi_end_desc": "A palavra foi adivinhada: **{word}**\n\n**Tabela de Pontos:**\n{ranking}",
     "hangman_multi_rematch_title": "🔄 Revanche?",
-    "hangman_multi_rematch_desc": "Reajam todos os participantes com 🔄 nos próximos 5 segundos para jogar outra partida com a mesma configuração.",
-    "hangman_multi_rematch_success": "🔄 Todos aceitaram! Iniciando nova partida...",
-    "hangman_multi_rematch_fail": "❌ Nem todos os jogadores aceitaram a revanche. Fim de jogo.",
+    "hangman_multi_rematch_desc": "Reajam os participantes com 🔄 nos próximos 10 segundos para jogar outra partida com a mesma configuração.",
+    "hangman_multi_rematch_success": "🔄 Revanche aceita! Iniciando uma nova partida...",
+    "hangman_multi_rematch_fail": "❌ Revanche recusada ou tempo limite expirado.",
+    "hangman_hint_hidden": "Oculto até o último minuto",
+    "hangman_hint_revealed_chat": "💡 **Dica:** A letra `{letter}` foi revelada com menos de 1 minuto restante.",
 }
