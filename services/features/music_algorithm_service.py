@@ -257,9 +257,9 @@ class RecommendationEngine:
         # --- ESTRATEGIA 2: HEURÍSTICA ---
         artist_streak = self._get_artist_streak(history, author)
         provider = settings.LAVALINK_CONFIG.get("SEARCH_PROVIDER", "ytsearch")
-        queries = self._get_heuristic_queries(provider, author, title, seed_styles, artist_streak)
+        queries = self._get_heuristic_queries(author, title, seed_styles, artist_streak)
         
-        candidates = await self._fetch_candidates(queries)
+        candidates = await self._fetch_candidates(queries, provider)
 
         scored = []
         for track in candidates:
@@ -276,7 +276,7 @@ class RecommendationEngine:
         provider = settings.LAVALINK_CONFIG.get("SEARCH_PROVIDER", "ytsearch")
         # Limitar búsquedas simultáneas a los top 3 recomendados de Spotify
         recs_to_search = data["recs"][:3]
-        tasks = [wavelink.Playable.search(f"{provider}:{rec}") for rec in recs_to_search]
+        tasks = [wavelink.Playable.search(rec, source=provider) for rec in recs_to_search]
         results = await asyncio.gather(*tasks, return_exceptions=True)
         
         candidates = [res[0] for res in results if isinstance(res, list) and res and res[0].identifier not in played_ids]
@@ -293,25 +293,25 @@ class RecommendationEngine:
             else: break
         return streak
 
-    def _get_heuristic_queries(self, provider, author, title, styles, streak):
+    def _get_heuristic_queries(self, author, title, styles, streak):
         clean = music_service.clean_track_title(title)
         queries = [
-            f"{provider}:{clean} {author} mix",
-            f"{provider}:{author} {'radio' if streak >= 2 else 'top tracks'}"
+            f"{clean} {author} mix",
+            f"{author} {'radio' if streak >= 2 else 'top tracks'}"
         ]
         
         peers = self._get_related_known_artists(author)
         if peers:
             p = random.choice(peers)
-            queries.append(f"{provider}:{p} top hits")
+            queries.append(f"{p} top hits")
             
         if styles:
-            queries.append(f"{provider}:{clean} {' '.join(styles)} similar")
+            queries.append(f"{clean} {' '.join(styles)} similar")
             
         return queries
 
-    async def _fetch_candidates(self, queries):
-        tasks = [wavelink.Playable.search(q) for q in queries]
+    async def _fetch_candidates(self, queries, provider):
+        tasks = [wavelink.Playable.search(q, source=provider) for q in queries]
         results = await asyncio.gather(*tasks, return_exceptions=True)
         candidates = []
         for res in results:
@@ -351,6 +351,6 @@ class RecommendationEngine:
         
         try:
             p = settings.LAVALINK_CONFIG.get("SEARCH_PROVIDER", "spsearch")
-            res = await wavelink.Playable.search(f"{p}:{random.choice(['lofi hip hop', 'chill mix'])}")
+            res = await wavelink.Playable.search(random.choice(['lofi hip hop', 'chill mix']), source=p)
             return res[0] if res else None
         except Exception: return None

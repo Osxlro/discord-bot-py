@@ -131,7 +131,7 @@ async def handle_play_search(busqueda: str) -> wavelink.Playable | wavelink.Play
     for source in sources:
         try:
             logger.debug(f"🔎 [Music Service] Intentando fuente: {source}")
-            tracks = await wavelink.Playable.search(f"{source}:{busqueda}")
+            tracks = await wavelink.Playable.search(busqueda, source=source)
             if tracks:
                 logger.debug(f"✅ [Music Service] Búsqueda exitosa en {source} ({len(tracks) if isinstance(tracks, list) else 'Playlist'} resultados)")
                 return tracks
@@ -151,8 +151,8 @@ async def handle_track_fallback(player: wavelink.Player, track: wavelink.Playabl
     
     try:
         clean_name = clean_track_title(track.title)
-        query = f"{fallback_provider}:{clean_name} {track.author}"
-        tracks = await wavelink.Playable.search(query)
+        query = f"{clean_name} {track.author}"
+        tracks = await wavelink.Playable.search(query, source=fallback_provider)
         
         if tracks:
             new_track = tracks[0]
@@ -212,7 +212,7 @@ async def get_search_choices(current: str) -> list[app_commands.Choice[str]]:
         
         for source in sources:
             try:
-                tracks = await wavelink.Playable.search(f"{source}:{current}")
+                tracks = await wavelink.Playable.search(current, source=source)
                 if tracks:
                     logger.debug(f"🔎 [Music Service] Autocompletado resuelto vía: {source}")
                     break
