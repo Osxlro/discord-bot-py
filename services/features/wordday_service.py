@@ -69,12 +69,9 @@ async def get_daily_phrase(session: aiohttp.ClientSession):
 
 async def post_wordday(bot: discord.Client):
     """Envía la frase del día a todos los servidores configurados."""
-    session = getattr(bot, "session", None)
-    if session:
-        phrases = await get_daily_phrase(session)
-    else:
-        async with aiohttp.ClientSession() as session:
-            phrases = await get_daily_phrase(session)
+    from services.utils import http_client
+    session = await http_client.get_session()
+    phrases = await get_daily_phrase(session)
     
     # Semáforo para limitar concurrencia y no saturar la API de Discord
     sem = asyncio.Semaphore(10) 

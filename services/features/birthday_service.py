@@ -37,6 +37,9 @@ async def notify_guild_birthdays(guild: discord.Guild, users_rows: list):
     for row in users_rows:
         member = guild.get_member(row['user_id'])
         if not member:
+            if guild.chunked:
+                # Si la guild ya tiene todos los miembros en caché, get_member es definitivo.
+                continue
             try:
                 member = await guild.fetch_member(row['user_id'])
             except discord.HTTPException:

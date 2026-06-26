@@ -39,17 +39,13 @@ class RecommendationEngine:
         self._skip_tracker = {} # guild_id: {genre: count}
 
     async def _get_session(self) -> aiohttp.ClientSession:
-        """Obtiene o crea una sesión persistente para peticiones HTTP."""
-        if self._session is None or self._session.closed:
-            # TCPConnector optimiza el reuso de conexiones y evita fugas de sockets
-            connector = aiohttp.TCPConnector(limit=0, ttl_dns_cache=300)
-            self._session = aiohttp.ClientSession(connector=connector)
-        return self._session
+        """Obtiene la sesión compartida global."""
+        from services.utils import http_client
+        return await http_client.get_session()
 
     async def close(self):
-        """Cierra la sesión de aiohttp de forma segura."""
-        if self._session and not self._session.closed:
-            await self._session.close()
+        """No hace nada, la sesión compartida se cierra globalmente en main.py."""
+        pass
 
     async def _request(self, method: str, url: str, **kwargs) -> dict | None:
         """Realiza una petición HTTP genérica con manejo de errores y reintentos."""

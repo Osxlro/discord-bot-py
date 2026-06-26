@@ -4,6 +4,7 @@ import xml.etree.ElementTree as ET
 import logging
 from services.core import db_service
 from services.repositories.stream_alert_repository import StreamAlertRepository
+from services.utils import http_client
 
 logger = logging.getLogger(__name__)
 
@@ -84,29 +85,29 @@ async def resolve_youtube_channel_id(handle: str) -> str | None:
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
     }
-    async with aiohttp.ClientSession() as session:
-        try:
-            async with session.get(url, headers=headers, timeout=10) as resp:
-                if resp.status != 200:
-                    return None
-                html = await resp.text()
-                
-                # Intentar método 1: Meta etiqueta de channelId
-                match = re.search(r'<meta itemprop="channelId" content="(UC[^"]+)"', html)
-                if match:
-                    return match.group(1)
-                
-                # Intentar método 2: RSS feed link
-                match = re.search(r'href="https://www.youtube.com/feeds/videos.xml\?channel_id=(UC[^"]+)"', html)
-                if match:
-                    return match.group(1)
-                
-                # Intentar método 3: JSON interno ytInitialData
-                match = re.search(r'"channelId":"(UC[^"]+)"', html)
-                if match:
-                    return match.group(1)
-        except Exception as e:
-            logger.error(f"Error en resolve_youtube_channel_id para {handle}: {e}")
+    try:
+        session = await http_client.get_session()
+        async with session.get(url, headers=headers, timeout=10) as resp:
+            if resp.status != 200:
+                return None
+            html = await resp.text()
+            
+            # Intentar método 1: Meta etiqueta de channelId
+            match = re.search(r'<meta itemprop="channelId" content="(UC[^"]+)"', html)
+            if match:
+                return match.group(1)
+            
+            # Intentar método 2: RSS feed link
+            match = re.search(r'href="https://www.youtube.com/feeds/videos.xml\?channel_id=(UC[^"]+)"', html)
+            if match:
+                return match.group(1)
+            
+            # Intentar método 3: JSON interno ytInitialData
+            match = re.search(r'"channelId":"(UC[^"]+)"', html)
+            if match:
+                return match.group(1)
+    except Exception as e:
+        logger.error(f"Error en resolve_youtube_channel_id para {handle}: {e}")
             
     return None
 
@@ -115,30 +116,30 @@ async def check_youtube_feed(channel_id: str) -> dict | None:
     Consulta el feed RSS público de un canal de YouTube y devuelve el último video si existe.
     """
     url = f"https://www.youtube.com/feeds/videos.xml?channel_id={channel_id}"
-    async with aiohttp.ClientSession() as session:
-        try:
-            async with session.get(url, timeout=10) as resp:
-                if resp.status != 200:
-                    return None
-                xml_data = await resp.read()
-                
-                root = ET.fromstring(xml_data)
-                entry = root.find('atom:entry', YT_NAMESPACES)
-                if entry is None:
-                    return None
-                
-                video_id = entry.find('yt:videoId', YT_NAMESPACES).text
-                title = entry.find('atom:title', YT_NAMESPACES).text
-                author = entry.find('atom:author/atom:name', YT_NAMESPACES).text
-                link = entry.find('atom:link', YT_NAMESPACES).attrib.get('href')
-                
-                return {
-                    "video_id": video_id,
-                    "title": title,
-                    "author": author,
-                    "link": link
-                }
-        except Exception as e:
-            logger.error(f"Error consultando feed RSS de YouTube para {channel_id}: {e}")
+    try:
+        session = await http_client.get_session()
+        async with session.get(url, timeout=10) as resp:
+            if resp.status != 200:
+                return None
+            xml_data = await resp.read()
+            
+            root = ET.fromstring(xml_data)
+            entry = root.find('atom:entry', YT_NAMESPACES)
+            if entry is None:
+                return None
+            
+            video_id = entry.find('yt:videoId', YT_NAMESPACES).text
+            title = entry.find('atom:title', YT_NAMESPACES).text
+            author = entry.find('atom:author/atom:name', YT_NAMESPACES).text
+            link = entry.find('atom:link', YT_NAMESPACES).attrib.get('href')
+            
+            return {
+                "video_id": video_id,
+                "title": title,
+                "author": author,
+                "link": link
+            }
+    except Exception as e:
+        logger.error(f"Error consultando feed RSS de YouTube para {channel_id}: {e}")
             
     return None
