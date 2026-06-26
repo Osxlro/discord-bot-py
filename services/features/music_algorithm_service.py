@@ -276,7 +276,7 @@ class RecommendationEngine:
             provider = "ytsearch"
         # Limitar búsquedas simultáneas a los top 3 recomendados de Spotify
         recs_to_search = data["recs"][:3]
-        tasks = [wavelink.Playable.search(rec, source=provider) for rec in recs_to_search]
+        tasks = [music_service.safe_search(rec, source=provider) for rec in recs_to_search]
         results = await asyncio.gather(*tasks, return_exceptions=True)
         
         candidates = [res[0] for res in results if isinstance(res, list) and res and res[0].identifier not in played_ids]
@@ -311,7 +311,7 @@ class RecommendationEngine:
         return queries
 
     async def _fetch_candidates(self, queries, provider):
-        tasks = [wavelink.Playable.search(q, source=provider) for q in queries]
+        tasks = [music_service.safe_search(q, source=provider) for q in queries]
         results = await asyncio.gather(*tasks, return_exceptions=True)
         candidates = []
         for res in results:
@@ -353,6 +353,6 @@ class RecommendationEngine:
             p = settings.LAVALINK_CONFIG.get("SEARCH_PROVIDER", "ytsearch")
             if p == "spsearch":
                 p = "ytsearch"
-            res = await wavelink.Playable.search(random.choice(['lofi hip hop', 'chill mix']), source=p)
+            res = await music_service.safe_search(random.choice(['lofi hip hop', 'chill mix']), source=p)
             return res[0] if res else None
         except Exception: return None

@@ -2,6 +2,7 @@ import logging
 import asyncio
 import discord
 import re
+import string
 import wavelink
 from discord import app_commands
 from config import settings
@@ -138,6 +139,47 @@ async def _handle_track_enqueue(ctx, player, tracks, lang):
         msg = lang_service.get_text("music_track_enqueued", lang, title=track.title)
         await ctx.send(embed=embed_service.success(lang_service.get_text("music_queue_title", lang), msg, lite=True))
 
+async def safe_search(query: str, source: str = None, node: wavelink.Node = None) -> list[wavelink.Playable] | wavelink.Playlist | None:
+    """
+    Realiza una búsqueda de canciones en Lavalink de forma resiliente.
+    Si el nodo por defecto falla (ej. 429/403), intenta secuencialmente en los demás nodos conectados.
+    """
+    if not wavelink.Pool.nodes:
+        logger.error("❌ [Music Service] No hay nodos en el Pool de Lavalink.")
+        return []
+
+    # 1. Si se solicita un nodo específico, buscar directamente en ese nodo
+    if node:
+        try:
+            return await wavelink.Playable.search(query, source=source, node=node)
+        except Exception as e:
+            logger.warning(f"⚠️ [Music Service] Búsqueda falló en nodo específico solicitado ({node.identifier}): {e}")
+            return []
+
+    # 2. Intento de búsqueda normal (Wavelink autoelegirá el nodo por defecto)
+    try:
+        res = await wavelink.Playable.search(query, source=source)
+        if res:
+            return res
+    except Exception as e:
+        logger.warning(f"⚠️ [Music Service] Búsqueda por defecto falló: {e}. Intentando nodos de respaldo secuencialmente...")
+
+    # 3. Si falla la búsqueda general, rotamos manualmente sobre todos los nodos conectados
+    connected_nodes = [n for n in wavelink.Pool.nodes.values() if n.status == wavelink.NodeStatus.CONNECTED]
+    for n in connected_nodes:
+        try:
+            logger.debug(f"🔎 [Music Service] Intentando búsqueda de respaldo en nodo: {n.identifier}")
+            res = await wavelink.Playable.search(query, source=source, node=n)
+            if res:
+                logger.info(f"✅ [Music Service] Búsqueda exitosa en nodo de respaldo: {n.identifier}")
+                return res
+        except Exception as node_err:
+            logger.warning(f"⚠️ [Music Service] Búsqueda falló en el nodo {n.identifier}: {node_err}")
+            continue
+
+    logger.error("❌ [Music Service] Todos los nodos fallaron la búsqueda.")
+    return []
+
 async def handle_play_search(busqueda: str) -> wavelink.Playable | wavelink.Playlist | None:
     """Encapsula la lógica de búsqueda con fallback para el comando play."""
     if busqueda.startswith("<") and busqueda.endswith(">"):
@@ -146,15 +188,15 @@ async def handle_play_search(busqueda: str) -> wavelink.Playable | wavelink.Play
     logger.debug(f"🔎 [Music Service] Buscando: {busqueda}")
     if re.match(r'https?://(?:www\.)?.+', busqueda):
         logger.debug("🔎 [Music Service] URL detectada. Buscando directamente...")
-        return await wavelink.Playable.search(busqueda)
+        return await safe_search(busqueda)
 
-    primary = settings.LAVALINK_CONFIG.get("SEARCH_PROVIDER", "spsearch")
+    primary = settings.LAVALINK_CONFIG.get("SEARCH_PROVIDER", "ytsearch")
     sources = list(dict.fromkeys([primary, "ytsearch", "scsearch"]))
     
     for source in sources:
         try:
             logger.debug(f"🔎 [Music Service] Intentando fuente: {source}")
-            tracks = await wavelink.Playable.search(busqueda, source=source)
+            tracks = await safe_search(busqueda, source=source)
             if tracks:
                 logger.debug(f"✅ [Music Service] Búsqueda exitosa en {source} ({len(tracks) if isinstance(tracks, list) else 'Playlist'} resultados)")
                 return tracks
@@ -175,7 +217,7 @@ async def handle_track_fallback(player: wavelink.Player, track: wavelink.Playabl
     try:
         clean_name = clean_track_title(track.title)
         query = f"{clean_name} {track.author}"
-        tracks = await wavelink.Playable.search(query, source=fallback_provider)
+        tracks = await safe_search(query, source=fallback_provider)
         
         if tracks:
             new_track = tracks[0]
@@ -224,23 +266,40 @@ async def save_player_state(player: wavelink.Player):
 
 async def get_search_choices(current: str) -> list[app_commands.Choice[str]]:
     """Genera opciones para el autocompletado de búsqueda."""
-    if not wavelink.Pool.nodes or not current:
+    if not wavelink.Pool.nodes:
         return []
+        
+    current_clean = current.strip()
+    if not current_clean:
+        return []
+
+    # Si consiste solo de símbolos / signos de puntuación, o es muy corto, no hacemos petición de red
+    # para evitar sobrecargar a Lavalink y acelerar rate limits (429)
+    all_chars_are_symbols = all(c in string.punctuation or c.isspace() for c in current_clean)
+    if len(current_clean) < 3 or all_chars_are_symbols:
+        # Sugerencias rápidas estáticas de UX
+        sugerencias = ["Lofi hip hop", "Chill mix", "Pop hits", "Rock classic", "Electronic dance"]
+        filtradas = [s for s in sugerencias if s.lower().startswith(current_clean.lower())]
+        if not filtradas:
+            filtradas = sugerencias[:3]
+        return [app_commands.Choice(name=f"💡 Sugerencia: {s}", value=s) for s in filtradas]
+
     try:
-        primary = settings.LAVALINK_CONFIG.get("SEARCH_PROVIDER", "spsearch")
+        primary = settings.LAVALINK_CONFIG.get("SEARCH_PROVIDER", "ytsearch")
+        if primary == "spsearch":
+            primary = "ytsearch"
         sources = [primary, "ytsearch", "scsearch"]
         sources = list(dict.fromkeys(sources))
         
         tracks = []
-        
         for source in sources:
             try:
-                tracks = await wavelink.Playable.search(current, source=source)
+                tracks = await safe_search(current_clean, source=source)
                 if tracks:
                     logger.debug(f"🔎 [Music Service] Autocompletado resuelto vía: {source}")
                     break
                 else:
-                    logger.debug(f"⚠️ [Music Service] {source} no devolvió resultados para '{current}'")
+                    logger.debug(f"⚠️ [Music Service] {source} no devolvió resultados para '{current_clean}'")
             except Exception as e:
                 logger.debug(f"⚠️ [Music Service] Autocompletado falló para fuente {source}: {e}")
                 continue

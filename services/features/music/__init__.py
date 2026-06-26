@@ -30,5 +30,7 @@ from .playback_service import (
     handle_track_fallback,
     get_music_error_message,
     save_player_state,
-    get_search_choices
+    get_search_choices,
+    safe_search
 )
+
