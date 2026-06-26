@@ -11,6 +11,7 @@ from services.features.music import queue_service
 logger = logging.getLogger(__name__)
 
 _next_connection_node = None
+_connect_lock = asyncio.Lock()
 
 class BotPlayer(wavelink.Player):
     def __init__(self, *args, **kwargs):
@@ -242,35 +243,60 @@ async def connect_nodes(bot):
     """Configura y conecta a los nodos de Lavalink."""
     await bot.wait_until_ready()
     
-    node_configs = settings.LAVALINK_CONFIG.get("NODES", [])
-    if not node_configs and "HOST" in settings.LAVALINK_CONFIG:
-        node_configs = [settings.LAVALINK_CONFIG]
+    async with _connect_lock:
+        node_configs = settings.LAVALINK_CONFIG.get("NODES", [])
+        if not node_configs and "HOST" in settings.LAVALINK_CONFIG:
+            node_configs = [settings.LAVALINK_CONFIG]
 
-    if not node_configs:
-        logger.error("❌ [Music Service] No se encontraron nodos de Lavalink en la configuración.")
-        return
+        if not node_configs:
+            logger.error("❌ [Music Service] No se encontraron nodos de Lavalink en la configuración.")
+            return
 
-    nodes = []
-    for config in node_configs:
+        nodes_to_connect = []
+        for config in node_configs:
+            identifier = config.get("IDENTIFIER", config["HOST"])
+            
+            # Si el nodo ya está registrado en el Pool
+            if wavelink.Pool.nodes and identifier in wavelink.Pool.nodes:
+                existing_node = wavelink.Pool.nodes[identifier]
+                if existing_node.status == wavelink.NodeStatus.DISCONNECTED:
+                    logger.info(f"🔄 Intentando reconectar nodo existente de Lavalink: {identifier}")
+                    try:
+                        await existing_node._connect(client=bot)
+                    except Exception as e:
+                        logger.error(f"❌ Error al reconectar nodo {identifier}: {e}")
+                else:
+                    logger.debug(f"ℹ️ El nodo {identifier} ya está registrado y en estado {existing_node.status}.")
+                continue
+            
+            # Si no está registrado, se configura e intenta conectar
+            try:
+                protocol = "https" if config.get("SECURE") else "http"
+                node = wavelink.Node(
+                    identifier=identifier,
+                    uri=f"{protocol}://{config['HOST']}:{config['PORT']}",
+                    password=config['PASSWORD']
+                )
+                nodes_to_connect.append(node)
+            except Exception as e:
+                logger.error(f"❌ Error configurando nodo {identifier}: {e}")
+
+        if not nodes_to_connect:
+            return
+
         try:
-            protocol = "https" if config.get("SECURE") else "http"
-            node = wavelink.Node(
-                identifier=config.get("IDENTIFIER", config["HOST"]),
-                uri=f"{protocol}://{config['HOST']}:{config['PORT']}",
-                password=config['PASSWORD']
-            )
-            nodes.append(node)
+            await wavelink.Pool.connect(nodes=nodes_to_connect, client=bot, cache_capacity=settings.LAVALINK_CONFIG.get("CACHE_CAPACITY", 100))
         except Exception as e:
-            logger.error(f"❌ Error configurando nodo {config.get('IDENTIFIER', config.get('HOST'))}: {e}")
-
-    if not nodes:
-        logger.error("❌ No se pudieron configurar nodos de Lavalink válidos.")
-        return
-
-    try:
-        await wavelink.Pool.connect(nodes=nodes, client=bot, cache_capacity=settings.LAVALINK_CONFIG.get("CACHE_CAPACITY", 100))
-    except Exception as e:
-        logger.exception(f"❌ Error fatal al conectar con los nodos de Lavalink: {e}")
+            logger.exception(f"❌ Error fatal al conectar con los nodos de Lavalink: {e}")
+        finally:
+            # Cerrar sesiones de los nuevos nodos creados que no lograron registrarse en el pool (fugas)
+            for node in nodes_to_connect:
+                if node.identifier not in wavelink.Pool.nodes:
+                    logger.warning(f"🧹 Cerrando sesión del nodo fallido: {node.identifier}")
+                    try:
+                        await node._pool_closer()
+                    except Exception as cleanup_err:
+                        logger.error(f"Error cerrando sesión del nodo {node.identifier}: {cleanup_err}")
 
 async def check_voice(ctx) -> bool:
     """Verifica si el usuario puede ejecutar comandos de control."""
