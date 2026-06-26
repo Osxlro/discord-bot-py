@@ -31,8 +31,27 @@ async def send_now_playing(bot: discord.Client, player: wavelink.Player, track: 
         data = queue_service.get_player_data(guild_id)
         home = getattr(player, "home", None) or data.get("home")
         if not home:
-            logger.warning(f"⚠️ [Music Service] No se pudo enviar 'Ahora suena' porque 'home' es None en el guild {guild_id}")
-            return
+            # Fallback dinámico si por alguna razón 'home' es None pero el bot está reproduciendo en un servidor
+            guild = bot.get_guild(guild_id)
+            if guild:
+                # 1. Intentar el system_channel
+                if guild.system_channel and guild.system_channel.permissions_for(guild.me).send_messages:
+                    home = guild.system_channel
+                else:
+                    # 2. Buscar el primer canal de texto disponible donde tengamos permisos de envío
+                    for channel in guild.text_channels:
+                        if channel.permissions_for(guild.me).send_messages:
+                            home = channel
+                            break
+            
+            if home:
+                logger.warning(f"⚠️ [Music Service] 'home' era None en guild {guild_id}. Se usó el canal fallback: {home.name}")
+                # Guardar el fallback para futuras reproducciones de la sesión
+                player.home = home
+                data["home"] = home
+            else:
+                logger.warning(f"⚠️ [Music Service] No se pudo enviar 'Ahora suena' porque 'home' es None en el guild {guild_id} y no se encontró canal fallback.")
+                return
 
         lang = await lang_service.get_guild_lang(guild_id)
         embed = create_np_embed(player, track, lang)

@@ -104,7 +104,14 @@ class MusicEvents(commands.Cog):
             if before.channel and not after.channel:
                 player: wavelink.Player = member.guild.voice_client
                 if player:
-                    logger.info(f"🔌 [Music Event] Desconexión detectada en {member.guild.name}. Limpiando UI...")
+                    # Esperar un momento para verificar si es una reconexión automática temporal
+                    await asyncio.sleep(2.5)
+                    # Si el bot se ha reconectado y sigue conectado, no limpiamos el reproductor
+                    if player.connected:
+                        logger.info(f"🔄 [Music Event] Reconexión automática detectada en {member.guild.name}. Conservando reproductor.")
+                        return
+                    
+                    logger.info(f"🔌 [Music Event] Desconexión definitiva detectada en {member.guild.name}. Limpiando UI...")
                     await music_service.cleanup_player(player)
             return
 
