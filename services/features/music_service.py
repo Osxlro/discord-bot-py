@@ -1,3 +1,4 @@
+from ui.music.music_ui import MusicControls, create_np_embed
 from services.features.music import (
     get_player_data,
     set_player_home,

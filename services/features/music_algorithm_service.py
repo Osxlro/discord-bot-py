@@ -253,6 +253,8 @@ class RecommendationEngine:
         # --- ESTRATEGIA 2: HEURÍSTICA ---
         artist_streak = self._get_artist_streak(history, author)
         provider = settings.LAVALINK_CONFIG.get("SEARCH_PROVIDER", "ytsearch")
+        if provider == "spsearch":
+            provider = "ytsearch"
         queries = self._get_heuristic_queries(author, title, seed_styles, artist_streak)
         
         candidates = await self._fetch_candidates(queries, provider)
@@ -270,6 +272,8 @@ class RecommendationEngine:
 
     async def _resolve_spotify_recs(self, data, seed, styles, mood, played_ids):
         provider = settings.LAVALINK_CONFIG.get("SEARCH_PROVIDER", "ytsearch")
+        if provider == "spsearch":
+            provider = "ytsearch"
         # Limitar búsquedas simultáneas a los top 3 recomendados de Spotify
         recs_to_search = data["recs"][:3]
         tasks = [wavelink.Playable.search(rec, source=provider) for rec in recs_to_search]
@@ -346,7 +350,9 @@ class RecommendationEngine:
             if pool: return random.choice(pool)
         
         try:
-            p = settings.LAVALINK_CONFIG.get("SEARCH_PROVIDER", "spsearch")
+            p = settings.LAVALINK_CONFIG.get("SEARCH_PROVIDER", "ytsearch")
+            if p == "spsearch":
+                p = "ytsearch"
             res = await wavelink.Playable.search(random.choice(['lofi hip hop', 'chill mix']), source=p)
             return res[0] if res else None
         except Exception: return None

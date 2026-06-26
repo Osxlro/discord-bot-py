@@ -143,7 +143,7 @@ LAVALINK_CONFIG = {
         {"HOST": "lavalink.jirayu.net", "PORT": 443, "PASSWORD": "youshallnotpass", "SECURE": True, "IDENTIFIER": "Jirayu-SSL"},
     ],
     "DEFAULT_VOLUME": 50,  # Volumen base inicial
-    "SEARCH_PROVIDER": "spsearch",  # Proveedor de búsqueda ('spsearch' para Spotify, 'ytsearch' para YouTube)
+    "SEARCH_PROVIDER": "ytsearch",  # Proveedor de búsqueda ('spsearch' para Spotify, 'ytsearch' para YouTube)
     "INACTIVITY_TIMEOUT": 300,  # Segundos antes de apagar el reproductor si el canal de voz se vacía
     "CACHE_CAPACITY": 100,  # Capacidad máxima del caché interno de canciones en Wavelink
     "SPOTIFY": {  # Credenciales de API de Spotify

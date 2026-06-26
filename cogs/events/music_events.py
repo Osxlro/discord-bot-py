@@ -47,15 +47,20 @@ class MusicEvents(commands.Cog):
 
     @commands.Cog.listener()
     async def on_wavelink_track_start(self, payload: wavelink.TrackStartEventPayload):
-        player = payload.player
-        logger.debug(f"🎶 [Music Event] on_wavelink_track_start disparado: {payload.track.title}")
-        if not player: return
-        
-        home = getattr(player, "home", None) or music_service.get_player_home(player.guild.id)
-        if not home: return
+        try:
+            player = payload.player
+            logger.info(f"🎶 [Music Event] on_wavelink_track_start disparado: {payload.track.title}")
+            if not player: return
+            
+            home = getattr(player, "home", None) or music_service.get_player_home(player.guild.id)
+            if not home:
+                logger.warning(f"⚠️ [Music Event] No se encontró canal de texto (home) para el servidor {player.guild.id}")
+                return
 
-        # Lógica de mensaje NP delegada al servicio
-        await music_service.send_now_playing(self.bot, player, payload.track)
+            # Lógica de mensaje NP delegada al servicio
+            await music_service.send_now_playing(self.bot, player, payload.track)
+        except Exception as e:
+            logger.exception(f"🔥 [Music Event] Error en on_wavelink_track_start: {e}")
 
     @commands.Cog.listener()
     async def on_wavelink_track_end(self, payload: wavelink.TrackEndEventPayload):

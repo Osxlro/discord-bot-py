@@ -26,40 +26,44 @@ async def send_now_playing(bot: discord.Client, player: wavelink.Player, track: 
     Genera y envía el mensaje 'Ahora Suena', optimizando la edición de mensajes.
     `new_track=True` fuerza el borrado y re-envío del mensaje.
     """
-    guild_id = player.guild.id
-    data = queue_service.get_player_data(guild_id)
-    home = getattr(player, "home", None) or data.get("home")
-    if not home:
-        return
+    try:
+        guild_id = player.guild.id
+        data = queue_service.get_player_data(guild_id)
+        home = getattr(player, "home", None) or data.get("home")
+        if not home:
+            logger.warning(f"⚠️ [Music Service] No se pudo enviar 'Ahora suena' porque 'home' es None en el guild {guild_id}")
+            return
 
-    lang = await lang_service.get_guild_lang(guild_id)
-    embed = create_np_embed(player, track, lang)
-    view = MusicControls(player, lang=lang)
+        lang = await lang_service.get_guild_lang(guild_id)
+        embed = create_np_embed(player, track, lang)
+        view = MusicControls(player, lang=lang)
 
-    last_msg = getattr(player, "last_msg", None) or data.get("last_msg")
+        last_msg = getattr(player, "last_msg", None) or data.get("last_msg")
 
-    if new_track or not last_msg or last_msg.author.id != bot.user.id:
-        if last_msg:
-            try: await last_msg.delete()
-            except Exception: pass
-        
-        sent_msg = await home.send(embed=embed, view=view)
-        player.last_msg = sent_msg
-        data["last_msg"] = sent_msg
-    else:
-        try:
-            await last_msg.edit(embed=embed, view=view)
-        except Exception as e:
-            logger.warning(f"No se pudo editar el mensaje del reproductor: {e}. Enviando uno nuevo.")
-            try: await last_msg.delete()
-            except Exception: pass
+        if new_track or not last_msg or last_msg.author.id != bot.user.id:
+            if last_msg:
+                try: await last_msg.delete()
+                except Exception: pass
+            
             sent_msg = await home.send(embed=embed, view=view)
             player.last_msg = sent_msg
             data["last_msg"] = sent_msg
-    
-    player.last_view = view
-    data["last_view"] = view
-    await presence_service.update_presence(bot, player, track, lang)
+        else:
+            try:
+                await last_msg.edit(embed=embed, view=view)
+            except Exception as e:
+                logger.warning(f"No se pudo editar el mensaje del reproductor: {e}. Enviando uno nuevo.")
+                try: await last_msg.delete()
+                except Exception: pass
+                sent_msg = await home.send(embed=embed, view=view)
+                player.last_msg = sent_msg
+                data["last_msg"] = sent_msg
+        
+        player.last_view = view
+        data["last_view"] = view
+        await presence_service.update_presence(bot, player, track, lang)
+    except Exception as e:
+        logger.exception(f"🔥 Error en send_now_playing: {e}")
 
 async def handle_enqueue(ctx, player: wavelink.Player, tracks: wavelink.Playable | wavelink.Playlist, lang: str):
     """Maneja la lógica de añadir pistas o playlists a la cola, optimizando el feedback al usuario."""

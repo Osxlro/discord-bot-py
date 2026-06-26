@@ -14,12 +14,12 @@ _next_connection_node = None
 _connect_lock = asyncio.Lock()
 
 class BotPlayer(wavelink.Player):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, client=None, channel=None):
         global _next_connection_node
-        if _next_connection_node:
-            self._node = _next_connection_node  # _node es el atributo privado real (node es solo lectura)
-            _next_connection_node = None  # Resetear después de asignar
+        nodes = [_next_connection_node] if _next_connection_node else None
+        super().__init__(client, channel, nodes=nodes)
+        
+        _next_connection_node = None  # Resetear después de asignar
         self.home = None
         self.last_msg = None
         self.last_view = None
