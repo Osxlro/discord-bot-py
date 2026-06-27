@@ -119,12 +119,11 @@ class ItemSelect(discord.ui.Select):
             cost=item["cost"]
         )
         
-        confirm_embed = discord.Embed(
+        confirm_embed = embed_service.info(
             title=lang_service.get_text("shop_purchase_title", self.lang),
             description=confirm_msg,
-            color=discord.Color.blue()
+            thumbnail=self.bot.user.display_avatar.url
         )
-        confirm_embed.set_thumbnail(url=self.bot.user.display_avatar.url)
 
         view = ConfirmPurchaseView(self.bot, item, 1, self.author_id, self.lang)
         await interaction.response.send_message(embed=confirm_embed, view=view, ephemeral=True)
@@ -185,29 +184,43 @@ class ShopView(discord.ui.View):
     def get_embed(self) -> discord.Embed:
         """Genera el embed de catálogo de la tienda para la página actual."""
         title = lang_service.get_text("shop_title", self.lang)
-        embed = discord.Embed(title=title, color=discord.Color.gold())
-        embed.set_thumbnail(url=self.bot.user.display_avatar.url)
-
+        
         start = self.current_page * self.items_per_page
         end = start + self.items_per_page
         page_items = self.all_items[start:end]
 
-        desc = ""
+        # Agrupar por categoría
+        grouped = {}
         for item in page_items:
-            emoji = item.get("emoji") or ""
-            name = item.get("name_default") or lang_service.get_text(item.get("name_key"), self.lang)
-            cost = item["cost"]
-            description = item.get("desc_default") or lang_service.get_text(item.get("desc_key"), self.lang)
-            
-            # Formato: Emoji - Nombre - Costo
-            desc += f"> **{emoji} {name}** — `{cost}` coins\n"
-            desc += f"> *{description}*\n\n"
+            cat = item.get("category") or "Otros"
+            if cat not in grouped:
+                grouped[cat] = []
+            grouped[cat].append(item)
+
+        desc = ""
+        for cat, items in grouped.items():
+            desc += f"### 📂 {cat}\n"
+            for item in items:
+                emoji = item.get("emoji") or ""
+                name = item.get("name_default") or lang_service.get_text(item.get("name_key"), self.lang)
+                cost = item["cost"]
+                description = item.get("desc_default") or lang_service.get_text(item.get("desc_key"), self.lang)
+                
+                # Formato: Emoji - Nombre - Costo
+                desc += f"> **{emoji} {name}** — `{cost}` coins\n"
+                desc += f"> *{description}*\n"
+            desc += "\n"
 
         if not desc:
             desc = lang_service.get_text("shop_empty", self.lang)
 
-        embed.description = desc
-        embed.set_footer(text=f"Pág. {self.current_page + 1}/{self.total_pages}")
+        # Usar helper de info de embed_service
+        embed = embed_service.info(
+            title=title,
+            description=desc,
+            thumbnail=self.bot.user.display_avatar.url,
+            footer=f"Pág. {self.current_page + 1}/{self.total_pages}"
+        )
         return embed
 
     @discord.ui.button(style=discord.ButtonStyle.primary, row=1)

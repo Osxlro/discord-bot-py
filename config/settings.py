@@ -93,7 +93,7 @@ HELP_CONFIG = {
         "General": "💡", "Moderacion": "🛡️", "Niveles": "📊", "Diversion": "🎲",
         "Configuracion": "⚙️", "Developer": "💻", "Cumpleanos": "🎂", "Roles": "🎭",
         "Voice": "🎙️", "Perfil": "👤", "Status": "🟢", "Backup": "💾",
-        "Usuario": "👤", "Music": "🎵" # "Minecraft": "🧱" (Archivado)
+        "Usuario": "👤", "Music": "🎵", "Shop": "🛒" # "Minecraft": "🧱" (Archivado)
     },
     "HOME_EMOJI": "🏠"  # Emoji para el botón de regreso al panel principal de ayuda
 }

@@ -332,6 +332,7 @@ FR = {
     "help_desc_optimizationtasks": "Tâches de maintenance interne.",
     "help_desc_usuario": "Profil, anniversaire et personnalisation.",
     "help_desc_music": "Lecture de musique haute qualité.",
+    "help_desc_shop": "🛒 Commandes de la boutique du serveur et de l'inventaire de l'utilisateur.",
 
     # --- MINECRAFT ---
     "mc_bridge_set": "✅ Canal de chat lié : {channel}",
@@ -563,11 +564,23 @@ FR = {
     # --- PERFIL (SELECT & INVENTARIO) ---
     "profile_select_general": "Informations Générales",
     "profile_select_stats": "Statistiques du Serveur",
-    "profile_select_msgs": "Messages Personnalisés",
+    "profile_select_wallet": "Portefeuille",
     "profile_select_inventory": "Inventaire",
+    "profile_select_others": "Autres Paramètres",
     "profile_select_placeholder": "Sélectionnez une section...",
     "profile_inventory_title": "🎒 Inventaire",
     "profile_inventory_empty": "🎒 Votre inventaire est vide.",
+    
+    # --- PORTEFEUILLE (WALLET) ---
+    "profile_wallet_title": "Portefeuille",
+    "profile_wallet_cash": "💵 Espèces",
+    "profile_wallet_bank": "🏦 Compte Bancaire",
+    "profile_wallet_total": "💳 Valeur Nette",
+    "profile_wallet_protected": "Protégé par le Système",
+    
+    # --- AUTRES PARAMÈTRES ---
+    "profile_preview_lvl_label": "Message de Niveau",
+    "profile_preview_bday_label": "Message d'Anniversaire",
 
     # --- TIENDA (/SHOP & /BUY) ---
     "shop_title": "🛒 Boutique du Serveur",

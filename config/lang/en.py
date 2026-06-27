@@ -334,6 +334,7 @@ EN = {
     "help_desc_optimizationtasks": "Internal maintenance tasks.",
     "help_desc_usuario": "Profile, birthday and customization.",
     "help_desc_music": "High quality music playback.",
+    "help_desc_shop": "🛒 Server shop and user inventory commands.",
 
     # --- MINECRAFT ---
     "mc_bridge_set": "✅ Chat bridge linked: {channel}",
@@ -563,11 +564,23 @@ EN = {
     # --- PROFILE (SELECT & INVENTORY) ---
     "profile_select_general": "General Info",
     "profile_select_stats": "Server Stats",
-    "profile_select_msgs": "Custom Messages",
+    "profile_select_wallet": "Wallet",
     "profile_select_inventory": "Inventory",
+    "profile_select_others": "Other Settings",
     "profile_select_placeholder": "Select a section...",
     "profile_inventory_title": "🎒 Inventory",
     "profile_inventory_empty": "🎒 Your inventory is empty.",
+    
+    # --- WALLET ---
+    "profile_wallet_title": "Wallet",
+    "profile_wallet_cash": "💵 Cash",
+    "profile_wallet_bank": "🏦 Bank Account",
+    "profile_wallet_total": "💳 Net Worth",
+    "profile_wallet_protected": "Protected by the System",
+    
+    # --- OTHER SETTINGS ---
+    "profile_preview_lvl_label": "Level Up Message",
+    "profile_preview_bday_label": "Birthday Message",
 
     # --- SHOP (/SHOP & /BUY) ---
     "shop_title": "🛒 Server Shop",

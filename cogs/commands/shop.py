@@ -1,7 +1,6 @@
 import discord
 from discord.ext import commands
 from discord import app_commands
-from typing import Literal
 from services.core import lang_service, db_service
 from services.utils import embed_service
 from services.features import shop_service
@@ -34,16 +33,59 @@ class Shop(commands.Cog):
         embed = view.get_embed()
         view.message = await ctx.reply(embed=embed, view=view)
 
-    @commands.hybrid_command(name="buy", description="Compra un objeto de la tienda directamente.")
+    async def buy_category_autocomplete(self, interaction: discord.Interaction, current: str) -> list[app_commands.Choice[str]]:
+        """Autocompleta las categorías disponibles en la tienda."""
+        all_items = await db_service.get_all_shop_items()
+        categories = sorted(list({item.get("category", "Otros") for item in all_items}))
+        choices = [
+            app_commands.Choice(name=cat, value=cat)
+            for cat in categories
+            if current.lower() in cat.lower()
+        ]
+        return choices[:25]
+
+    async def buy_object_autocomplete(self, interaction: discord.Interaction, current: str) -> list[app_commands.Choice[str]]:
+        """Autocompleta los objetos según la categoría filtrada o general."""
+        all_items = await db_service.get_all_shop_items()
+        
+        # Intentar leer la categoría ingresada en la interacción
+        selected_category = getattr(interaction.namespace, "category", None)
+        if selected_category:
+            all_items = [item for item in all_items if item.get("category", "Otros") == selected_category]
+
+        lang = await lang_service.get_guild_lang(interaction.guild_id)
+        choices = []
+        for item in all_items:
+            name = item.get("name_default") or lang_service.get_text(item.get("name_key"), lang)
+            emoji = item.get("emoji") or ""
+            display_name = f"{emoji} {name}"[:100]
+            if current.lower() in name.lower() or current.lower() in item["item_id"].lower():
+                choices.append(app_commands.Choice(name=display_name, value=item["item_id"]))
+                
+        return choices[:25]
+
+    @commands.hybrid_command(name="buy", description="Compra un objeto de la tienda.")
     @app_commands.describe(
-        item_id="El ID único del objeto que quieres comprar (ej: color_role)",
-        cantidad="La cantidad de unidades que deseas adquirir (mínimo 1)"
+        category="Categoría del objeto para filtrar",
+        objeto="Nombre o ID del objeto a comprar",
+        qty="Cantidad de unidades a adquirir (mínimo 1)"
     )
-    async def buy(self, ctx: commands.Context, item_id: str, cantidad: int = 1):
-        """Inicia el flujo de confirmación efímera para la compra de un objeto."""
+    @app_commands.autocomplete(category=buy_category_autocomplete, objeto=buy_object_autocomplete)
+    async def buy(self, ctx: commands.Context, category: str = None, objeto: str = None, qty: int = 1):
+        """Inicia el flujo de confirmación para comprar un objeto de la tienda."""
         lang = await lang_service.get_guild_lang(ctx.guild.id if ctx.guild else None)
 
-        if cantidad <= 0:
+        if not objeto:
+            return await ctx.reply(
+                embed=embed_service.error(
+                    lang_service.get_text("error_title", lang),
+                    "Debes especificar el objeto a comprar.",
+                    lite=True
+                ),
+                ephemeral=True
+            )
+
+        if qty <= 0:
             return await ctx.reply(
                 embed=embed_service.error(
                     lang_service.get_text("error_title", lang),
@@ -53,8 +95,33 @@ class Shop(commands.Cog):
                 ephemeral=True
             )
 
-        # Obtener información del item
-        item = await db_service.get_shop_item(item_id)
+        # 1. Buscar por item_id directo primero
+        item = await db_service.get_shop_item(objeto)
+        
+        # 2. Si no se encontró por ID, buscar por nombre exacto o parcial en la DB
+        if not item:
+            all_items = await db_service.get_all_shop_items()
+            best_match = None
+            
+            # Filtro por categoría opcional antes de buscar por texto
+            if category:
+                all_items = [it for it in all_items if it.get("category", "Otros") == category]
+
+            for it in all_items:
+                name = it.get("name_default") or lang_service.get_text(it.get("name_key"), lang)
+                if name.lower() == objeto.lower() or it["item_id"].lower() == objeto.lower():
+                    best_match = it
+                    break
+            
+            if not best_match:
+                for it in all_items:
+                    name = it.get("name_default") or lang_service.get_text(it.get("name_key"), lang)
+                    if objeto.lower() in name.lower():
+                        best_match = it
+                        break
+            
+            item = best_match
+
         if not item:
             return await ctx.reply(
                 embed=embed_service.error(
@@ -72,121 +139,27 @@ class Shop(commands.Cog):
         confirm_msg = lang_service.get_text(
             "shop_purchase_confirm", 
             lang, 
-            qty=cantidad, 
+            qty=qty, 
             emoji=item_emoji, 
             item=item_name, 
-            cost=item["cost"] * cantidad
+            cost=item["cost"] * qty
         )
         
-        confirm_embed = discord.Embed(
+        confirm_embed = embed_service.info(
             title=lang_service.get_text("shop_purchase_title", lang),
             description=confirm_msg,
-            color=discord.Color.blue()
+            thumbnail=self.bot.user.display_avatar.url
         )
-        confirm_embed.set_thumbnail(url=self.bot.user.display_avatar.url)
 
-        # Usar respuesta efímera para que solo el autor vea el embed de confirmación
-        view = shop_ui.ConfirmPurchaseView(self.bot, item, cantidad, ctx.author.id, lang)
+        # Confirmación de compra efímera
+        view = shop_ui.ConfirmPurchaseView(self.bot, item, qty, ctx.author.id, lang)
         
-        # Enviar respuesta efímera dependiente del tipo de interacción
         if ctx.interaction:
             await ctx.interaction.response.send_message(embed=confirm_embed, view=view, ephemeral=True)
             view.message = ctx.interaction
         else:
-            # Para comandos con prefijo tradicional, enviamos respuesta efímera
-            # (en discord.py hybrid context, send con ephemeral=True funciona)
             msg = await ctx.send(embed=confirm_embed, view=view, ephemeral=True)
             view.message = msg
-
-    # --- COMANDOS DE ADMINISTRACIÓN (DEVELOPER ONLY) ---
-    @commands.hybrid_group(name="shop_admin", description="Administración de la tienda del bot.")
-    @commands.is_owner()
-    async def shop_admin(self, ctx: commands.Context):
-        if ctx.invoked_subcommand is None:
-            await ctx.send_help(ctx.command)
-
-    @shop_admin.command(name="add", description="Añade o actualiza un objeto en el catálogo de la tienda.")
-    @app_commands.describe(
-        item_id="ID único del objeto sin espacios (ej: vip_pass)",
-        emoji="Emoji icono del objeto (ej: 🎫)",
-        cost="Precio en coins del objeto",
-        availability="Disponibilidad del item (permanent o date_range)",
-        start_date="Fecha inicio para date_range (YYYY-MM-DD)",
-        end_date="Fecha fin para date_range (YYYY-MM-DD)",
-        purchase_limit="Límite máximo de compra por usuario (0 o vacío para ilimitado)",
-        total_stock="Stock global disponible (0 o vacío para ilimitado)",
-        name="Nombre legible por defecto del objeto",
-        description="Descripción legible por defecto del objeto"
-    )
-    async def admin_add(
-        self,
-        ctx: commands.Context,
-        item_id: str,
-        emoji: str,
-        cost: int,
-        availability: Literal["permanent", "date_range"] = "permanent",
-        start_date: str = None,
-        end_date: str = None,
-        purchase_limit: int = None,
-        total_stock: int = None,
-        name: str = None,
-        description: str = None
-    ):
-        """Añade o actualiza un objeto en la base de datos de la tienda."""
-        lang = await lang_service.get_guild_lang(ctx.guild.id if ctx.guild else None)
-        await ctx.defer(ephemeral=True)
-
-        # Validaciones de entrada
-        p_limit = None if (purchase_limit is None or purchase_limit <= 0) else purchase_limit
-        t_stock = None if (total_stock is None or total_stock <= 0) else total_stock
-        
-        name_val = name or item_id.replace("_", " ").title()
-        desc_val = description or "Objeto de la tienda."
-
-        await db_service.add_or_update_shop_item(
-            item_id=item_id,
-            emoji=emoji,
-            cost=cost,
-            availability=availability,
-            start_date=start_date,
-            end_date=end_date,
-            purchase_limit=p_limit,
-            total_stock=t_stock,
-            name_default=name_val,
-            desc_default=desc_val
-        )
-
-        embed = embed_service.success(
-            lang_service.get_text("shop_purchase_title", lang),
-            lang_service.get_text("shop_admin_add_success", lang, item_id=item_id),
-            lite=True
-        )
-        await ctx.send(embed=embed, ephemeral=True)
-
-    @shop_admin.command(name="remove", description="Elimina un objeto del catálogo de la tienda.")
-    @app_commands.describe(item_id="El ID del objeto a eliminar")
-    async def admin_remove(self, ctx: commands.Context, item_id: str):
-        """Elimina un objeto de la tienda en la base de datos."""
-        lang = await lang_service.get_guild_lang(ctx.guild.id if ctx.guild else None)
-        await ctx.defer(ephemeral=True)
-
-        deleted = await db_service.delete_shop_item(item_id)
-        if not deleted:
-            return await ctx.send(
-                embed=embed_service.error(
-                    lang_service.get_text("error_title", lang),
-                    lang_service.get_text("shop_error_item_not_found", lang),
-                    lite=True
-                ),
-                ephemeral=True
-            )
-
-        embed = embed_service.success(
-            lang_service.get_text("shop_purchase_title", lang),
-            lang_service.get_text("shop_admin_remove_success", lang, item_id=item_id),
-            lite=True
-        )
-        await ctx.send(embed=embed, ephemeral=True)
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(Shop(bot))

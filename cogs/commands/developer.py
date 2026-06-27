@@ -205,5 +205,93 @@ class Developer(commands.Cog):
             return await ctx.send(embed=embed_service.error(lang_service.get_text("title_error", lang), error, lite=True), ephemeral=True)
         await ctx.send(embed=embed, ephemeral=True)
 
+    @devedit_group.command(name="shop_add", description="Añade o edita un objeto en el catálogo de la tienda.")
+    @app_commands.describe(
+        item_id="ID único del objeto sin espacios (ej: vip_pass)",
+        emoji="Emoji icono del objeto (ej: 🎫)",
+        cost="Precio en coins del objeto",
+        category="Categoría del objeto (ej: Cosméticos, Rangos, Diversión)",
+        availability="Disponibilidad del item (permanent o date_range)",
+        start_date="Fecha inicio para date_range (YYYY-MM-DD)",
+        end_date="Fecha fin para date_range (YYYY-MM-DD)",
+        purchase_limit="Límite máximo de compra por usuario (0 o vacío para ilimitado)",
+        total_stock="Stock global disponible (0 o vacío para ilimitado)",
+        name="Nombre legible por defecto del objeto",
+        description="Descripción legible por defecto del objeto"
+    )
+    async def devedit_shop_add(
+        self,
+        ctx: commands.Context,
+        item_id: str,
+        emoji: str,
+        cost: int,
+        category: str = "Otros",
+        availability: Literal["permanent", "date_range"] = "permanent",
+        start_date: str = None,
+        end_date: str = None,
+        purchase_limit: int = None,
+        total_stock: int = None,
+        name: str = None,
+        description: str = None
+    ):
+        """Añade o actualiza un objeto en la base de datos de la tienda."""
+        lang = await lang_service.get_guild_lang(ctx.guild.id if ctx.guild else None)
+        await ctx.defer(ephemeral=True)
+
+        p_limit = None if (purchase_limit is None or purchase_limit <= 0) else purchase_limit
+        t_stock = None if (total_stock is None or total_stock <= 0) else total_stock
+        
+        name_val = name or item_id.replace("_", " ").title()
+        desc_val = description or "Objeto de la tienda."
+
+        # Registrar en la base de datos
+        from services.core import db_service
+        await db_service.add_or_update_shop_item(
+            item_id=item_id,
+            emoji=emoji,
+            cost=cost,
+            availability=availability,
+            start_date=start_date,
+            end_date=end_date,
+            purchase_limit=p_limit,
+            total_stock=t_stock,
+            name_default=name_val,
+            desc_default=desc_val,
+            category=category
+        )
+
+        embed = embed_service.success(
+            lang_service.get_text("shop_purchase_title", lang),
+            lang_service.get_text("shop_admin_add_success", lang, item_id=item_id),
+            lite=True
+        )
+        await ctx.send(embed=embed, ephemeral=True)
+
+    @devedit_group.command(name="shop_remove", description="Elimina un objeto del catálogo de la tienda.")
+    @app_commands.describe(item_id="El ID del objeto a eliminar")
+    async def devedit_shop_remove(self, ctx: commands.Context, item_id: str):
+        """Elimina un objeto de la tienda en la base de datos."""
+        lang = await lang_service.get_guild_lang(ctx.guild.id if ctx.guild else None)
+        await ctx.defer(ephemeral=True)
+
+        from services.core import db_service
+        deleted = await db_service.delete_shop_item(item_id)
+        if not deleted:
+            return await ctx.send(
+                embed=embed_service.error(
+                    lang_service.get_text("error_title", lang),
+                    lang_service.get_text("shop_error_item_not_found", lang),
+                    lite=True
+                ),
+                ephemeral=True
+            )
+
+        embed = embed_service.success(
+            lang_service.get_text("shop_purchase_title", lang),
+            lang_service.get_text("shop_admin_remove_success", lang, item_id=item_id),
+            lite=True
+        )
+        await ctx.send(embed=embed, ephemeral=True)
+
 async def setup(bot):
     await bot.add_cog(Developer(bot))

@@ -172,7 +172,8 @@ async def init_db():
         purchase_limit INTEGER DEFAULT NULL,
         total_stock INTEGER DEFAULT NULL,
         name_default TEXT DEFAULT NULL,
-        desc_default TEXT DEFAULT NULL
+        desc_default TEXT DEFAULT NULL,
+        category TEXT DEFAULT 'Otros'
     )
     """)
 
@@ -181,12 +182,12 @@ async def init_db():
     row = await cursor.fetchone()
     if row and row[0] == 0:
         default_items = [
-            ("color_role", "🎨", 150, "permanent", None, None, 1, None, "Color de Rol Personalizado", "Te permite solicitar un rol de color personalizado en el servidor."),
-            ("vip_status", "👑", 500, "permanent", None, None, 1, None, "Rango VIP", "Rango VIP especial en el servidor con beneficios exclusivos."),
-            ("lucky_charm", "🍀", 50, "permanent", None, None, None, 100, "Amuleto de la Suerte", "Un amuleto especial de stock limitado (solo 100 unidades globales).")
+            ("color_role", "🎨", 150, "permanent", None, None, 1, None, "Color de Rol Personalizado", "Te permite solicitar un rol de color personalizado en el servidor.", "Cosméticos"),
+            ("vip_status", "👑", 500, "permanent", None, None, 1, None, "Rango VIP", "Rango VIP especial en el servidor con beneficios exclusivos.", "Rangos"),
+            ("lucky_charm", "🍀", 50, "permanent", None, None, None, 100, "Amuleto de la Suerte", "Un amuleto especial de stock limitado (solo 100 unidades globales).", "Diversión")
         ]
         await db.executemany(
-            "INSERT INTO shop_items (item_id, emoji, cost, availability, start_date, end_date, purchase_limit, total_stock, name_default, desc_default) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO shop_items (item_id, emoji, cost, availability, start_date, end_date, purchase_limit, total_stock, name_default, desc_default, category) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             default_items
         )
 
@@ -194,6 +195,9 @@ async def init_db():
     # --- MIGRACIONES DE COLUMNAS (Asegura consistencia estructural en actualizaciones) ---
     await _ensure_column("users", "coins", "INTEGER DEFAULT 0")
     await _ensure_column("users", "gender", "TEXT DEFAULT NULL")
+    await _ensure_column("users", "bank_coins", "INTEGER DEFAULT 0")
+    
+    await _ensure_column("shop_items", "category", "TEXT DEFAULT 'Otros'")
     
     await _ensure_column("guild_stats", "rebirths", "INTEGER DEFAULT 0")
     
@@ -316,11 +320,12 @@ async def add_or_update_shop_item(
     purchase_limit: int | None = None,
     total_stock: int | None = None,
     name_default: str | None = None,
-    desc_default: str | None = None
+    desc_default: str | None = None,
+    category: str = "Otros"
 ) -> None:
     await ShopRepository.add_or_update_item(
         item_id, emoji, cost, availability, start_date, end_date,
-        purchase_limit, total_stock, name_default, desc_default
+        purchase_limit, total_stock, name_default, desc_default, category
     )
 
 async def delete_shop_item(item_id: str) -> bool:

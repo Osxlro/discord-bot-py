@@ -9,8 +9,6 @@ def get_general_embed(target: discord.Member, user_data: dict, lang: str) -> dis
     user_dict = dict(user_data) if user_data else {}
     desc = user_dict.get('description') or lang_service.get_text("profile_desc", lang)
     cumple = user_dict.get('birthday') or lang_service.get_text("profile_no_bday", lang)
-    prefix = user_dict.get('custom_prefix') or settings.CONFIG["bot_config"]["prefix"]
-    coins = user_dict.get('coins') or 0
     
     title = lang_service.get_text("profile_title", lang, user=target.display_name)
     embed = discord.Embed(title=title, color=target.color)
@@ -18,8 +16,6 @@ def get_general_embed(target: discord.Member, user_data: dict, lang: str) -> dis
     
     embed.add_field(name=lang_service.get_text("profile_field_desc", lang), value=f"*{desc}*", inline=False)
     embed.add_field(name=lang_service.get_text("profile_field_bday", lang), value=f"{cumple}", inline=True)
-    embed.add_field(name=lang_service.get_text("profile_field_prefix", lang), value=f"`{prefix}`", inline=True)
-    embed.add_field(name=lang_service.get_text("profile_field_coins", lang), value=f"`{coins}`", inline=True)
 
     try:
         gender = user_dict.get('gender')
@@ -56,22 +52,25 @@ def get_stats_embed(target: discord.Member, guild_data: dict, xp_next: int, lang
     
     return embed
 
-def get_messages_embed(target: discord.Member, user_data: dict, lang: str) -> discord.Embed:
-    """Genera el embed de previsualización de mensajes personalizados."""
-    title = lang_service.get_text("profile_custom_msgs", lang).replace("-", "").strip()
+def get_wallet_embed(target: discord.Member, user_data: dict, lang: str) -> discord.Embed:
+    """Genera el embed del sistema de billetera (efectivo y banco)."""
+    user_dict = dict(user_data) if user_data else {}
+    coins = user_dict.get('coins') or 0
+    bank_coins = user_dict.get('bank_coins') or 0
+    
+    title = lang_service.get_text("profile_wallet_title", lang) or "Billetera"
     embed = discord.Embed(title=f"{title} - {target.display_name}", color=target.color)
     embed.set_thumbnail(url=target.display_avatar.url)
 
-    msgs = ""
-    if user_data:
-        user_dict = dict(user_data)
-        limit = settings.UI_CONFIG["MSG_PREVIEW_TRUNCATE"]
-        if user_dict.get('personal_level_msg'): 
-            msgs += lang_service.get_text("profile_preview_lvl", lang, msg=user_dict['personal_level_msg'][:limit]) + "\n"
-        if user_dict.get('personal_birthday_msg'): 
-            msgs += lang_service.get_text("profile_preview_bday", lang, msg=user_dict['personal_birthday_msg'][:limit]) + "\n"
+    cash_label = lang_service.get_text("profile_wallet_cash", lang) or "💵 Efectivo"
+    bank_label = lang_service.get_text("profile_wallet_bank", lang) or "🏦 Cuenta de Banco"
+    total_label = lang_service.get_text("profile_wallet_total", lang) or "💳 Total Neto"
+    protected_label = lang_service.get_text("profile_wallet_protected", lang) or "Protegido por el Sistema"
+
+    embed.add_field(name=cash_label, value=f"`{coins}` coins", inline=True)
+    embed.add_field(name=bank_label, value=f"`{bank_coins}` coins\n*({protected_label})*", inline=True)
+    embed.add_field(name=total_label, value=f"`{coins + bank_coins}` coins", inline=False)
     
-    embed.description = msgs if msgs else lang_service.get_text("log_none", lang)
     return embed
 
 def get_inventory_embed(target: discord.Member, inventory_resolved: list[dict], lang: str) -> discord.Embed:
@@ -93,6 +92,41 @@ def get_inventory_embed(target: discord.Member, inventory_resolved: list[dict], 
     embed.description = desc
     return embed
 
+def get_others_embed(target: discord.Member, user_data: dict, lang: str) -> discord.Embed:
+    """Genera el embed de previsualización de mensajes personalizados y configuraciones varias (prefijo)."""
+    user_dict = dict(user_data) if user_data else {}
+    prefix = user_dict.get('custom_prefix') or settings.CONFIG["bot_config"]["prefix"]
+    
+    title = lang_service.get_text("profile_select_others", lang) or "Otros Ajustes"
+    embed = discord.Embed(title=f"{title} - {target.display_name}", color=target.color)
+    embed.set_thumbnail(url=target.display_avatar.url)
+
+    embed.add_field(
+        name=lang_service.get_text("profile_field_prefix", lang),
+        value=f"`{prefix}`",
+        inline=False
+    )
+
+    limit = settings.UI_CONFIG["MSG_PREVIEW_TRUNCATE"]
+    lvl_msg = user_dict.get('personal_level_msg')
+    bday_msg = user_dict.get('personal_birthday_msg')
+
+    lvl_msg_val = f"\"{lvl_msg[:limit]}...\"" if lvl_msg else lang_service.get_text("log_none", lang)
+    bday_msg_val = f"\"{bday_msg[:limit]}...\"" if bday_msg else lang_service.get_text("log_none", lang)
+
+    embed.add_field(
+        name=lang_service.get_text("profile_preview_lvl_label", lang) or "Mensaje de Nivel",
+        value=lvl_msg_val,
+        inline=True
+    )
+    embed.add_field(
+        name=lang_service.get_text("profile_preview_bday_label", lang) or "Mensaje de Cumpleaños",
+        value=bday_msg_val,
+        inline=True
+    )
+    
+    return embed
+
 class ProfileDropdown(discord.ui.Select):
     def __init__(self, is_dm: bool, lang: str):
         options = [
@@ -109,14 +143,19 @@ class ProfileDropdown(discord.ui.Select):
                 emoji="📊"
             ))
         options.append(discord.SelectOption(
-            label=lang_service.get_text("profile_select_msgs", lang) or "Mensajes Personalizados",
-            value="messages",
-            emoji="✉️"
+            label=lang_service.get_text("profile_select_wallet", lang) or "Billetera",
+            value="wallet",
+            emoji="💳"
         ))
         options.append(discord.SelectOption(
             label=lang_service.get_text("profile_select_inventory", lang) or "Inventario",
             value="inventory",
             emoji="🎒"
+        ))
+        options.append(discord.SelectOption(
+            label=lang_service.get_text("profile_select_others", lang) or "Otros Ajustes",
+            value="others",
+            emoji="⚙️"
         ))
 
         placeholder = lang_service.get_text("profile_select_placeholder", lang) or "Selecciona una sección..."
@@ -130,10 +169,12 @@ class ProfileDropdown(discord.ui.Select):
             embed = get_general_embed(view.target, view.user_data, view.lang)
         elif selection == "stats":
             embed = get_stats_embed(view.target, view.guild_data, view.xp_next, view.lang)
-        elif selection == "messages":
-            embed = get_messages_embed(view.target, view.user_data, view.lang)
-        else:
+        elif selection == "wallet":
+            embed = get_wallet_embed(view.target, view.user_data, view.lang)
+        elif selection == "inventory":
             embed = get_inventory_embed(view.target, view.inventory_resolved, view.lang)
+        else:
+            embed = get_others_embed(view.target, view.user_data, view.lang)
 
         await interaction.response.edit_message(embed=embed, view=view)
 

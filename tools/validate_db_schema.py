@@ -10,7 +10,7 @@ sys.path.append(root_dir)
 BASELINE_COLUMNS = {
     "users": {
         "user_id", "birthday", "celebrate", "custom_prefix", 
-        "description", "personal_level_msg", "personal_birthday_msg"
+        "description", "personal_level_msg", "personal_birthday_msg", "bank_coins"
     },
     "guild_stats": {
         "guild_id", "user_id", "xp", "level"
@@ -35,7 +35,7 @@ BASELINE_COLUMNS = {
     },
     "shop_items": {
         "item_id", "emoji", "cost", "availability", "start_date", "end_date",
-        "purchase_limit", "total_stock", "name_default", "desc_default"
+        "purchase_limit", "total_stock", "name_default", "desc_default", "category"
     }
 }
 

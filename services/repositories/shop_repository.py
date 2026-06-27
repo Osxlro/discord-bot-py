@@ -28,18 +28,20 @@ class ShopRepository:
         purchase_limit: int | None = None,
         total_stock: int | None = None,
         name_default: str | None = None,
-        desc_default: str | None = None
+        desc_default: str | None = None,
+        category: str = "Otros"
     ) -> None:
         """Añade o actualiza la configuración de un objeto en la tienda."""
         await database.execute(
-            "INSERT INTO shop_items (item_id, emoji, cost, availability, start_date, end_date, purchase_limit, total_stock, name_default, desc_default) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) "
+            "INSERT INTO shop_items (item_id, emoji, cost, availability, start_date, end_date, purchase_limit, total_stock, name_default, desc_default, category) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) "
             "ON CONFLICT(item_id) DO UPDATE SET "
             "emoji = excluded.emoji, cost = excluded.cost, availability = excluded.availability, "
             "start_date = excluded.start_date, end_date = excluded.end_date, "
             "purchase_limit = excluded.purchase_limit, total_stock = excluded.total_stock, "
-            "name_default = excluded.name_default, desc_default = excluded.desc_default",
-            (item_id, emoji, cost, availability, start_date, end_date, purchase_limit, total_stock, name_default, desc_default)
+            "name_default = excluded.name_default, desc_default = excluded.desc_default, "
+            "category = excluded.category",
+            (item_id, emoji, cost, availability, start_date, end_date, purchase_limit, total_stock, name_default, desc_default, category)
         )
 
     @classmethod

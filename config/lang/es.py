@@ -332,6 +332,7 @@ ES = {
     "help_desc_optimizationtasks": "Tareas de mantenimiento interno.",
     "help_desc_usuario": "Perfil, cumpleaños y personalización.",
     "help_desc_music": "Reproducción de música de alta calidad.",
+    "help_desc_shop": "🛒 Comandos de la tienda y el inventario del usuario.",
 
     # --- MINECRAFT ---
     "mc_bridge_set": "✅ Canal de chat vinculado: {channel}",
@@ -563,11 +564,23 @@ ES = {
     # --- PERFIL (SELECT & INVENTARIO) ---
     "profile_select_general": "Información General",
     "profile_select_stats": "Estadísticas del Servidor",
-    "profile_select_msgs": "Mensajes Personalizados",
+    "profile_select_wallet": "Billetera",
     "profile_select_inventory": "Inventario",
+    "profile_select_others": "Otros Ajustes",
     "profile_select_placeholder": "Selecciona una sección...",
     "profile_inventory_title": "🎒 Inventario",
     "profile_inventory_empty": "🎒 Tu inventario está vacío.",
+    
+    # --- BILLETERA ---
+    "profile_wallet_title": "Billetera",
+    "profile_wallet_cash": "💵 Efectivo",
+    "profile_wallet_bank": "🏦 Cuenta de Banco",
+    "profile_wallet_total": "💳 Total Neto",
+    "profile_wallet_protected": "Protegido por el Sistema",
+    
+    # --- OTROS AJUSTES ---
+    "profile_preview_lvl_label": "Mensaje de Nivel",
+    "profile_preview_bday_label": "Mensaje de Cumpleaños",
 
     # --- TIENDA (/SHOP & /BUY) ---
     "shop_title": "🛒 Tienda del Servidor",
@@ -583,6 +596,8 @@ ES = {
     "shop_error_user_limit": "❌ Has alcanzado el límite de compra para {item} (Máximo {limit} por usuario).",
     "shop_error_no_stock": "❌ No queda stock suficiente para {item} (Solo quedan {stock} unidades).",
     "shop_error_no_coins": "❌ No tienes suficientes coins. Costo: `{cost}` coins, tienes: `{coins}`.",
+    
+    # --- TIENDA ADMIN ---
     "shop_admin_add_success": "✅ Objeto `{item_id}` añadido/actualizado con éxito en la tienda.",
     "shop_admin_remove_success": "✅ Objeto `{item_id}` eliminado con éxito de la tienda.",
 
