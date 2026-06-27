@@ -28,8 +28,3 @@ async def disconnect_channel(guild: discord.Guild) -> bool:
         await guild.voice_client.disconnect()
         return True
     return False
-
-def check_voice_permissions(channel: discord.VoiceChannel, me: discord.Member) -> bool:
-    """Helper básico para verificar si el bot tiene permisos para conectarse a un canal."""
-    permissions = channel.permissions_for(me)
-    return permissions.connect

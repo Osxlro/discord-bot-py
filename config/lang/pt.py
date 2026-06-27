@@ -7,7 +7,11 @@ PT = {
     "error_hierarchy": "❌ Não posso realizar esta ação devido à hierarquia de cargos.",
     "error_self_action": "❌ Não podes usar este comando em ti mesmo.",
     "error_missing_args": "❌ Faltam argumentos.",
-    "error_cooldown": "⏳ Estás a ir muito rápido. Espera {seconds}s.",
+    "error_cooldown": [
+        "⏳ Estás a ir muito rápido. Espera {seconds}s.",
+        "⏳ Vai mais devagar! Deves esperar {seconds}s.",
+        "⏳ Vai com calma. Tenta novamente em {seconds}s."
+    ],
     "error_old_messages": "⚠️ Não posso apagar mensagens com mais de 14 dias (Limitação do Discord).",
     "error_usage": "💡 **Uso correto:**",
     "error_bad_arg": "❌ Um dos argumentos fornecidos é inválido.",
@@ -555,4 +559,42 @@ PT = {
     "hangman_time_remaining": "{time}s restantes",
     "hangman_scores": "🏆 **Placar**",
     "hangman_word_was": "A palavra era: **{word}**",
+
+    # --- PERFIL (SELECT & INVENTARIO) ---
+    "profile_select_general": "Informação Geral",
+    "profile_select_stats": "Estatísticas do Servidor",
+    "profile_select_msgs": "Mensagens Personalizadas",
+    "profile_select_inventory": "Inventário",
+    "profile_select_placeholder": "Selecione uma seção...",
+    "profile_inventory_title": "🎒 Inventário",
+    "profile_inventory_empty": "🎒 O seu inventário está vazio.",
+
+    # --- TIENDA (/SHOP & /BUY) ---
+    "shop_title": "🛒 Loja do Servidor",
+    "shop_empty": "A loja está vazia de momento.",
+    "shop_select_placeholder": "Escolha um item para comprar...",
+    "shop_purchase_title": "🛍️ Confirmação de Compra",
+    "shop_purchase_confirm": "Tem certeza que deseja comprar {qty}x {emoji} **{item}** por `{cost}` coins?",
+    "shop_purchase_success": "Compra concluída com sucesso! Adquiriu {qty}x {emoji} **{item}** por `{cost}` coins.",
+    "shop_purchase_public": "¡{user} comprou {qty}x {emoji} **{item}** na loja! 🎉",
+    "shop_purchase_cancelled": "Compra cancelada.",
+    "shop_error_item_not_found": "❌ Item não encontrado.",
+    "shop_error_unavailable": "❌ {item} não está à venda atualmente.",
+    "shop_error_user_limit": "❌ Atingiu o limite de compra para {item} (Máximo {limit} por usuário).",
+    "shop_error_no_stock": "❌ Não há stock suficiente para {item} (Apenas restam {stock} unidades).",
+    "shop_error_no_coins": "❌ Não tem coins suficientes. Custo: `{cost}` coins, possui: `{coins}`.",
+    "shop_admin_add_success": "✅ Item `{item_id}` adicionado/atualizado com sucesso na loja.",
+    "shop_admin_remove_success": "✅ Item `{item_id}` removido com sucesso da loja.",
+
+    # --- OBJETOS POR DEFEITO ---
+    "item_color_role_name": "Cor de Cargo Personalizada",
+    "item_color_role_desc": "Permite que solicite uma cor de cargo personalizada no servidor.",
+    "item_vip_status_name": "Cargo VIP",
+    "item_vip_status_desc": "Cargo VIP especial no servidor com benefícios exclusivos.",
+    "item_lucky_charm_name": "Amuleto da Sorte",
+    "item_lucky_charm_desc": "Um amuleto especial com estoque global limitado (apenas 100 unidades).",
+
+    # --- PAGINAÇÃO ---
+    "pagination_prev": "Anterior",
+    "pagination_next": "Seguinte",
 }

@@ -3,7 +3,8 @@ import logging
 from discord import app_commands
 from discord.ext import commands
 from config.locales import LOCALES
-from services.features import general_service, help_service
+from services.features import general_service
+from ui.shared import help_ui
 from services.core import lang_service
 from services.utils import embed_service
 
@@ -29,8 +30,9 @@ class General(commands.Cog):
     async def help(self, ctx: commands.Context):
         """Muestra un panel interactivo con la lista de comandos disponibles."""
         lang = await lang_service.get_guild_lang(ctx.guild.id if ctx.guild else None)
-        # Delegamos la orquestación de la ayuda al servicio especializado
-        embed, view = await help_service.handle_help(self.bot, ctx, lang)
+        # ponytail: help_service eliminado por ser una fachada redundante. Llamamos directamente a ui/shared/help_ui.py
+        embed = await help_ui.get_home_embed(self.bot, ctx.guild, ctx.author, lang)
+        view = help_ui.HelpView(self.bot, ctx, lang)
         view.message = await ctx.send(embed=embed, view=view)
 
     @commands.hybrid_command(name="ping", description="Muestra la latencia actual del bot.")

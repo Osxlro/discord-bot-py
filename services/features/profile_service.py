@@ -24,14 +24,38 @@ async def handle_profile(guild, target, lang, author_id: int):
     nivel = guild_data['level'] if guild_data else 1
     xp_next = calculate_xp_required(nivel)
     
+    # Obtener y resolver inventario
+    inventory = await db_service.get_user_inventory(target.id)
+    shop_items = await db_service.get_all_shop_items()
+    shop_map = {item["item_id"]: item for item in shop_items}
+    
+    inventory_resolved = []
+    for item_id, qty in inventory.items():
+        if qty <= 0:
+            continue
+        item_info = shop_map.get(item_id)
+        if item_info:
+            emoji = item_info.get("emoji") or "📦"
+            name = item_info.get("name_default") or lang_service.get_text(item_info.get("name_key"), lang)
+        else:
+            emoji = "📦"
+            name = item_id.replace("_", " ").title()
+            
+        inventory_resolved.append({
+            "item_id": item_id,
+            "quantity": qty,
+            "emoji": emoji,
+            "name": name
+        })
+    
     try:
         embed = profile_ui.get_general_embed(target, user_data, lang)
     except NonVitalRenderError as nve:
-        view = profile_ui.ProfileView(target, user_data, guild_data, xp_next, lang, author_id, is_dm=(guild is None))
+        view = profile_ui.ProfileView(target, user_data, guild_data, xp_next, inventory_resolved, lang, author_id, is_dm=(guild is None))
         nve.view = view
         raise nve
         
-    view = profile_ui.ProfileView(target, user_data, guild_data, xp_next, lang, author_id, is_dm=(guild is None))
+    view = profile_ui.ProfileView(target, user_data, guild_data, xp_next, inventory_resolved, lang, author_id, is_dm=(guild is None))
     return embed, view
 
 async def handle_update_description(user_id: int, text: str, lang: str):

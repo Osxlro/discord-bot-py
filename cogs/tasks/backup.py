@@ -15,11 +15,9 @@ class Backup(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.backup_db.start()
-        self.flush_xp.start()
 
     def cog_unload(self):
         self.backup_db.cancel()
-        self.flush_xp.cancel()
 
     async def _cleanup_dm(self, channel: discord.DMChannel):
         """Limpia backups antiguos y otros mensajes basura del bot en DMs."""
@@ -49,10 +47,7 @@ class Backup(commands.Cog):
                 except discord.HTTPException:
                     pass
 
-    @tasks.loop(minutes=settings.BACKUP_CONFIG["XP_FLUSH_MINUTES"])
-    async def flush_xp(self):
-        """Guarda el caché de XP en la base de datos periódicamente."""
-        await db_service.flush_xp_cache()
+    # ponytail: Eliminado bucle flush_xp redundante porque ya existe cache_flush_loop en optimization.py
 
     @tasks.loop(hours=settings.BACKUP_CONFIG["INTERVAL_HOURS"])
     async def backup_db(self):

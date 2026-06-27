@@ -7,7 +7,11 @@ FR = {
     "error_hierarchy": "❌ Je ne peux pas effectuer cette action en raison de la hiérarchie des rôles.",
     "error_self_action": "❌ Vous ne pouvez pas utiliser cette commande sur vous-même.",
     "error_missing_args": "❌ Arguments manquants.",
-    "error_cooldown": "⏳ Vous allez trop vite. Attendez {seconds}s.",
+    "error_cooldown": [
+        "⏳ Vous allez trop vite. Attendez {seconds}s.",
+        "⏳ Ralentissez un peu ! Vous devez attendre {seconds}s.",
+        "⏳ Prenez votre temps. Réessayez dans {seconds}s."
+    ],
     "error_old_messages": "⚠️ Je ne peux pas supprimer les messages de plus de 14 jours (Limitation Discord).",
     "error_usage": "💡 **Utilisation correcte :**",
     "error_bad_arg": "❌ L'un des arguments fournis est invalide.",
@@ -555,4 +559,42 @@ FR = {
     "hangman_time_remaining": "{time}s restantes",
     "hangman_scores": "🏆 **Tableau des scores**",
     "hangman_word_was": "Le mot était : **{word}**",
+
+    # --- PERFIL (SELECT & INVENTARIO) ---
+    "profile_select_general": "Informations Générales",
+    "profile_select_stats": "Statistiques du Serveur",
+    "profile_select_msgs": "Messages Personnalisés",
+    "profile_select_inventory": "Inventaire",
+    "profile_select_placeholder": "Sélectionnez une section...",
+    "profile_inventory_title": "🎒 Inventaire",
+    "profile_inventory_empty": "🎒 Votre inventaire est vide.",
+
+    # --- TIENDA (/SHOP & /BUY) ---
+    "shop_title": "🛒 Boutique du Serveur",
+    "shop_empty": "La boutique est vide pour le moment.",
+    "shop_select_placeholder": "Choisissez un objet à acheter...",
+    "shop_purchase_title": "🛍️ Confirmation d'Achat",
+    "shop_purchase_confirm": "Êtes-vous sûr de vouloir acheter {qty}x {emoji} **{item}** pour `{cost}` coins ?",
+    "shop_purchase_success": "Achat effectué avec succès ! Vous avez acquis {qty}x {emoji} **{item}** pour `{cost}` coins.",
+    "shop_purchase_public": "¡{user} a acheté {qty}x {emoji} **{item}** dans la boutique ! 🎉",
+    "shop_purchase_cancelled": "Achat annulé.",
+    "shop_error_item_not_found": "❌ Objet non trouvé.",
+    "shop_error_unavailable": "❌ {item} n'est pas en vente actuellement.",
+    "shop_error_user_limit": "❌ Vous avez atteint la limite d'achat pour {item} (Maximum {limit} par utilisateur).",
+    "shop_error_no_stock": "❌ Stock insuffisant pour {item} (Il ne reste que {stock} unités).",
+    "shop_error_no_coins": "❌ Vous n'avez pas assez de coins. Coût : `{cost}` coins, vous avez : `{coins}`.",
+    "shop_admin_add_success": "✅ Objet `{item_id}` ajouté/mis à jour avec succès dans la boutique.",
+    "shop_admin_remove_success": "✅ Objet `{item_id}` supprimé avec succès de la boutique.",
+
+    # --- OBJETOS POR DEFEITO ---
+    "item_color_role_name": "Couleur de Rôle Personnalisée",
+    "item_color_role_desc": "Vous permet de demander une couleur de rôle personnalisée sur le serveur.",
+    "item_vip_status_name": "Grade VIP",
+    "item_vip_status_desc": "Grade VIP spécial sur le serveur avec des avantages exclusifs.",
+    "item_lucky_charm_name": "Porte-bonheur",
+    "item_lucky_charm_desc": "Un porte-bonheur spécial à stock limité (seulement 100 unités mondiales).",
+
+    # --- PAGINATION ---
+    "pagination_prev": "Précédent",
+    "pagination_next": "Suivant",
 }

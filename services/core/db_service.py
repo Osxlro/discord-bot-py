@@ -8,6 +8,8 @@ from services.repositories.user_repository import UserRepository
 from services.repositories.warn_repository import WarnRepository
 from services.repositories.stream_alert_repository import StreamAlertRepository
 from services.repositories.status_repository import StatusRepository
+from services.repositories.inventory_repository import InventoryRepository
+from services.repositories.shop_repository import ShopRepository
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +23,7 @@ DB_PATH = database.DB_PATH
 
 REQUIRED_TABLES = {
     "users", "guild_stats", "guild_config", "bot_persistence",
-    "bot_statuses", "warns", "stream_alerts"
+    "bot_statuses", "warns", "stream_alerts", "user_inventory", "shop_items"
 }
 
 async def _ensure_column(table: str, column: str, definition: str):
@@ -148,6 +150,47 @@ async def init_db():
     )
     """)
 
+    # 8. Inventario de Usuario (Objetos comprados)
+    await db.execute("""
+    CREATE TABLE IF NOT EXISTS user_inventory (
+        user_id INTEGER,
+        item_id TEXT,
+        quantity INTEGER DEFAULT 1,
+        PRIMARY KEY (user_id, item_id)
+    )
+    """)
+
+    # 9. Catálogo de Objetos de la Tienda
+    await db.execute("""
+    CREATE TABLE IF NOT EXISTS shop_items (
+        item_id TEXT PRIMARY KEY,
+        emoji TEXT,
+        cost INTEGER,
+        availability TEXT DEFAULT 'permanent',
+        start_date TEXT DEFAULT NULL,
+        end_date TEXT DEFAULT NULL,
+        purchase_limit INTEGER DEFAULT NULL,
+        total_stock INTEGER DEFAULT NULL,
+        name_default TEXT DEFAULT NULL,
+        desc_default TEXT DEFAULT NULL
+    )
+    """)
+
+    # Sembrar catálogo con plantillas por defecto si está vacío
+    cursor = await db.execute("SELECT COUNT(*) FROM shop_items")
+    row = await cursor.fetchone()
+    if row and row[0] == 0:
+        default_items = [
+            ("color_role", "🎨", 150, "permanent", None, None, 1, None, "Color de Rol Personalizado", "Te permite solicitar un rol de color personalizado en el servidor."),
+            ("vip_status", "👑", 500, "permanent", None, None, 1, None, "Rango VIP", "Rango VIP especial en el servidor con beneficios exclusivos."),
+            ("lucky_charm", "🍀", 50, "permanent", None, None, None, 100, "Amuleto de la Suerte", "Un amuleto especial de stock limitado (solo 100 unidades globales).")
+        ]
+        await db.executemany(
+            "INSERT INTO shop_items (item_id, emoji, cost, availability, start_date, end_date, purchase_limit, total_stock, name_default, desc_default) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            default_items
+        )
+
+
     # --- MIGRACIONES DE COLUMNAS (Asegura consistencia estructural en actualizaciones) ---
     await _ensure_column("users", "coins", "INTEGER DEFAULT 0")
     await _ensure_column("users", "gender", "TEXT DEFAULT NULL")
@@ -242,3 +285,46 @@ async def get_persistence_stats() -> dict:
 def clear_xp_cache_safe():
     """Limpia entradas de XP en memoria sin cambios pendientes para evitar fugas de memoria."""
     XpRepository.clear_xp_cache_safe()
+
+# --- DELEGACIÓN DE MÉTODOS DE INVENTARIO Y TIENDA ---
+
+async def get_user_inventory(user_id: int) -> dict[str, int]:
+    return await InventoryRepository.get_user_inventory(user_id)
+
+async def add_item_to_inventory(user_id: int, item_id: str, quantity: int = 1) -> None:
+    await InventoryRepository.add_item(user_id, item_id, quantity)
+
+async def remove_item_from_inventory(user_id: int, item_id: str, quantity: int = 1) -> bool:
+    return await InventoryRepository.remove_item(user_id, item_id, quantity)
+
+async def get_user_item_count(user_id: int, item_id: str) -> int:
+    return await InventoryRepository.get_item_count(user_id, item_id)
+
+async def get_all_shop_items() -> list[dict]:
+    return await ShopRepository.get_all_items()
+
+async def get_shop_item(item_id: str) -> dict | None:
+    return await ShopRepository.get_item(item_id)
+
+async def add_or_update_shop_item(
+    item_id: str,
+    emoji: str,
+    cost: int,
+    availability: str = "permanent",
+    start_date: str | None = None,
+    end_date: str | None = None,
+    purchase_limit: int | None = None,
+    total_stock: int | None = None,
+    name_default: str | None = None,
+    desc_default: str | None = None
+) -> None:
+    await ShopRepository.add_or_update_item(
+        item_id, emoji, cost, availability, start_date, end_date,
+        purchase_limit, total_stock, name_default, desc_default
+    )
+
+async def delete_shop_item(item_id: str) -> bool:
+    return await ShopRepository.delete_item(item_id)
+
+async def get_shop_item_global_sales(item_id: str) -> int:
+    return await ShopRepository.get_global_sales(item_id)

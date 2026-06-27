@@ -3,7 +3,7 @@ import random
 from ui.games import diversion_ui
 from services.utils import random_service, embed_service
 from services.core import db_service, lang_service
-from services.integrations import emojimixer_service, nekos_api_service
+from services.integrations import nekos_api_service
 from config import settings
 
 async def handle_jumbo(emoji_str: str, lang: str):
@@ -20,11 +20,13 @@ def handle_coinflip(lang: str):
     return diversion_ui.get_coinflip_embed(lang, res, url_gif)
 
 def handle_choice(opcion_a: str, opcion_b: str, lang: str):
-    eleccion = random_service.elegir_opcion(opcion_a, opcion_b)
+    # ponytail: elegir_opcion simplificado usando standard library random.choice
+    eleccion = random.choice([opcion_a, opcion_b])
     return diversion_ui.get_choice_embed(lang, opcion_a, opcion_b, eleccion)
 
 def handle_emojimix(e1: str, e2: str, lang: str):
-    url = emojimixer_service.generar_url_emojimix(e1, e2)
+    # ponytail: emojimixer_service inlineado por simplicidad
+    url = f"https://emojik.vercel.app/s/{e1}_{e2}?size=128"
     return diversion_ui.get_emojimix_embed(lang, e1, e2, url)
 
 async def handle_confess(guild_id: int, secreto: str, lang: str):

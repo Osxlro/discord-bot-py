@@ -7,7 +7,11 @@ EN = {
     "error_hierarchy": "I cannot perform this action due to role hierarchy.",
     "error_self_action": "You cannot perform this action on yourself.",
     "error_missing_args": "Missing arguments.",
-    "error_cooldown": "You are going too fast. Wait {seconds}s.",
+    "error_cooldown": [
+        "⏳ You are going too fast. Wait {seconds}s.",
+        "⏳ Slow down a bit! You need to wait {seconds}s.",
+        "⏳ Take a breath. Try again in {seconds}s."
+    ],
     "error_old_messages": "⚠️ I cannot delete messages older than 14 days (Discord Limitation).",
     "error_usage": "💡 **Correct usage:**",
     "error_bad_arg": "❌ One of the provided arguments is invalid.",
@@ -555,4 +559,42 @@ EN = {
     "hangman_time_remaining": "{time}s remaining",
     "hangman_scores": "🏆 **Scoreboard**",
     "hangman_word_was": "The word was: **{word}**",
+
+    # --- PROFILE (SELECT & INVENTORY) ---
+    "profile_select_general": "General Info",
+    "profile_select_stats": "Server Stats",
+    "profile_select_msgs": "Custom Messages",
+    "profile_select_inventory": "Inventory",
+    "profile_select_placeholder": "Select a section...",
+    "profile_inventory_title": "🎒 Inventory",
+    "profile_inventory_empty": "🎒 Your inventory is empty.",
+
+    # --- SHOP (/SHOP & /BUY) ---
+    "shop_title": "🛒 Server Shop",
+    "shop_empty": "The shop is empty at the moment.",
+    "shop_select_placeholder": "Choose an item to buy...",
+    "shop_purchase_title": "🛍️ Purchase Confirmation",
+    "shop_purchase_confirm": "Are you sure you want to buy {qty}x {emoji} **{item}** for `{cost}` coins?",
+    "shop_purchase_success": "Purchase completed successfully! You bought {qty}x {emoji} **{item}** for `{cost}` coins.",
+    "shop_purchase_public": "¡{user} bought {qty}x {emoji} **{item}** in the shop! 🎉",
+    "shop_purchase_cancelled": "Purchase cancelled.",
+    "shop_error_item_not_found": "❌ Item not found.",
+    "shop_error_unavailable": "❌ {item} is not currently on sale.",
+    "shop_error_user_limit": "❌ You have reached the purchase limit for {item} (Max {limit} per user).",
+    "shop_error_no_stock": "❌ Not enough stock for {item} (Only {stock} left).",
+    "shop_error_no_coins": "❌ You don't have enough coins. Cost: `{cost}` coins, you have: `{coins}`.",
+    "shop_admin_add_success": "✅ Item `{item_id}` successfully added/updated in the shop.",
+    "shop_admin_remove_success": "✅ Item `{item_id}` successfully removed from the shop.",
+
+    # --- SHOP DEFAULT ITEMS ---
+    "item_color_role_name": "Custom Color Role",
+    "item_color_role_desc": "Allows you to request a custom color role in the server.",
+    "item_vip_status_name": "VIP Rank",
+    "item_vip_status_desc": "Special VIP rank in the server with exclusive benefits.",
+    "item_lucky_charm_name": "Lucky Charm",
+    "item_lucky_charm_desc": "A special limited stock charm (only 100 units global).",
+
+    # --- PAGINATION ---
+    "pagination_prev": "Previous",
+    "pagination_next": "Next",
 }

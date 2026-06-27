@@ -4,7 +4,7 @@ import discord
 import wavelink
 import os
 from discord.ext import commands, tasks
-from services.features import help_service
+from ui.shared import help_ui
 from config import settings
 from services.core import db_service, lang_service, persistence_service
 from services.features import developer_service, level_service, moderation_service, profile_service, diversion_service, setup_service, birthday_service
@@ -162,7 +162,7 @@ class HealthCheck(commands.Cog):
                 class MockCtx:
                     def __init__(self, g, a):
                         self.guild, self.author = g, a
-                embed, _ = await help_service.handle_help(self.bot, MockCtx(test_guild, test_guild.me), lang)
+                embed = await help_ui.get_home_embed(self.bot, test_guild, test_guild.me, lang)
                 check_embed(embed, "/help")
             except Exception as e:
                 errors.append(f"Command Logic (/help): {e}")
@@ -279,5 +279,7 @@ class HealthCheck(commands.Cog):
 
             logger.exception("No se pudo notificar al dueño sobre los errores")
 
+# ponytail: Cog deshabilitado temporalmente para evitar sobrecarga periódico
 async def setup(bot):
-    await bot.add_cog(HealthCheck(bot))
+    # Deshabilitado por optimización ponytail. Mantener archivo para referencia futura.
+    pass

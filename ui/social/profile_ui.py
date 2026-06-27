@@ -74,20 +74,84 @@ def get_messages_embed(target: discord.Member, user_data: dict, lang: str) -> di
     embed.description = msgs if msgs else lang_service.get_text("log_none", lang)
     return embed
 
-class ProfileView(discord.ui.View):
-    """Vista con botones para navegar por las secciones del perfil."""
-    def __init__(self, target, user_data, guild_data, xp_next, lang, author_id, is_dm: bool = False):
-        super().__init__(timeout=settings.GLOBAL_TIMEOUT)
-        self.target, self.user_data, self.guild_data = target, user_data, guild_data
-        self.xp_next, self.lang, self.author_id = xp_next, lang, author_id
-        self.message = None
-        
-        self.btn_general.label = lang_service.get_text("profile_btn_general", lang)
-        self.btn_stats.label = lang_service.get_text("profile_btn_stats", lang)
-        self.btn_msgs.label = lang_service.get_text("profile_btn_msgs", lang)
+def get_inventory_embed(target: discord.Member, inventory_resolved: list[dict], lang: str) -> discord.Embed:
+    """Genera el embed de visualización del inventario del usuario."""
+    title = lang_service.get_text("profile_inventory_title", lang) or "Inventario"
+    embed = discord.Embed(title=f"{title} - {target.display_name}", color=target.color)
+    embed.set_thumbnail(url=target.display_avatar.url)
 
-        if is_dm:
-            self.remove_item(self.btn_stats)
+    desc = ""
+    if inventory_resolved:
+        for item in inventory_resolved:
+            emoji = item.get("emoji") or ""
+            name = item.get("name") or ""
+            qty = item.get("quantity") or 0
+            desc += f"> **{emoji} {name}** — x{qty}\n"
+    else:
+        desc = lang_service.get_text("profile_inventory_empty", lang) or "🎒 Tu inventario está vacío."
+
+    embed.description = desc
+    return embed
+
+class ProfileDropdown(discord.ui.Select):
+    def __init__(self, is_dm: bool, lang: str):
+        options = [
+            discord.SelectOption(
+                label=lang_service.get_text("profile_select_general", lang) or "Información General",
+                value="general",
+                emoji="👤"
+            )
+        ]
+        if not is_dm:
+            options.append(discord.SelectOption(
+                label=lang_service.get_text("profile_select_stats", lang) or "Estadísticas del Servidor",
+                value="stats",
+                emoji="📊"
+            ))
+        options.append(discord.SelectOption(
+            label=lang_service.get_text("profile_select_msgs", lang) or "Mensajes Personalizados",
+            value="messages",
+            emoji="✉️"
+        ))
+        options.append(discord.SelectOption(
+            label=lang_service.get_text("profile_select_inventory", lang) or "Inventario",
+            value="inventory",
+            emoji="🎒"
+        ))
+
+        placeholder = lang_service.get_text("profile_select_placeholder", lang) or "Selecciona una sección..."
+        super().__init__(placeholder=placeholder, min_values=1, max_values=1, options=options)
+
+    async def callback(self, interaction: discord.Interaction):
+        selection = self.values[0]
+        view = self.view
+        
+        if selection == "general":
+            embed = get_general_embed(view.target, view.user_data, view.lang)
+        elif selection == "stats":
+            embed = get_stats_embed(view.target, view.guild_data, view.xp_next, view.lang)
+        elif selection == "messages":
+            embed = get_messages_embed(view.target, view.user_data, view.lang)
+        else:
+            embed = get_inventory_embed(view.target, view.inventory_resolved, view.lang)
+
+        await interaction.response.edit_message(embed=embed, view=view)
+
+
+class ProfileView(discord.ui.View):
+    """Vista con un menú desplegable (Select) para navegar por las secciones del perfil."""
+    def __init__(self, target, user_data, guild_data, xp_next, inventory_resolved, lang, author_id, is_dm: bool = False):
+        super().__init__(timeout=settings.GLOBAL_TIMEOUT)
+        self.target = target
+        self.user_data = user_data
+        self.guild_data = guild_data
+        self.xp_next = xp_next
+        self.inventory_resolved = inventory_resolved
+        self.lang = lang
+        self.author_id = author_id
+        self.message = None
+
+        self.add_item(ProfileDropdown(is_dm, lang))
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         if interaction.user.id != self.author_id:
@@ -96,27 +160,12 @@ class ProfileView(discord.ui.View):
         return True
 
     async def on_timeout(self):
-        for child in self.children: child.disabled = True
-        try: await self.message.edit(view=self)
-        except Exception: pass
-
-    async def _update(self, interaction, embed, style_idx):
-        tabs = [self.btn_general, self.btn_stats, self.btn_msgs]
-        for i, child in enumerate(tabs):
-            child.style = discord.ButtonStyle.primary if i == style_idx else discord.ButtonStyle.secondary
-        await interaction.response.edit_message(embed=embed, view=self)
-
-    @discord.ui.button(style=discord.ButtonStyle.primary)
-    async def btn_general(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await self._update(interaction, get_general_embed(self.target, self.user_data, self.lang), 0)
-
-    @discord.ui.button(style=discord.ButtonStyle.secondary)
-    async def btn_stats(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await self._update(interaction, get_stats_embed(self.target, self.guild_data, self.xp_next, self.lang), 1)
-
-    @discord.ui.button(style=discord.ButtonStyle.secondary)
-    async def btn_msgs(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await self._update(interaction, get_messages_embed(self.target, self.user_data, self.lang), 2)
+        for child in self.children:
+            child.disabled = True
+        try:
+            await self.message.edit(view=self)
+        except Exception:
+            pass
 
 def get_profile_embed(target: discord.Member, user_data: dict, guild_data: dict, xp_next: int, lang: str) -> discord.Embed:
     """Mantiene compatibilidad con el wrapper de servicio (retorna la vista general)."""

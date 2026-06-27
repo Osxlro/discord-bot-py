@@ -29,6 +29,13 @@ BASELINE_COLUMNS = {
     },
     "warns": {
         "id", "guild_id", "user_id", "mod_id", "reason", "timestamp"
+    },
+    "user_inventory": {
+        "user_id", "item_id", "quantity"
+    },
+    "shop_items": {
+        "item_id", "emoji", "cost", "availability", "start_date", "end_date",
+        "purchase_limit", "total_stock", "name_default", "desc_default"
     }
 }
 

@@ -63,7 +63,8 @@ async def handle_join(guild: discord.Guild, member: discord.Member, lang: str):
         return None, voice_ui.get_voice_error_embed(lang, "voice_error_user")
 
     channel = member.voice.channel
-    if not voice_service.check_voice_permissions(channel, guild.me):
+    # ponytail: check_voice_permissions simplificado usando propiedad nativa de discord.py
+    if not channel.permissions_for(guild.me).connect:
         return None, voice_ui.get_voice_error_embed(lang, "voice_error_perms")
 
     if await join_voice(guild, channel):

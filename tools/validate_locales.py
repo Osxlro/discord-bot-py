@@ -18,6 +18,13 @@ except ImportError as e:
 
 def get_placeholders(text):
     """Extrae los marcadores de posición (placeholders) de una cadena de formato."""
+    # ponytail: Si es una colección de textos, extraemos de forma recursiva
+    if isinstance(text, (list, tuple)):
+        placeholders = set()
+        for t in text:
+            placeholders.update(get_placeholders(t))
+        return placeholders
+
     if not isinstance(text, str):
         return set()
     try:

@@ -423,18 +423,17 @@ Para garantizar la estabilidad y fácil mantenimiento del bot en entornos de pro
    - Ubicación del log rotativo: `data/discord.log` (Rotación automática: 5 archivos de hasta 5MB).
    - Siempre registrar excepciones usando `logger.exception("Mensaje del error")` para capturar la traza completa (stack trace).
 
-2. **Suite de Autodiagnóstico Activo (`health_check.py`):**
-   - El bot ejecuta una prueba automática en segundo plano cada 30 minutos (`cogs/tasks/health_check.py`).
-   - Comprueba la integridad física de la base de datos (PRAGMA check), tamaño del disco, estado de los nodos Lavalink, credenciales de Spotify, paridad de las claves i18n entre idiomas, y uso de CPU/RAM.
-   - Si se detecta un fallo, el bot enviará un mensaje directo (DM) automático con la alerta al dueño de la aplicación.
+2. **Monitoreo Pasivo y Desactivación de Autodiagnóstico Activo (Ponytail):**
+   - *Nota:* La suite de autodiagnóstico activo (`health_check.py`) ha sido desactivada temporalmente para evitar sobrecarga y optimizar recursos (consultas recurrentes a disco, base de datos y simulaciones de comandos).
+   - Se prioriza el monitoreo pasivo a través del archivo de log local (`data/discord.log`). El archivo original `health_check.py` se mantiene en el repositorio en caso de requerirse su reactivación.
 
 3. **Manejo de Excepciones en Comandos:**
    - Centralizado en `cogs/events/error_handler.py`. Evitar bloques `try/except` genéricos que silencien errores en la capa del comando; permitir que escalen al manejador global.
    - Enviar siempre respuestas visuales controladas usando `embed_service.error(...)` e internacionalizadas.
 
 4. **Respaldo y Recuperación ante Pérdida de Datos:**
-   - La tarea `cogs/tasks/backup.py` realiza un volcado de XP en memoria a disco cada 5 minutos (`flush_xp_cache()`) y genera un backup completo de la base de datos SQLite cada 12 horas.
-   - El backup se envía directamente al DM del dueño del bot. Solo se mantienen los últimos 3 backups en el historial para evitar saturar el almacenamiento.
+   - El volcado recurrente de XP en memoria a disco se gestiona de forma centralizada cada 60 segundos por la tarea de optimización en `cogs/tasks/optimization.py` (`cache_flush_loop`).
+   - La tarea `cogs/tasks/backup.py` se encarga de forzar el volcado de XP a disco justo antes de generar la copia del archivo SQLite y enviar el backup completo al DM del dueño del bot cada 12 horas. Solo se mantienen los últimos 3 backups en el historial para evitar saturar el almacenamiento.
    - Para restaurar en caso de corrupción: Detener el bot, descargar el último archivo sqlite3 del DM, renombrarlo a `database.sqlite3` en `/data/`, y reiniciar.
 
 5. **Garantía de Tiempo de Actividad (Resiliency):**

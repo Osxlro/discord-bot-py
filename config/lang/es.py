@@ -7,7 +7,11 @@ ES = {
     "error_hierarchy": "❌ No puedo realizar esta acción por jerarquía de roles.",
     "error_self_action": "❌ No puedes usar este comando sobre ti mismo.",
     "error_missing_args": "❌ Faltan argumentos.",
-    "error_cooldown": "⏳ Estás yendo muy rápido. Espera {seconds}s.",
+    "error_cooldown": [
+        "⏳ Estás yendo muy rápido. Espera {seconds}s.",
+        "⏳ ¡Desacelera un poco! Debes esperar {seconds}s.",
+        "⏳ Tómate un respiro. Inténtalo de nuevo en {seconds}s."
+    ],
     "error_old_messages": "⚠️ No puedo borrar mensajes de hace más de 14 días (Limitación de Discord).",
     "error_usage": "💡 **Uso correcto:**",
     "error_bad_arg": "❌ Uno de los argumentos proporcionados es inválido.",
@@ -555,4 +559,42 @@ ES = {
     "hangman_time_remaining": "{time}s restantes",
     "hangman_scores": "🏆 **Puntajes**",
     "hangman_word_was": "La palabra era: **{word}**",
+
+    # --- PERFIL (SELECT & INVENTARIO) ---
+    "profile_select_general": "Información General",
+    "profile_select_stats": "Estadísticas del Servidor",
+    "profile_select_msgs": "Mensajes Personalizados",
+    "profile_select_inventory": "Inventario",
+    "profile_select_placeholder": "Selecciona una sección...",
+    "profile_inventory_title": "🎒 Inventario",
+    "profile_inventory_empty": "🎒 Tu inventario está vacío.",
+
+    # --- TIENDA (/SHOP & /BUY) ---
+    "shop_title": "🛒 Tienda del Servidor",
+    "shop_empty": "La tienda está vacía por el momento.",
+    "shop_select_placeholder": "Elige un objeto para comprar...",
+    "shop_purchase_title": "🛍️ Confirmación de Compra",
+    "shop_purchase_confirm": "¿Estás seguro de que quieres comprar {qty}x {emoji} **{item}** por `{cost}` coins?",
+    "shop_purchase_success": "¡Compra completada con éxito! Has adquirido {qty}x {emoji} **{item}** por `{cost}` coins.",
+    "shop_purchase_public": "¡{user} ha comprado {qty}x {emoji} **{item}** en la tienda! 🎉",
+    "shop_purchase_cancelled": "Compra cancelada.",
+    "shop_error_item_not_found": "❌ Objeto no encontrado.",
+    "shop_error_unavailable": "❌ {item} no está a la venta actualmente.",
+    "shop_error_user_limit": "❌ Has alcanzado el límite de compra para {item} (Máximo {limit} por usuario).",
+    "shop_error_no_stock": "❌ No queda stock suficiente para {item} (Solo quedan {stock} unidades).",
+    "shop_error_no_coins": "❌ No tienes suficientes coins. Costo: `{cost}` coins, tienes: `{coins}`.",
+    "shop_admin_add_success": "✅ Objeto `{item_id}` añadido/actualizado con éxito en la tienda.",
+    "shop_admin_remove_success": "✅ Objeto `{item_id}` eliminado con éxito de la tienda.",
+
+    # --- OBJETOS DE EJEMPLO DE LA TIENDA ---
+    "item_color_role_name": "Color de Rol Personalizado",
+    "item_color_role_desc": "Te permite solicitar un rol de color personalizado en el servidor.",
+    "item_vip_status_name": "Rango VIP",
+    "item_vip_status_desc": "Rango VIP especial en el servidor con beneficios exclusivos.",
+    "item_lucky_charm_name": "Amuleto de la Suerte",
+    "item_lucky_charm_desc": "Un amuleto especial de stock limitado (solo 100 unidades globales).",
+
+    # --- PAGINACIÓN ---
+    "pagination_prev": "Anterior",
+    "pagination_next": "Siguiente",
 }

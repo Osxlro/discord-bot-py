@@ -10,9 +10,6 @@ def obtener_cara_cruz() -> tuple[str, str]:
     ]
     return random.choice(opciones)
 
-def elegir_opcion(opcion_a: str, opcion_b: str) -> str:
-    """Elige una de las dos opciones."""
-    return random.choice([opcion_a, opcion_b])
 
 # --- NUEVA FUNCIÓN ---
 def verificar_suerte(probabilidad: float) -> bool:

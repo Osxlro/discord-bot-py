@@ -29,6 +29,11 @@ def get_text(key: str, lang: str = "es", **kwargs) -> str:
     # Obtener texto
     text = lang_dict.get(key, f"Missing key: {key}")
     
+    # ponytail: Si el texto es una lista/tupla (diálogos aleatorios), seleccionamos uno al azar
+    if isinstance(text, (list, tuple)):
+        import random
+        text = random.choice(text)
+    
     # Formatear si hay variables
     if kwargs:
         try:
