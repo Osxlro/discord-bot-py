@@ -35,7 +35,8 @@ BASELINE_COLUMNS = {
     },
     "shop_items": {
         "item_id", "emoji", "cost", "availability", "start_date", "end_date",
-        "purchase_limit", "total_stock", "name_default", "desc_default", "category"
+        "purchase_limit", "total_stock", "name_default", "desc_default", "category",
+        "names_json", "descs_json"
     }
 }
 

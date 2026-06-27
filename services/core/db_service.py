@@ -173,23 +173,14 @@ async def init_db():
         total_stock INTEGER DEFAULT NULL,
         name_default TEXT DEFAULT NULL,
         desc_default TEXT DEFAULT NULL,
-        category TEXT DEFAULT 'Otros'
+        category TEXT DEFAULT 'Otros',
+        names_json TEXT DEFAULT NULL,
+        descs_json TEXT DEFAULT NULL
     )
     """)
 
-    # Sembrar catálogo con plantillas por defecto si está vacío
-    cursor = await db.execute("SELECT COUNT(*) FROM shop_items")
-    row = await cursor.fetchone()
-    if row and row[0] == 0:
-        default_items = [
-            ("color_role", "🎨", 150, "permanent", None, None, 1, None, "Color de Rol Personalizado", "Te permite solicitar un rol de color personalizado en el servidor.", "Cosméticos"),
-            ("vip_status", "👑", 500, "permanent", None, None, 1, None, "Rango VIP", "Rango VIP especial en el servidor con beneficios exclusivos.", "Rangos"),
-            ("lucky_charm", "🍀", 50, "permanent", None, None, None, 100, "Amuleto de la Suerte", "Un amuleto especial de stock limitado (solo 100 unidades globales).", "Diversión")
-        ]
-        await db.executemany(
-            "INSERT INTO shop_items (item_id, emoji, cost, availability, start_date, end_date, purchase_limit, total_stock, name_default, desc_default, category) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            default_items
-        )
+    # Sincronizar catálogo con config/shop_items.json
+    await sync_shop_catalog()
 
 
     # --- MIGRACIONES DE COLUMNAS (Asegura consistencia estructural en actualizaciones) ---
@@ -198,6 +189,8 @@ async def init_db():
     await _ensure_column("users", "bank_coins", "INTEGER DEFAULT 0")
     
     await _ensure_column("shop_items", "category", "TEXT DEFAULT 'Otros'")
+    await _ensure_column("shop_items", "names_json", "TEXT DEFAULT NULL")
+    await _ensure_column("shop_items", "descs_json", "TEXT DEFAULT NULL")
     
     await _ensure_column("guild_stats", "rebirths", "INTEGER DEFAULT 0")
     
@@ -321,11 +314,14 @@ async def add_or_update_shop_item(
     total_stock: int | None = None,
     name_default: str | None = None,
     desc_default: str | None = None,
-    category: str = "Otros"
+    category: str = "Otros",
+    names_json: str | None = None,
+    descs_json: str | None = None
 ) -> None:
     await ShopRepository.add_or_update_item(
         item_id, emoji, cost, availability, start_date, end_date,
-        purchase_limit, total_stock, name_default, desc_default, category
+        purchase_limit, total_stock, name_default, desc_default, category,
+        names_json, descs_json
     )
 
 async def delete_shop_item(item_id: str) -> bool:
@@ -333,3 +329,54 @@ async def delete_shop_item(item_id: str) -> bool:
 
 async def get_shop_item_global_sales(item_id: str) -> int:
     return await ShopRepository.get_global_sales(item_id)
+
+async def sync_shop_catalog() -> bool:
+    """Sincroniza el catálogo de la tienda desde el archivo config/shop_items.json a la base de datos."""
+    import json
+    import os
+    json_path = "./config/shop_items.json"
+    if not os.path.exists(json_path):
+        logger.warning(f"⚠️ [DB Service] Archivo no encontrado: {json_path}")
+        return False
+    try:
+        with open(json_path, "r", encoding="utf-8") as f:
+            items_data = json.load(f)
+        
+        json_item_ids = set()
+        for item in items_data:
+            item_id = item["item_id"]
+            json_item_ids.add(item_id)
+            
+            names_dict = item.get("names", {})
+            descs_dict = item.get("descriptions", {})
+            names_str = json.dumps(names_dict, ensure_ascii=False)
+            descs_str = json.dumps(descs_dict, ensure_ascii=False)
+            
+            name_default = names_dict.get("es") or names_dict.get("en") or next(iter(names_dict.values()), item_id)
+            desc_default = descs_dict.get("es") or descs_dict.get("en") or next(iter(descs_dict.values()), "")
+            
+            await add_or_update_shop_item(
+                item_id=item_id,
+                emoji=item["emoji"],
+                cost=item["cost"],
+                availability=item.get("availability", "permanent"),
+                start_date=item.get("start_date"),
+                end_date=item.get("end_date"),
+                purchase_limit=item.get("purchase_limit"),
+                total_stock=item.get("total_stock"),
+                name_default=name_default,
+                desc_default=desc_default,
+                category=item.get("category", "Otros"),
+                names_json=names_str,
+                descs_json=descs_str
+            )
+        
+        db_items = await get_all_shop_items()
+        for db_item in db_items:
+            if db_item["item_id"] not in json_item_ids:
+                logger.info(f"🗑️ [DB Service] Eliminando item '{db_item['item_id']}' no presente en shop_items.json")
+                await delete_shop_item(db_item["item_id"])
+        return True
+    except Exception as e:
+        logger.error(f"❌ Error al sincronizar shop_items.json: {e}")
+        return False

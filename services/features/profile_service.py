@@ -29,6 +29,8 @@ async def handle_profile(guild, target, lang, author_id: int):
     shop_items = await db_service.get_all_shop_items()
     shop_map = {item["item_id"]: item for item in shop_items}
     
+    from services.features.shop_service import get_localized_field
+    
     inventory_resolved = []
     for item_id, qty in inventory.items():
         if qty <= 0:
@@ -36,7 +38,7 @@ async def handle_profile(guild, target, lang, author_id: int):
         item_info = shop_map.get(item_id)
         if item_info:
             emoji = item_info.get("emoji") or "📦"
-            name = item_info.get("name_default") or lang_service.get_text(item_info.get("name_key"), lang)
+            name = get_localized_field(item_info, "names", lang)
         else:
             emoji = "📦"
             name = item_id.replace("_", " ").title()

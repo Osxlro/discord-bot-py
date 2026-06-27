@@ -1,0 +1,65 @@
+[
+  {
+    "item_id": "color_role",
+    "emoji": "🎨",
+    "cost": 150,
+    "category": "Categoría 1",
+    "availability": "permanent",
+    "purchase_limit": 1,
+    "total_stock": null,
+    "names": {
+      "es": "Color de Rol Personalizado",
+      "en": "Custom Color Role",
+      "pt": "Cor de Cargo Personalizada",
+      "fr": "Couleur de Rôle Personnalisée"
+    },
+    "descriptions": {
+      "es": "Te permite solicitar un rol de color personalizado en el servidor.",
+      "en": "Allows you to request a custom color role in the server.",
+      "pt": "Permite que solicite uma cor de cargo personalizada no servidor.",
+      "fr": "Vous permet de demander une couleur de rôle personnalisée sur le serveur."
+    }
+  },
+  {
+    "item_id": "vip_status",
+    "emoji": "👑",
+    "cost": 500,
+    "category": "Categoría 2",
+    "availability": "permanent",
+    "purchase_limit": 1,
+    "total_stock": null,
+    "names": {
+      "es": "Rango VIP",
+      "en": "VIP Rank",
+      "pt": "Cargo VIP",
+      "fr": "Grade VIP"
+    },
+    "descriptions": {
+      "es": "Rango VIP especial en el servidor con beneficios exclusivos.",
+      "en": "Special VIP rank in the server with exclusive benefits.",
+      "pt": "Cargo VIP especial no servidor com benefícios exclusivos.",
+      "fr": "Grade VIP spécial sur le serveur avec des avantages exclusifs."
+    }
+  },
+  {
+    "item_id": "lucky_charm",
+    "emoji": "🍀",
+    "cost": 50,
+    "category": "Eventos",
+    "availability": "permanent",
+    "purchase_limit": null,
+    "total_stock": 100,
+    "names": {
+      "es": "Amuleto de la Suerte",
+      "en": "Lucky Charm",
+      "pt": "Amuleto da Sorte",
+      "fr": "Porte-bonheur"
+    },
+    "descriptions": {
+      "es": "Un amuleto especial de stock limitado (solo 100 unidades globales).",
+      "en": "A special limited stock charm (only 100 units global).",
+      "pt": "Um amuleto especial com estoque global limitado (apenas 100 unidades).",
+      "fr": "Un porte-bonheur spécial à stock limité (seulement 100 unités mondiales)."
+    }
+  }
+]

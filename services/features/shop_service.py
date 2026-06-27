@@ -4,7 +4,29 @@ import discord
 from services.core import db_service, lang_service
 from services.utils import embed_service
 
+import json
+
 logger = logging.getLogger(__name__)
+
+def get_localized_field(item: dict, field_prefix: str, lang: str) -> str:
+    """Obtiene el campo localizado de un item (ej: 'names' o 'descs') según el idioma."""
+    json_col = f"{field_prefix}_json"
+    if json_col in item and item[json_col]:
+        try:
+            data = json.loads(item[json_col])
+            val = data.get(lang)
+            if val:
+                return val
+            val = data.get("en")
+            if val:
+                return val
+            if data:
+                return next(iter(data.values()))
+        except Exception:
+            pass
+            
+    default_key = "name_default" if field_prefix == "names" else "desc_default"
+    return item.get(default_key) or ""
 
 async def process_purchase(user_id: int, item_id: str, quantity: int, lang: str) -> tuple[bool, str | None, discord.Embed]:
     """
@@ -21,7 +43,7 @@ async def process_purchase(user_id: int, item_id: str, quantity: int, lang: str)
         err_msg = lang_service.get_text("shop_error_item_not_found", lang)
         return False, err_msg, embed_service.error(lang_service.get_text("error_title", lang), err_msg, lite=True)
 
-    item_name = item.get("name_default") or lang_service.get_text(item.get("name_key"), lang)
+    item_name = get_localized_field(item, "names", lang)
     item_emoji = item.get("emoji") or ""
 
     # 2. Verificar disponibilidad temporal

@@ -293,5 +293,35 @@ class Developer(commands.Cog):
         )
         await ctx.send(embed=embed, ephemeral=True)
 
+    @commands.hybrid_group(name="dev", description="Comandos de utilidad para desarrolladores (Solo Owner).")
+    @commands.is_owner()
+    async def dev_group(self, ctx: commands.Context):
+        """Grupo de comandos para desarrolladores."""
+        if ctx.invoked_subcommand is None:
+            await ctx.send_help(ctx.command)
+
+    @dev_group.command(name="refresh_shop", description="Sincroniza y recarga el catálogo de la tienda desde shop_items.json.")
+    async def refresh_shop(self, ctx: commands.Context):
+        """Sincroniza el catálogo de la tienda con shop_items.json."""
+        await ctx.defer(ephemeral=True)
+        lang = await lang_service.get_guild_lang(ctx.guild.id if ctx.guild else None)
+        
+        from services.core import db_service
+        success = await db_service.sync_shop_catalog()
+        
+        if success:
+            embed = embed_service.success(
+                lang_service.get_text("shop_purchase_title", lang),
+                "Catálogo de la tienda sincronizado con éxito desde `shop_items.json`.",
+                lite=True
+            )
+        else:
+            embed = embed_service.error(
+                lang_service.get_text("error_title", lang),
+                "Ocurrió un error al sincronizar el catálogo de la tienda. Revisa la consola/logs.",
+                lite=True
+            )
+        await ctx.send(embed=embed, ephemeral=True)
+
 async def setup(bot):
     await bot.add_cog(Developer(bot))

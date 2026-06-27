@@ -54,9 +54,10 @@ class Shop(commands.Cog):
             all_items = [item for item in all_items if item.get("category", "Otros") == selected_category]
 
         lang = await lang_service.get_guild_lang(interaction.guild_id)
+        from services.features.shop_service import get_localized_field
         choices = []
         for item in all_items:
-            name = item.get("name_default") or lang_service.get_text(item.get("name_key"), lang)
+            name = get_localized_field(item, "names", lang)
             emoji = item.get("emoji") or ""
             display_name = f"{emoji} {name}"[:100]
             if current.lower() in name.lower() or current.lower() in item["item_id"].lower():
@@ -107,15 +108,16 @@ class Shop(commands.Cog):
             if category:
                 all_items = [it for it in all_items if it.get("category", "Otros") == category]
 
+            from services.features.shop_service import get_localized_field
             for it in all_items:
-                name = it.get("name_default") or lang_service.get_text(it.get("name_key"), lang)
+                name = get_localized_field(it, "names", lang)
                 if name.lower() == objeto.lower() or it["item_id"].lower() == objeto.lower():
                     best_match = it
                     break
             
             if not best_match:
                 for it in all_items:
-                    name = it.get("name_default") or lang_service.get_text(it.get("name_key"), lang)
+                    name = get_localized_field(it, "names", lang)
                     if objeto.lower() in name.lower():
                         best_match = it
                         break
@@ -132,7 +134,8 @@ class Shop(commands.Cog):
                 ephemeral=True
             )
 
-        item_name = item.get("name_default") or lang_service.get_text(item.get("name_key"), lang)
+        from services.features.shop_service import get_localized_field
+        item_name = get_localized_field(item, "names", lang)
         item_emoji = item.get("emoji") or ""
 
         # Crear confirmación de compra efímera

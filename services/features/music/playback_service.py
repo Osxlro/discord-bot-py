@@ -209,6 +209,12 @@ async def handle_play_search(busqueda: str) -> wavelink.Playable | wavelink.Play
 
 async def handle_track_fallback(player: wavelink.Player, track: wavelink.Playable) -> bool:
     """Intenta encontrar una versión alternativa de una canción que falló."""
+    # Evitar fallbacks múltiples simultáneos para la misma pista
+    if getattr(player, "processing_fallback_uri", None) == track.uri:
+        logger.debug(f"🔄 [Music Service] Ya se está procesando el fallback para esta pista: {track.title}")
+        return False
+        
+    player.processing_fallback_uri = track.uri
     uri = (track.uri or "").lower()
     fallback_provider = "scsearch" if "youtube" in uri or "spotify" in uri else "ytsearch"
     
@@ -229,6 +235,9 @@ async def handle_track_fallback(player: wavelink.Player, track: wavelink.Playabl
             return True
     except Exception as e:
         logger.error(f"❌ Fallback fallido: {e}")
+    finally:
+        if getattr(player, "processing_fallback_uri", None) == track.uri:
+            player.processing_fallback_uri = None
     
     return False
 

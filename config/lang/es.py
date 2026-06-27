@@ -332,7 +332,7 @@ ES = {
     "help_desc_optimizationtasks": "Tareas de mantenimiento interno.",
     "help_desc_usuario": "Perfil, cumpleaños y personalización.",
     "help_desc_music": "Reproducción de música de alta calidad.",
-    "help_desc_shop": "🛒 Comandos de la tienda y el inventario del usuario.",
+    "help_desc_shop": "Comandos de la tienda y el inventario del usuario.",
 
     # --- MINECRAFT ---
     "mc_bridge_set": "✅ Canal de chat vinculado: {channel}",
