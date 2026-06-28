@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ bot_name }}{% endblock %}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/main.css">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/" class="logo-link">
+                <img class="logo-img" src="{{ bot_avatar }}" alt="Logo">
+                <span>{{ bot_name }}</span>
+            </a>
+            <ul class="nav-menu">
+                <li><a href="/" class="nav-link {% if active_page == 'index' %}active{% endif %}">Inicio</a></li>
+                <li><a href="/commands" class="nav-link {% if active_page == 'commands' %}active{% endif %}">Comandos</a></li>
+                <li><a href="/docs" class="nav-link {% if active_page == 'docs' %}active{% endif %}">Documentos</a></li>
+                <li><a href="/profile" class="btn-login">Login</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="footer">
+        <div class="nav-container">
+            <span class="footer-text">
+                Friday Bot © 2026. Hospedado en 
+                <a href="http://fridaybot.duckdns.org:5058" class="footer-link" target="_blank">fridaybot.duckdns.org:5058</a>
+            </span>
+        </div>
+    </footer>
+</body>
+</html>

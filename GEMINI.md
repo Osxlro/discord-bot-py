@@ -429,6 +429,9 @@ La suite se compone de seis validadores en el directorio `/tools/`:
 2. **Actualización Obligatoria de `GEMINI.md`**:
    - Cada vez que se realice una adición importante de características, cambios en la estructura de directorios, actualización de base de datos o adición/modificación de herramientas en el proyecto, el desarrollador (o la IA) tiene la obligación de actualizar este archivo `GEMINI.md` de manera inmediata para mantener sincronizada la documentación del proyecto.
 
+3. **Mantenimiento y Diseño del Módulo Web**:
+   - Para cualquier modificación, adición o cambio de estilo, enrutamiento o lógica dentro del módulo `/web/` y sus recursos, el desarrollador (o la IA) tiene la obligación de leer y seguir las directrices estéticas y estructurales establecidas en el archivo [web/DESIGN.md](file:///c:/Users/PC/Documents/GitHub/discord-bot-py/web/DESIGN.md) en el repositorio.
+
 ---
 
 ## 🚨 Protocolo ante Bugs, Errores y Fallos Críticos

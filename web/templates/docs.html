@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block title %}{{ bot_name }} - Documentos{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1>Documentación</h1>
+    <p class="subtitle" style="margin-bottom: 24px;">Guías completas para configurar y sacar el máximo provecho de {{ bot_name }}.</p>
+    
+    <div style="background: rgba(255, 255, 255, 0.02); border: 1px dashed var(--card-border); border-radius: 16px; padding: 32px 16px; text-align: center;">
+        <span style="font-size: 2rem;">📚</span>
+        <h3 style="margin: 12px 0 8px; font-weight: 600;">Sección en construcción</h3>
+        <p style="font-size: 0.9rem; color: var(--text-muted);">Estamos redactando guías paso a paso detalladas para la configuración del servidor y sistemas de juego.</p>
+    </div>
+</div>
+{% endblock %}

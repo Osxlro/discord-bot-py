@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ bot_name }} - Portal Web</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0f111a;
+            --card-bg: rgba(255, 255, 255, 0.03);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --primary-color: #5865F2;
+            --text-color: #f3f4f6;
+            --text-muted: #9ca3af;
+            --online-color: #22c55e;
+            --offline-color: #f59e0b;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(88, 101, 242, 0.1) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.1) 0%, transparent 40%);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 480px;
+            padding: 20px;
+            z-index: 10;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            backdrop-filter: blur(16px);
+            border-radius: 24px;
+            padding: 40px 30px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4);
+        }
+
+        .avatar-container {
+            position: relative;
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 24px;
+        }
+
+        .avatar {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid var(--card-border);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        .status-indicator {
+            position: absolute;
+            bottom: 4px;
+            right: 4px;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 4px solid var(--bg-color);
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+
+        .status-online {
+            background-color: var(--online-color);
+            animation: pulse 2s infinite;
+        }
+
+        .status-offline {
+            background-color: var(--offline-color);
+        }
+
+        h1 {
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, #ffffff 0%, #a5b4fc 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            font-size: 1rem;
+            color: var(--text-muted);
+            margin-bottom: 32px;
+            font-weight: 300;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-bottom: 12px;
+        }
+
+        .stat-item {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 16px 8px;
+            transition: background 0.2s ease;
+        }
+
+        .stat-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .stat-val {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #ffffff;
+            margin-bottom: 4px;
+        }
+
+        .stat-lbl {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        footer {
+            margin-top: 24px;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            text-align: center;
+        }
+
+        footer a {
+            color: var(--primary-color);
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }
+
+        footer a:hover {
+            color: #ffffff;
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(34, 197, 94, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="avatar-container">
+                <img class="avatar" src="{{ bot_avatar }}" alt="Avatar de {{ bot_name }}">
+                <div class="status-indicator {% if is_ready %}status-online{% else %}status-offline{% endif %}"></div>
+            </div>
+            <h1>{{ bot_name }}</h1>
+            <p class="subtitle">¡Hola Mundo! El portal web del bot de Discord funciona correctamente.</p>
+            
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-val">{{ guilds_count }}</div>
+                    <div class="stat-lbl">Servidores</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-val">{{ users_count }}</div>
+                    <div class="stat-lbl">Usuarios</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-val">{{ commands_count }}</div>
+                    <div class="stat-lbl">Comandos</div>
+                </div>
+            </div>
+        </div>
+        <footer>
+            Hospedado en <a href="http://fridaybot.duckdns.org:5058" target="_blank">fridaybot.duckdns.org:5058</a>
+        </footer>
+    </div>
+</body>
+</html>
