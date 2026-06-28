@@ -178,12 +178,13 @@ async def main():
     from services.utils import http_client
     from web.app import create_app
     from web.server import WebServer
+    from web.config import web_settings
 
     bot = BotPersonal()
     
     app = create_app()
     app.state.bot = bot
-    web_server = WebServer(app, host="0.0.0.0", port=5058)
+    web_server = WebServer(app, host=web_settings.WEB_HOST, port=web_settings.WEB_PORT)
     
     try:
         web_server.start()
