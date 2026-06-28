@@ -36,9 +36,9 @@ def create_app() -> FastAPI:
             commands_count = len(bot.commands) + len(bot.tree.get_commands())
             
         return templates.TemplateResponse(
+            request,
             "index.html",
             {
-                "request": request,
                 "bot_name": bot_name,
                 "bot_avatar": bot_avatar,
                 "guilds_count": guilds_count,
