@@ -37,3 +37,8 @@ def get_anime_embed(lang: str, url: str, description: str, title: str = None) ->
     if not title:
         title = lang_service.get_text("anime_embed_title", lang)
     return embed_service.fun(title, description, image=url)
+
+def get_dice_embed(lang: str, result: int) -> discord.Embed:
+    title = lang_service.get_text("dice_title", lang)
+    desc = lang_service.get_text("dice_desc", lang, result=result)
+    return embed_service.fun(title, desc, lite=True)

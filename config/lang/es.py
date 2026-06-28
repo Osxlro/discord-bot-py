@@ -85,6 +85,8 @@ ES = {
     "emojimix_title": "Emoji Mix",
     "eightball_title": "🎱 8-Ball",
     "8ball_responses": "Sí, definitivamente.|Es cierto.|Sin duda.|Sí.|Probablemente.|Pregunta de nuevo más tarde.|Mejor no decirte ahora.|No cuentes con ello.|Mi respuesta es no.|Mis fuentes dicen que no.|Muy dudoso.",
+    "dice_title": "🎲 Tirada de Dados",
+    "dice_desc": "¡Has lanzado el dado y obtuviste un **{result}**! 🎲",
 
     # --- NIVELES & PERFIL ---
     "rank_title": "Rango de {user}",

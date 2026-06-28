@@ -78,3 +78,7 @@ async def handle_anime(lang: str):
     
     embed = diversion_ui.get_anime_embed(lang, url, description, title=title)
     return embed, None
+
+def handle_dice(lang: str):
+    res = random.randint(1, 10)
+    return diversion_ui.get_dice_embed(lang, res)

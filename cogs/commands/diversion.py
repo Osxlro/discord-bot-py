@@ -183,6 +183,14 @@ class Diversion(commands.Cog):
         finally:
             self._active_hangman_channels.discard(ctx.channel.id)
 
+    @commands.hybrid_command(name="dice", description="Tira un dado de 1 a 10.")
+    @commands.cooldown(1, 5, commands.BucketType.user)
+    async def dice(self, ctx: commands.Context):
+        """Simula la tirada de un dado con un resultado entre 1 y 10."""
+        lang = await lang_service.get_guild_lang(ctx.guild.id if ctx.guild else None)
+        embed = diversion_service.handle_dice(lang)
+        await ctx.reply(embed=embed)
+
 
 async def setup(bot: commands.Bot):
     """Función de entrada para cargar el Cog en el bot."""

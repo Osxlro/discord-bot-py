@@ -85,6 +85,8 @@ PT = {
     "emojimix_title": "Emoji Mix",
     "eightball_title": "🎱 8-Ball",
     "8ball_responses": "Sim, definitivamente.|É verdade.|Sem dúvida.|Sim.|Provavelmente.|Pergunta de novo mais tarde.|Melhor não te dizer agora.|Não contes com isso.|A minha resposta é não.|As minhas fontes dizem que não.|Muito duvidoso.",
+    "dice_title": "🎲 Rolagem de Dados",
+    "dice_desc": "Você rolou o dado e conseguiu um **{result}**! 🎲",
 
     # --- NÍVEIS & PERFIL ---
     "rank_title": "Rank de {user}",

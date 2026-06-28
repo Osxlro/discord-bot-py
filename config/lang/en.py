@@ -87,6 +87,8 @@ EN = {
     "emojimix_title": "Emoji Mix",
     "eightball_title": "🎱 8-Ball",
     "8ball_responses": "Yes, definitely.|It is certain.|Without a doubt.|Yes.|Probably.|Ask again later.|Better not tell you now.|Don't count on it.|My reply is no.|My sources say no.|Very doubtful.",
+    "dice_title": "🎲 Dice Roll",
+    "dice_desc": "You rolled the die and got a **{result}**! 🎲",
 
     # --- LEVELS & PROFILE ---
     "rank_title": "{user}'s Rank",
