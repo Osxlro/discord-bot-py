@@ -149,13 +149,14 @@ def parse_columns_from_query(query):
 def validate_db_schema():
     db_service_path = os.path.join(root_dir, "services", "core", "db_service.py")
     if not os.path.exists(db_service_path):
-        print(f"Error: No se encontró db_service.py en {db_service_path}")
+        print(f"Error: No se encontro db_service.py en {db_service_path}")
         sys.exit(1)
 
     print("\n[DB Schema Validator] Iniciando comprobacion de consistencia del esquema...")
     print("=" * 60)
 
     try:
+        print("[DB Schema Validator] Leyendo db_service.py...")
         with open(db_service_path, "r", encoding="utf-8") as f:
             source = f.read()
         tree = ast.parse(source, filename=db_service_path)
@@ -163,13 +164,14 @@ def validate_db_schema():
         print(f"[ERROR] Error al parsear db_service.py: {e}")
         sys.exit(1)
 
+    print("[DB Schema Validator] Analizando tablas y columnas...")
     visitor = DbServiceVisitor()
     visitor.visit(tree)
 
     errors_found = False
 
     # 1. Validate REQUIRED_TABLES
-    print(f"REQUIRED_TABLES encontradas: {visitor.required_tables}")
+    print(f"[DB Schema Validator] REQUIRED_TABLES encontradas: {visitor.required_tables}")
     
     created_tables = {}
     table_regex = re.compile(r"CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(\w+)", re.IGNORECASE)
@@ -183,11 +185,12 @@ def validate_db_schema():
             # Check if it is listed in REQUIRED_TABLES
             if table_name not in visitor.required_tables:
                 errors_found = True
-                print(f"[ERROR] Tabla '{table_name}' definida en CREATE TABLE (Línea {line}) pero falta en REQUIRED_TABLES.")
+                print(f"[ERROR] Tabla '{table_name}' definida en CREATE TABLE (Linea {line}) pero falta en REQUIRED_TABLES.")
         else:
-            print(f"[WARNING] No se pudo extraer el nombre de la tabla de la consulta en la Línea {line}")
+            print(f"[WARNING] No se pudo extraer el nombre de la tabla de la consulta en la Linea {line}")
 
     # 2. Check migrations (_ensure_column) for non-baseline columns
+    print("[DB Schema Validator] Verificando llamadas a _ensure_column...")
     ensure_map = {}
     for line, table, col in visitor.ensure_column_calls:
         table_l = table.lower()
@@ -202,7 +205,7 @@ def validate_db_schema():
         
         non_baseline_cols = columns - baseline
         if non_baseline_cols:
-            print(f"Tabla '{table_name}' (Línea {line}): Detectadas columnas no-base {non_baseline_cols}")
+            print(f"Tabla '{table_name}' (Linea {line}): Detectadas columnas no-base {non_baseline_cols}")
             for col in non_baseline_cols:
                 # Verify that it has an _ensure_column call
                 has_migration = False
@@ -212,7 +215,7 @@ def validate_db_schema():
                 if not has_migration:
                     errors_found = True
                     print(f"[ERROR] Columna nueva '{col}' en la tabla '{table_name}' no tiene una llamada a _ensure_column() registrada en init_db().")
-                    print(f"        Agrega: await _ensure_column(\"{table_name}\", \"{col}\", \"DEFINICIÓN_SQL\") para evitar errores en DBs existentes.")
+                    print(f"        Agrega: await _ensure_column(\"{table_name}\", \"{col}\", \"DEFINICION_SQL\") para evitar errores en DBs existentes.")
 
     if not errors_found:
         print("Perfecto! El esquema de la base de datos y sus migraciones son consistentes.")

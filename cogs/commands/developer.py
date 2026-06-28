@@ -154,7 +154,7 @@ class Developer(commands.Cog):
     async def reload(self, ctx: commands.Context, extension: str):
         """
         Recarga una extensión (Cog) específica sin reiniciar el bot.
-        Uso: !reload cogs.commands.cumpleaños
+        Uso: !reload cogs.commands.usuario
         """
         lang = await lang_service.get_guild_lang(ctx.guild.id if ctx.guild else None)
         try:

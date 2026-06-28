@@ -109,6 +109,10 @@ def scan_code_for_i18n():
 
 def validate_locales():
     """Compara las llaves y marcadores de los diccionarios de idiomas para detectar discrepancias."""
+    print("\n[Locale Validator] Iniciando comprobacion de sincronizacion y marcadores (ES, EN, PT, FR)...")
+    print("=" * 60)
+
+    print("[Locale Validator] Leyendo archivos de traduccion (ES, EN, PT, FR)... OK")
     langs = {
         "ES.py": set(ES.keys()), 
         "EN.py": set(EN.keys()), 
@@ -119,10 +123,8 @@ def validate_locales():
     
     errors_found = False
 
-    print("\n[Locale Validator] Iniciando comprobacion de sincronizacion y marcadores (ES, EN, PT, FR)...")
-    print("=" * 60)
-
     # 1. Validar presencia de llaves en todos los archivos de traducción
+    print("[Locale Validator] Verificando consistencia de llaves en los locales...")
     for name, keys in langs.items():
         missing = all_keys - keys
         if missing:
@@ -133,6 +135,7 @@ def validate_locales():
             print("-" * 30)
 
     # 2. Validar consistencia de marcadores de posición en traducciones
+    print("[Locale Validator] Verificando consistencia de marcadores de posicion...")
     for key in sorted(all_keys):
         placeholders = {}
         for lang_name, lang_dict in [("ES.py", ES), ("EN.py", EN), ("PT.py", PT), ("FR.py", FR)]:
@@ -148,10 +151,11 @@ def validate_locales():
             print("-" * 30)
 
     # 3. Validar integridad de las llamadas en el código real
-    print("[Locale Validator] Escaneando llamadas get_text en el código...")
+    print("[Locale Validator] Escaneando llamadas get_text en el codigo...")
     code_calls = scan_code_for_i18n()
     used_keys = set()
     
+    print("[Locale Validator] Analizando referencias cruzadas...")
     for call in code_calls:
         key = call["key"]
         if key is None:
@@ -163,7 +167,7 @@ def validate_locales():
         if key not in all_keys:
             errors_found = True
             rel_path = os.path.relpath(call["filepath"], root_dir)
-            print(f"[ERROR] Clave inexistente en traducciones: '{key}' usada en {rel_path} (Línea {call['line']})")
+            print(f"[ERROR] Clave inexistente en traducciones: '{key}' usada en {rel_path} (Linea {call['line']})")
             continue
             
         # Validar marcadores de posición si no hay unpacking dinámico (**kwargs)
@@ -180,27 +184,27 @@ def validate_locales():
             if missing_kwargs or extra_kwargs:
                 errors_found = True
                 rel_path = os.path.relpath(call["filepath"], root_dir)
-                print(f"[ERROR] Discrepancia de parámetros para get_text('{key}') en {rel_path} (Línea {call['line']}):")
+                print(f"[ERROR] Discrepancia de parametros para get_text('{key}') en {rel_path} (Linea {call['line']}):")
                 if missing_kwargs:
-                    print(f"  - Faltan argumentos requeridos por la traducción: {sorted(list(missing_kwargs))}")
+                    print(f"  - Faltan argumentos requeridos por la traduccion: {sorted(list(missing_kwargs))}")
                 if extra_kwargs:
-                    print(f"  - Argumentos sobrantes no definidos en la traducción: {sorted(list(extra_kwargs))}")
+                    print(f"  - Argumentos sobrantes no definidos en la traduccion: {sorted(list(extra_kwargs))}")
                 print("-" * 30)
 
     # 4. Advertencia de traducción no usada en el código (Clean Code)
     unused_keys = all_keys - used_keys
     # Filtrar posibles falsos positivos de llaves dinámicas comunes
-    dynamic_prefixes = ["status_", "month_", "day_", "game_", "help_module_", "sim_"]
+    dynamic_prefixes = ["status_", "month_", "day_", "game_", "help_module_", "sim_", "gender_", "help_desc_", "festive_title_", "festive_desc_"]
     filtered_unused = [
         k for k in unused_keys 
         if not any(k.startswith(p) for p in dynamic_prefixes)
     ]
     if filtered_unused:
-        print(f"[WARNING] Se encontraron {len(filtered_unused)} llaves aparentemente no usadas en el código:")
+        print(f"[WARNING] Se encontraron {len(filtered_unused)} llaves aparentemente no usadas en el codigo:")
         for k in sorted(filtered_unused)[:10]:
             print(f"  - {k}")
         if len(filtered_unused) > 10:
-            print(f"  - ... y {len(filtered_unused) - 10} más.")
+            print(f"  - ... y {len(filtered_unused) - 10} mas.")
         print("-" * 30)
 
     if not errors_found:
@@ -209,7 +213,7 @@ def validate_locales():
         sys.exit(0)
     else:
         print("=" * 60)
-        print("Se encontraron discrepancias en los archivos de idioma o llamadas del código.")
+        print("Se encontraron discrepancias en los archivos de idioma o llamadas del codigo.")
         sys.exit(1)
 
 if __name__ == "__main__":

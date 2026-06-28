@@ -115,10 +115,9 @@ def analyze_file(filename):
                                 "parent_group": parent_group
                             })
                             
-                            # Validate Name
                             if is_slash:
                                 if not COMMAND_NAME_REGEX.match(cmd_name):
-                                    errors.append((class_stmt.lineno, f"El comando slash/híbrido '{cmd_name}' tiene un nombre inválido. Debe ser minúscula, alfanumérico, sin espacios, y tener entre 1 y 32 caracteres (regex: ^[a-z0-9_-]{{1,32}}$)."))
+                                    errors.append((class_stmt.lineno, f"El comando slash/hibrido '{cmd_name}' tiene un nombre invalido. Debe ser minuscula, alfanumerico, sin espacios, y tener entre 1 y 32 caracteres (regex: ^[a-z0-9_-]{{1,32}}$)."))
                             else:
                                 if " " in cmd_name:
                                     errors.append((class_stmt.lineno, f"El comando prefijo '{cmd_name}' no puede contener espacios en su nombre."))
@@ -126,9 +125,9 @@ def analyze_file(filename):
                             # Validate Description
                             if is_slash:
                                 if not cmd_desc.strip():
-                                    errors.append((class_stmt.lineno, f"El comando slash/híbrido '{cmd_name}' no tiene descripción. Debe especificarse en el decorador o en el docstring de la función."))
+                                    errors.append((class_stmt.lineno, f"El comando slash/hibrido '{cmd_name}' no tiene descripcion. Debe especificarse en el decorador o en el docstring de la funcion."))
                                 elif len(cmd_desc) > 100:
-                                    errors.append((class_stmt.lineno, f"La descripción del comando slash/híbrido '{cmd_name}' excede los 100 caracteres permitidos por Discord (Largo actual: {len(cmd_desc)})."))
+                                    errors.append((class_stmt.lineno, f"La descripcion del comando slash/hibrido '{cmd_name}' excede los 100 caracteres permitidos por Discord (Largo actual: {len(cmd_desc)})."))
                                     
                             # Validate Parameters/Arguments for Discord Slash Commands
                             if is_slash:
@@ -137,10 +136,10 @@ def analyze_file(filename):
                                 for arg in cmd_args:
                                     arg_name = arg.arg
                                     if not COMMAND_NAME_REGEX.match(arg_name):
-                                        errors.append((class_stmt.lineno, f"[ERROR] El parámetro '{arg_name}' del comando slash/híbrido '{cmd_name}' tiene un nombre inválido. Debe ser minúscula, alfanumérico, sin espacios, y tener entre 1 y 32 caracteres (regex: ^[a-z0-9_-]{{1,32}}$)."))
+                                        errors.append((class_stmt.lineno, f"[ERROR] El parametro '{arg_name}' del comando slash/hibrido '{cmd_name}' tiene un nombre invalido. Debe ser minuscula, alfanumerico, sin espacios, y tener entre 1 y 32 caracteres (regex: ^[a-z0-9_-]{{1,32}}$)."))
                                     
     if has_cog and not has_setup:
-        errors.append((0, f"El archivo contiene un Cog pero le falta la función global 'setup(bot)' para registrarlo."))
+        errors.append((0, f"El archivo contiene un Cog pero le falta la funcion global 'setup(bot)' para registrarlo."))
         
     return errors, commands_found
 
@@ -168,6 +167,8 @@ def run_validation():
     print("=" * 60)
     
     for filename in files:
+        rel_path = os.path.relpath(filename, root_dir)
+        print(f"[Command Validator] Analizando: {rel_path}...")
         errors, cmds = analyze_file(filename)
         
         for cmd in cmds:
@@ -178,13 +179,15 @@ def run_validation():
                     group_subcommands[group] = {}
                 if name in group_subcommands[group]:
                     prev = group_subcommands[group][name]
-                    errors.append((cmd["line"], f"Colisión de subcomandos: El subcomando '{name}' del grupo '{group}' ya está definido en '{prev['file']}' (línea {prev['line']})."))
+                    prev_rel = os.path.relpath(prev['file'], root_dir)
+                    errors.append((cmd["line"], f"Colision de subcomandos: El subcomando '{name}' del grupo '{group}' ya esta definido en '{prev_rel}' (linea {prev['line']})."))
                 else:
                     group_subcommands[group][name] = {"file": filename, "line": cmd["line"]}
             else:
                 if name in top_level_commands:
                     prev = top_level_commands[name]
-                    errors.append((cmd["line"], f"Colisión de comandos: El comando '{name}' ya está definido en '{prev['file']}' (línea {prev['line']})."))
+                    prev_rel = os.path.relpath(prev['file'], root_dir)
+                    errors.append((cmd["line"], f"Colision de comandos: El comando '{name}' ya esta definido en '{prev_rel}' (linea {prev['line']})."))
                 else:
                     top_level_commands[name] = {"file": filename, "line": cmd["line"]}
                     
@@ -204,7 +207,7 @@ def run_validation():
     else:
         total_commands = len(top_level_commands) + sum(len(sub) for sub in group_subcommands.values())
         print("=" * 60)
-        print(f"Perfecto! Todos los comandos pasaron la validación de Discord con éxito.")
+        print(f"Perfecto! Todos los comandos pasaron la validacion de Discord con exito.")
         print(f"Total de comandos validados: {total_commands} ({len(top_level_commands)} principales, {total_commands - len(top_level_commands)} subcomandos).")
         sys.exit(0)
 

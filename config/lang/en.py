@@ -482,7 +482,7 @@ EN = {
     
     # --- WALLET ---
     "profile_wallet_title": "Wallet",
-    "profile_wallet_cash": "💵 Cash",
+    "profile_wallet_cash": "🪙 Coins",
     "profile_wallet_bank": "🏦 Bank Account",
     "profile_wallet_total": "💳 Net Worth",
     "profile_wallet_protected": "Protected by the System",
@@ -509,6 +509,44 @@ EN = {
     "shop_admin_remove_success": "✅ Item `{item_id}` successfully removed from the shop.",
 
     # --- SHOP DEFAULT ITEMS ---
+
+    # --- GENDERS ---
+    "gender_hombre": "Male",
+    "gender_mujer": "Female",
+    "gender_no_binario": "Non-Binary",
+    "gender_extraterrestre": "Alien",
+
+    # --- HELP (CATEGORY DESCRIPTIONS) ---
+    "help_desc_general": "Basic utility commands.",
+    "help_desc_moderacion": "Moderation and cleanup tools.",
+    "help_desc_niveles": "Experience and ranking system.",
+    "help_desc_diversion": "Minijuegos and entertainment.",
+    "help_desc_configuracion": "Server settings and setup.",
+    "help_desc_developer": "Internal bot administration.",
+    "help_desc_cumpleanos": "Birthday reminders.",
+    "help_desc_roles": "Role management and buttons.",
+    "help_desc_voice": "Voice channels and AFK mode.",
+    "help_desc_perfil": "User profile management.",
+    "help_desc_backup": "System backups.",
+    "help_desc_optimizationtasks": "Internal maintenance tasks.",
+    "help_desc_usuario": "Profile, birthday and customization.",
+    "help_desc_music": "High quality music playback.",
+    "help_desc_shop": "Server shop and user inventory commands.",
+    "help_desc_roleplay": "Interaction and roleplay commands.",
+
+    # --- FESTIVE DAYS ---
+    "festive_title_new_year": "🎆 Happy New Year!",
+    "festive_desc_new_year": "A new year full of opportunities and joy begins! May this year bring you happiness, health, and success in everything you set out to do. 🎉✨",
+    "festive_title_valentine": "💖 Happy Valentine's Day!",
+    "festive_desc_valentine": "Today we celebrate love and friendship. Have a wonderful day surrounded by the people you love most. 💕🌹",
+    "festive_title_halloween": "🎃 Happy Halloween!",
+    "festive_desc_halloween": "Have a spooktacular night filled with candy, scares, and dark magic! 👻🕯️",
+    "festive_title_christmas_eve": "🎄 Merry Christmas Eve!",
+    "festive_desc_christmas_eve": "May peace, harmony, and love reign in your homes on this special night. Happy holidays! ✨🍗",
+    "festive_title_christmas": "🎅 Merry Christmas!",
+    "festive_desc_christmas": "May the magic of Christmas light up your life and bring you peace, love, and happiness! Enjoy with your loved ones. 🎁❄️",
+    "festive_title_new_years_eve": "🥂 Happy New Year's Eve!",
+    "festive_desc_new_years_eve": "Let's say goodbye to this year with gratitude for everything we've learned and prepare to receive the new one with open arms! Cheers! 🔔🍾",
 
     # --- PAGINATION ---
     "pagination_prev": "Previous",

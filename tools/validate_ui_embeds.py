@@ -47,7 +47,6 @@ def validate_ui_embeds():
         os.path.join(root_dir, "ui")
     ]
 
-
     files_to_check = []
     for directory in target_dirs:
         if not os.path.exists(directory):
@@ -55,7 +54,6 @@ def validate_ui_embeds():
         for r, _, files in os.walk(directory):
             for file in files:
                 if file.endswith(".py"):
-                    # Omitir archivos exceptuados
                     if file in EXCEPTED_FILES:
                         continue
                     files_to_check.append(os.path.join(r, file))
@@ -63,6 +61,8 @@ def validate_ui_embeds():
     errors_found = False
 
     for filepath in sorted(files_to_check):
+        rel_path = os.path.relpath(filepath, root_dir)
+        print(f"[UI Embeds Validator] Analizando: {rel_path}...")
         try:
             with open(filepath, "r", encoding="utf-8") as f:
                 source = f.read()
@@ -73,11 +73,10 @@ def validate_ui_embeds():
             
             if visitor.errors:
                 errors_found = True
-                rel_path = os.path.relpath(filepath, root_dir)
                 print(f"[ERROR] Archivo: {rel_path}")
                 for line, col in visitor.errors:
-                    print(f"  - Linea {line}, Col {col}: Se instanció 'discord.Embed' de forma directa.")
-                    print(f"    Normativa: Está prohibido instanciar embeds directos en comandos o UI.")
+                    print(f"  - Linea {line}, Col {col}: Se instancio 'discord.Embed' de forma directa.")
+                    print(f"    Normativa: Esta prohibido instanciar embeds directos en comandos o UI.")
                     print(f"    Usa los helpers de 'embed_service.py' (ej: embed_service.success, embed_service.error, etc.).")
                 print("-" * 30)
         except Exception as e:

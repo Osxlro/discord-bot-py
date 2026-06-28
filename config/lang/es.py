@@ -482,7 +482,7 @@ ES = {
     
     # --- BILLETERA ---
     "profile_wallet_title": "Billetera",
-    "profile_wallet_cash": "💵 Efectivo",
+    "profile_wallet_cash": "🪙 Coins",
     "profile_wallet_bank": "🏦 Cuenta de Banco",
     "profile_wallet_total": "💳 Total Neto",
     "profile_wallet_protected": "Protegido por el Sistema",
@@ -511,6 +511,44 @@ ES = {
     "shop_admin_remove_success": "✅ Objeto `{item_id}` eliminado con éxito de la tienda.",
 
     # --- OBJETOS DE EJEMPLO DE LA TIENDA ---
+
+    # --- GÉNEROS ---
+    "gender_hombre": "Hombre",
+    "gender_mujer": "Mujer",
+    "gender_no_binario": "No Binario",
+    "gender_extraterrestre": "Extraterrestre",
+
+    # --- AYUDA (DESCRIPCIONES DE CATEGORÍAS) ---
+    "help_desc_general": "Comandos básicos y de utilidad.",
+    "help_desc_moderacion": "Herramientas para sancionar y limpiar.",
+    "help_desc_niveles": "Sistema de experiencia y ranking.",
+    "help_desc_diversion": "Minijuegos, azar y entretenimiento.",
+    "help_desc_configuracion": "Ajustes del servidor y setup.",
+    "help_desc_developer": "Administración interna del bot.",
+    "help_desc_cumpleanos": "Recordatorios de cumpleaños.",
+    "help_desc_roles": "Gestión de roles y botones.",
+    "help_desc_voice": "Canales de voz y modo AFK.",
+    "help_desc_perfil": "Gestión de tu tarjeta de usuario.",
+    "help_desc_backup": "Copias de seguridad.",
+    "help_desc_optimizationtasks": "Tareas de mantenimiento interno.",
+    "help_desc_usuario": "Perfil, cumpleaños y personalización.",
+    "help_desc_music": "Reproducción de música de alta calidad.",
+    "help_desc_shop": "Comandos de la tienda y el inventario del usuario.",
+    "help_desc_roleplay": "Comandos de interacción y juegos de rol.",
+
+    # --- DÍAS FESTIVOS ---
+    "festive_title_new_year": "🎆 ¡Feliz Año Nuevo!",
+    "festive_desc_new_year": "¡Comienza un nuevo año lleno de oportunidades y alegría! Que este año te traiga felicidad, salud y éxito en todo lo que te propongas. 🎉✨",
+    "festive_title_valentine": "💖 ¡Feliz Día de San Valentín!",
+    "festive_desc_valentine": "Hoy celebramos el amor y la amistad. Que pases un día maravilloso rodeado de las personas que más quieres. 💕🌹",
+    "festive_title_halloween": "🎃 ¡Feliz Halloween!",
+    "festive_desc_halloween": "¡Que tengas una noche terroríficamente divertida llena de dulces, sustos y magia oscura! 👻🕯️",
+    "festive_title_christmas_eve": "🎄 ¡Feliz Nochebuena!",
+    "festive_desc_christmas_eve": "Que la paz, la armonía y el amor reinen en sus hogares en esta noche tan especial. ¡Felices fiestas! ✨🍗",
+    "festive_title_christmas": "🎅 ¡Feliz Navidad!",
+    "festive_desc_christmas": "¡Que la magia de la Navidad ilumine tu vida y te traiga paz, amor y felicidad! Disfruta con tus seres queridos. 🎁❄️",
+    "festive_title_new_years_eve": "🥂 ¡Feliz Fin de Año!",
+    "festive_desc_new_years_eve": "¡Despidamos este año con agradecimiento por todo lo aprendido y preparémonos para recibir el nuevo con los brazos abiertos! ¡Salud! 🔔🍾",
 
     # --- PAGINACIÓN ---
     "pagination_prev": "Anterior",

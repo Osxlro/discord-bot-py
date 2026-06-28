@@ -269,6 +269,8 @@ def run_validation():
     
     for filename in files_to_check:
         checked_count += 1
+        rel_path = os.path.relpath(filename, root_dir)
+        print(f"[Code Validator] Verificando: {rel_path}...")
         try:
             with open(filename, "r", encoding="utf-8") as f:
                 source = f.read()

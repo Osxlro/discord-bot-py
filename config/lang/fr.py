@@ -482,7 +482,7 @@ FR = {
     
     # --- PORTEFEUILLE (WALLET) ---
     "profile_wallet_title": "Portefeuille",
-    "profile_wallet_cash": "💵 Espèces",
+    "profile_wallet_cash": "🪙 Coins",
     "profile_wallet_bank": "🏦 Compte Bancaire",
     "profile_wallet_total": "💳 Valeur Nette",
     "profile_wallet_protected": "Protégé par le Système",
@@ -509,6 +509,44 @@ FR = {
     "shop_admin_remove_success": "✅ Objet `{item_id}` supprimé avec succès de la boutique.",
 
     # --- OBJETOS POR DEFEITO ---
+
+    # --- GENDERS ---
+    "gender_hombre": "Homme",
+    "gender_mujer": "Femme",
+    "gender_no_binario": "Non-Binaire",
+    "gender_extraterrestre": "Extraterrestre",
+
+    # --- AIDE (DESCRIPTIONS DES CATÉGORIES) ---
+    "help_desc_general": "Commandes de base et utilitaires.",
+    "help_desc_moderacion": "Outils de sanction et de nettoyage.",
+    "help_desc_niveles": "Système d'expérience et de classement.",
+    "help_desc_diversion": "Mini-jeux, hasard et divertissement.",
+    "help_desc_configuracion": "Paramètres du serveur et configuration.",
+    "help_desc_developer": "Administration interne du bot.",
+    "help_desc_cumpleanos": "Rappels d'anniversaires.",
+    "help_desc_roles": "Gestion des rôles et boutons.",
+    "help_desc_voice": "Salons vocaux et mode AFK.",
+    "help_desc_perfil": "Gestion de votre carte utilisateur.",
+    "help_desc_backup": "Sauvegardes du système.",
+    "help_desc_optimizationtasks": "Tâches de maintenance interne.",
+    "help_desc_usuario": "Profil, anniversaire et personnalisation.",
+    "help_desc_music": "Lecture de musique haute qualité.",
+    "help_desc_shop": "Commandes de la boutique du serveur et de l'inventaire de l'utilisateur.",
+    "help_desc_roleplay": "Commandes d'interaction et de jeu de rôle.",
+
+    # --- FESTIVE DAYS ---
+    "festive_title_new_year": "🎆 Bonne Année !",
+    "festive_desc_new_year": "Une nouvelle année pleine d'opportunités et de joie commence ! Que cette année vous apporte bonheur, santé et réussite dans tout ce que vous entreprenez. 🎉✨",
+    "festive_title_valentine": "💖 Joyeuse Saint-Valentin !",
+    "festive_desc_valentine": "Aujourd'hui, nous célébrons l'amour et l'amitié. Passez une merveilleuse journée entouré des personnes que vous aimez le plus. 💕🌹",
+    "festive_title_halloween": "🎃 Joyeux Halloween !",
+    "festive_desc_halloween": "Passez une nuit terriblement amusante remplie de bonbons, de frayeurs et de magie noire ! 👻🕯️",
+    "festive_title_christmas_eve": "🎄 Joyeux Réveillon de Noël !",
+    "festive_desc_christmas_eve": "Que la paix, l'harmonie et l'amour règnent dans vos foyers en cette nuit si spéciale. Joyeuses fêtes ! ✨🍗",
+    "festive_title_christmas": "🎅 Joyeux Noël !",
+    "festive_desc_christmas": "Que la magie de Noël illumine votre vie et vous apporte paix, amour et bonheur ! Profitez-en avec vos proches. 🎁❄️",
+    "festive_title_new_years_eve": "🥂 Bon Réveillon du Nouvel An !",
+    "festive_desc_new_years_eve": "Disons au revoir à cette année avec gratitude pour tout ce que nous avons appris et préparons-nous à accueillir la nouvelle à bras ouverts ! Santé ! 🔔🍾",
 
     # --- PAGINATION ---
     "pagination_prev": "Précédent",

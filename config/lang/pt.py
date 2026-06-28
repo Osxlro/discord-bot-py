@@ -482,7 +482,7 @@ PT = {
     
     # --- CARTEIRA (WALLET) ---
     "profile_wallet_title": "Carteira",
-    "profile_wallet_cash": "💵 Dinheiro",
+    "profile_wallet_cash": "🪙 Coins",
     "profile_wallet_bank": "🏦 Conta Bancária",
     "profile_wallet_total": "💳 Total Líquido",
     "profile_wallet_protected": "Protegido pelo Sistema",
@@ -509,6 +509,44 @@ PT = {
     "shop_admin_remove_success": "✅ Item `{item_id}` removido com sucesso da loja.",
 
     # --- OBJETOS POR DEFEITO ---
+
+    # --- GÊNEROS ---
+    "gender_hombre": "Homem",
+    "gender_mujer": "Mulher",
+    "gender_no_binario": "Não Binário",
+    "gender_extraterrestre": "Extraterrestre",
+
+    # --- AJUDA (DESCRIÇÕES) ---
+    "help_desc_general": "Comandos básicos e utilitários.",
+    "help_desc_moderacion": "Ferramentas de moderação e limpeza.",
+    "help_desc_niveles": "Sistema de experiência e ranking.",
+    "help_desc_diversion": "Minijogos e entretenimento.",
+    "help_desc_configuracion": "Definições do servidor e setup.",
+    "help_desc_developer": "Administração interna do bot.",
+    "help_desc_cumpleanos": "Lembretes de aniversários.",
+    "help_desc_roles": "Gestão de cargos e botões.",
+    "help_desc_voice": "Canais de voz e modo AFK.",
+    "help_desc_perfil": "Gestão do teu cartão de utilizador.",
+    "help_desc_backup": "Cópias de segurança do sistema.",
+    "help_desc_optimizationtasks": "Tarefas de manutenção interna.",
+    "help_desc_usuario": "Perfil, aniversário e personalización.",
+    "help_desc_music": "Reprodução de música de alta qualidade.",
+    "help_desc_shop": "Comandos da loja do servidor e inventário do usuário.",
+    "help_desc_roleplay": "Comandos de interação e roleplay.",
+
+    # --- FESTIVE DAYS ---
+    "festive_title_new_year": "🎆 Feliz Ano Novo!",
+    "festive_desc_new_year": "Começa um novo ano cheio de oportunidades e alegria! Que este ano traga felicidade, saúde e sucesso em tudo o que você propuser. 🎉✨",
+    "festive_title_valentine": "💖 Feliz Dia dos Namorados!",
+    "festive_desc_valentine": "Hoje celebramos o amor e a amizade. Tenha um dia maravilhoso rodeado pelas pessoas que você mais ama. 💕🌹",
+    "festive_title_halloween": "🎃 Feliz Halloween!",
+    "festive_desc_halloween": "Tenha uma noite assustadoramente divertida cheia de doces, sustos e magia negra! 👻🕯️",
+    "festive_title_christmas_eve": "🎄 Feliz Véspera de Natal!",
+    "festive_desc_christmas_eve": "Que a paz, a harmonia e o amor reinem em seus lares nesta noite tão especial. Boas festas! ✨🍗",
+    "festive_title_christmas": "🎅 Feliz Natal!",
+    "festive_desc_christmas": "Que a magia do Natal ilumine a sua vida e lhe traga paz, amor e felicidade! Aproveite com seus entes queridos. 🎁❄️",
+    "festive_title_new_years_eve": "🥂 Feliz Véspera de Ano Novo!",
+    "festive_desc_new_years_eve": "Vamos nos despedir deste ano com gratidão por tudo o que aprendemos e nos preparar para receber o novo de braços abertos! Saúde! 🔔🍾",
 
     # --- PAGINAÇÃO ---
     "pagination_prev": "Anterior",

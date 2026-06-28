@@ -386,7 +386,7 @@ class MiConfiguracion(commands.Cog):
 
 Para prevenir errores de sintaxis, variables indefinidas o discrepancias de internacionalización, es **obligatorio** ejecutar la suite de validación estática local después de realizar cualquier cambio en el código, comandos o traducciones, y antes de hacer commits o desplegar en producción.
 
-La suite se compone de cinco validadores en el directorio `/tools/`:
+La suite se compone de seis validadores en el directorio `/tools/`:
 
 1. **Validación de Código (`tools/validate_code.py`)**:
    - Analiza estáticamente la sintaxis de todos los archivos de código del bot y busca nombres de variables indefinidos (`NameError`) en todos los bloques locales y globales.
@@ -412,6 +412,22 @@ La suite se compone de cinco validadores en el directorio `/tools/`:
 5. **Validación de Normativa de Embeds (`tools/validate_ui_embeds.py`)**:
    - Asegura la consistencia de marca y diseño del bot prohibiendo la instanciación directa de `discord.Embed(...)` en comandos o UI, forzando el uso exclusivo de los helpers en `embed_service.py` (excepto en `profile_ui.py`, `general_ui.py` y `music_ui.py` por razones de color dinámico).
    - *Ejecución:* `.venv\Scripts\python.exe tools/validate_ui_embeds.py`
+
+6. **Validación de Entorno y Configuración (`tools/validate_config.py`)**:
+   - Verifica estáticamente la existencia del archivo `.env` y comprueba que todas las variables obligatorias de entorno del bot (como `DISCORD_TOKEN`) estén declaradas correctamente.
+   - Asegura que el archivo de configuración global `config/settings.py` cargue correctamente y exponga las estructuras de diccionario obligatorias para el bot.
+   - *Ejecución:* `.venv\Scripts\python.exe tools/validate_config.py`
+
+---
+
+## 🛠️ Directrices de Desarrollo de Herramientas y Mantenimiento
+
+1. **Salidas en Terminal Limpias y sin Acentos**:
+   - Todas las herramientas desarrolladas en `/tools/` y scripts utilitarios del repositorio deben evitar caracteres acentuados (como `í`, `ó`, `á`, etc.) en sus impresiones de consola (`print`). Esto garantiza la compatibilidad en terminales antiguas de Windows (CMD y PowerShell) que no soporten codificación UTF-8 de manera predeterminada.
+   - Las salidas deben ser progresivas y detalladas para mostrar el paso a paso del proceso de validación en tiempo real.
+
+2. **Actualización Obligatoria de `GEMINI.md`**:
+   - Cada vez que se realice una adición importante de características, cambios en la estructura de directorios, actualización de base de datos o adición/modificación de herramientas en el proyecto, el desarrollador (o la IA) tiene la obligación de actualizar este archivo `GEMINI.md` de manera inmediata para mantener sincronizada la documentación del proyecto.
 
 ---
 
