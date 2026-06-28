@@ -16,16 +16,16 @@ class Usuario(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    @commands.hybrid_group(name="user", description="Gestion de usuario.", fallback="check")
+    @commands.hybrid_group(name="profile", description="Gestion de perfil de usuario.", fallback="check")
     @app_commands.describe(usuario="El usuario del que quieres ver el perfil (vacio para ver el tuyo)")
-    async def user(self, ctx: commands.Context, usuario: discord.User = None):
+    async def profile_group(self, ctx: commands.Context, usuario: discord.User = None):
         """Muestra la tarjeta de perfil con estadisticas globales y del servidor."""
         target = usuario or ctx.author
         lang = await lang_service.get_guild_lang(ctx.guild.id if ctx.guild else None)
         embed, view = await profile_service.handle_profile(ctx.guild, target, lang, ctx.author.id)
         view.message = await ctx.reply(embed=embed, view=view)
 
-    @user.command(name="desc", description="Cambia la biografia de tu tarjeta.")
+    @profile_group.command(name="desc", description="Cambia la biografia de tu tarjeta.")
     @app_commands.describe(texto="Maximo 200 caracteres.")
     async def set_desc(self, ctx: commands.Context, texto: str):
         """Actualiza la biografia que se muestra en la tarjeta de perfil."""
@@ -37,7 +37,7 @@ class Usuario(commands.Cog):
         
         await ctx.reply(embed=embed)
 
-    @user.command(name="message", description="Personaliza tus mensajes de nivel o cumpleanos.")
+    @profile_group.command(name="message", description="Personaliza tus mensajes de nivel o cumpleanos.")
     @app_commands.describe(
         tipo="¿Que mensaje quieres personalizar?",
         texto="Tu mensaje. Usa {user}, {level} (solo nivel). Escribe 'reset' para borrar."
@@ -47,7 +47,7 @@ class Usuario(commands.Cog):
         embed = await profile_service.handle_update_personal_message(ctx.author.id, tipo, texto, lang)
         await ctx.reply(embed=embed)
 
-    @user.command(name="gender", description="Define tu genero en tu perfil.")
+    @profile_group.command(name="gender", description="Define tu genero en tu perfil.")
     @app_commands.describe(opcion="Elige tu genero (o 'none' para ocultar)")
     async def set_gender(self, ctx: commands.Context, opcion: Literal["Hombre", "Mujer", "No Binario", "Extraterrestre", "none"]):
         """Actualiza el genero que se muestra en tu tarjeta de perfil."""
@@ -64,8 +64,8 @@ class Usuario(commands.Cog):
         embed = await profile_service.handle_update_gender(ctx.author.id, val, lang)
         await ctx.reply(embed=embed)
 
-    # --- SUBGRUPO DE CUMPLEAÑOS ---
-    @user.group(name="birthday", description="Comandos relacionados con cumpleanos.")
+    # --- GRUPO RAÍZ DE CUMPLEAÑOS ---
+    @commands.hybrid_group(name="birthday", description="Comandos relacionados con cumpleanos.")
     async def birthday(self, ctx: commands.Context):
         """Grupo base para los comandos de cumpleanos."""
         if ctx.invoked_subcommand is None:
@@ -121,8 +121,8 @@ class Usuario(commands.Cog):
         target = usuario or ctx.author
         lang = await lang_service.get_guild_lang(ctx.guild.id if ctx.guild else None)
         
-        from services.core import db_service
-        user_data = await db_service.get_user_data(target.id)
+        from services.repositories.user_repository import UserRepository
+        user_data = await UserRepository.get_user_data(target.id)
         
         from ui.social import profile_ui
         embed = profile_ui.get_wallet_embed(target, user_data, lang)
