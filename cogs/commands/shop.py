@@ -30,7 +30,7 @@ class Shop(commands.Cog):
 
         # Generar vista interactiva
         view = shop_ui.ShopView(self.bot, all_items, ctx.author.id, lang)
-        embed = view.get_embed()
+        embed = await view.get_embed()
         view.message = await ctx.reply(embed=embed, view=view)
 
     async def buy_category_autocomplete(self, interaction: discord.Interaction, current: str) -> list[app_commands.Choice[str]]:

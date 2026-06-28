@@ -4,6 +4,12 @@ from services.core import lang_service
 from services.utils import embed_service
 from config import settings
 
+CATEGORY_EMOJIS = {
+    "Categoría 1": "🎨",
+    "Categoría 2": "👑",
+    "Categoría 3": "🍀"
+}
+
 class ConfirmPurchaseView(discord.ui.View):
     """Vista de confirmación de compra de tipo efímera."""
     def __init__(self, bot: discord.Client, item: dict, quantity: int, author_id: int, lang: str):
@@ -23,7 +29,6 @@ class ConfirmPurchaseView(discord.ui.View):
 
     @discord.ui.button(label="Confirmar", style=discord.ButtonStyle.success, emoji="✅")
     async def confirm_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
-        # Deshabilitar botones
         for child in self.children:
             child.disabled = True
         await interaction.response.edit_message(view=self)
@@ -37,10 +42,8 @@ class ConfirmPurchaseView(discord.ui.View):
             await interaction.followup.send(embed=embed, ephemeral=True)
             return
 
-        # Notificación efímera de éxito
         await interaction.followup.send(embed=embed, ephemeral=True)
 
-        # Mensaje público en el canal
         from services.features.shop_service import get_localized_field
         item_name = get_localized_field(self.item, "names", self.lang)
         item_emoji = self.item.get("emoji") or ""
@@ -54,7 +57,6 @@ class ConfirmPurchaseView(discord.ui.View):
             item=item_name
         )
         
-        # Enviar de forma general en el canal
         try:
             public_embed = embed_service.success(
                 lang_service.get_text("shop_purchase_title", self.lang),
@@ -62,7 +64,7 @@ class ConfirmPurchaseView(discord.ui.View):
             )
             await interaction.channel.send(content=f"🎉 {interaction.user.mention}", embed=public_embed)
         except Exception:
-            pass # Si falla por falta de permisos de envío, ignorar
+            pass
 
     @discord.ui.button(label="Cancelar", style=discord.ButtonStyle.danger, emoji="❌")
     async def cancel_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -109,7 +111,6 @@ class ItemSelect(discord.ui.Select):
         item_id = self.values[0]
         item = self.items_map[item_id]
 
-        # Crear confirmación de compra efímera
         from services.features.shop_service import get_localized_field
         item_name = get_localized_field(item, "names", self.lang)
         item_emoji = item.get("emoji") or ""
@@ -135,10 +136,11 @@ class ItemSelect(discord.ui.Select):
 
 
 class CategoryButton(discord.ui.Button):
-    """Botón para seleccionar una categoría en la tienda."""
-    def __init__(self, category: str, label: str, active: bool):
+    """Botón para seleccionar una categoría en la tienda (solo muestra emoji)."""
+    def __init__(self, category: str, active: bool):
+        emoji = CATEGORY_EMOJIS.get(category, "📂")
         style = discord.ButtonStyle.success if active else discord.ButtonStyle.secondary
-        super().__init__(label=label, style=style, row=0)
+        super().__init__(emoji=emoji, style=style, row=0)
         self.category = category
 
     async def callback(self, interaction: discord.Interaction):
@@ -146,7 +148,7 @@ class CategoryButton(discord.ui.Button):
         view.selected_category = self.category
         view.current_page = 0
         view.update_components()
-        await interaction.response.edit_message(embed=view.get_embed(), view=view)
+        await interaction.response.edit_message(embed=await view.get_embed(), view=view)
 
 
 class ShopView(discord.ui.View):
@@ -158,15 +160,16 @@ class ShopView(discord.ui.View):
         self.author_id = author_id
         self.lang = lang
         
-        # Obtener categorías únicas
         self.categories = sorted(list({item.get("category", "Otros") for item in all_items}))
         self.selected_category = self.categories[0] if self.categories else "Otros"
         
         self.current_page = 0
         self.items_per_page = 5
         
-        self.btn_prev.label = lang_service.get_text("pagination_prev", lang) or "Anterior"
-        self.btn_next.label = lang_service.get_text("pagination_next", lang) or "Siguiente"
+        self.btn_prev.label = None
+        self.btn_prev.emoji = "◀️"
+        self.btn_next.label = None
+        self.btn_next.emoji = "▶️"
         
         self.update_components()
 
@@ -188,18 +191,10 @@ class ShopView(discord.ui.View):
         return [item for item in self.all_items if item.get("category", "Otros") == self.selected_category]
 
     def update_components(self):
-        # 1. Limpiar componentes dinámicos
+        # 1. Limpiar componentes
         for child in list(self.children):
-            if isinstance(child, CategoryButton) or isinstance(child, ItemSelect):
-                self.remove_item(child)
+            self.remove_item(child)
 
-        # 2. Agregar botones de categoría
-        for cat in self.categories:
-            active = (cat == self.selected_category)
-            btn = CategoryButton(cat, cat, active)
-            self.add_item(btn)
-
-        # 3. Filtrar ítems por la categoría seleccionada
         filtered = self.get_filtered_items()
         self.total_pages = max(1, (len(filtered) + self.items_per_page - 1) // self.items_per_page)
         if self.current_page >= self.total_pages:
@@ -211,7 +206,21 @@ class ShopView(discord.ui.View):
         self.btn_prev.disabled = (self.current_page == 0)
         self.btn_next.disabled = (self.current_page >= self.total_pages - 1)
 
-        # 4. Añadir selector para la página actual
+        # 2. Agregar botón Anterior (si hay más de 1 página)
+        if self.total_pages > 1:
+            self.add_item(self.btn_prev)
+
+        # 3. Agregar botones de categoría
+        for cat in self.categories:
+            active = (cat == self.selected_category)
+            btn = CategoryButton(cat, active)
+            self.add_item(btn)
+
+        # 4. Agregar botón Siguiente (si hay más de 1 página)
+        if self.total_pages > 1:
+            self.add_item(self.btn_next)
+
+        # 5. Añadir selector para la página actual
         start = self.current_page * self.items_per_page
         end = start + self.items_per_page
         page_items = filtered[start:end]
@@ -220,7 +229,7 @@ class ShopView(discord.ui.View):
             select = ItemSelect(self.bot, page_items, self.author_id, self.lang)
             self.add_item(select)
 
-    def get_embed(self) -> discord.Embed:
+    async def get_embed(self) -> discord.Embed:
         """Genera el embed de catálogo de la tienda para la página y categoría actuales."""
         title = lang_service.get_text("shop_title", self.lang)
         
@@ -230,22 +239,32 @@ class ShopView(discord.ui.View):
         page_items = filtered[start:end]
 
         from services.features.shop_service import get_localized_field
+        from services.core import db_service
 
-        desc = f"### 📂 {self.selected_category}\n"
+        emoji = CATEGORY_EMOJIS.get(self.selected_category, "📂")
+        desc = f"### {emoji} | {self.selected_category}\n"
+        
         for item in page_items:
-            emoji = item.get("emoji") or ""
+            emoji_item = item.get("emoji") or ""
             name = get_localized_field(item, "names", self.lang)
             cost = item["cost"]
             description = get_localized_field(item, "descs", self.lang)
             
-            desc += f"> **{emoji} {name}** — `{cost}` coins\n"
+            # Obtener stock dinámico
+            total_stock = item.get("total_stock")
+            if total_stock is None:
+                stock_display = "Ilimitado"
+            else:
+                sales = await db_service.get_shop_item_global_sales(item["item_id"])
+                stock_display = str(max(0, total_stock - sales))
+                
+            desc += f"> **{emoji_item} {name}** — `{cost}` coins — `{stock_display}` stock\n"
             desc += f"> *{description}*\n"
             desc += "\n"
 
         if not page_items:
             desc = lang_service.get_text("shop_empty", self.lang)
 
-        # Usar helper de info de embed_service
         embed = embed_service.info(
             title=title,
             description=desc,
@@ -254,14 +273,14 @@ class ShopView(discord.ui.View):
         )
         return embed
 
-    @discord.ui.button(style=discord.ButtonStyle.primary, row=1)
+    @discord.ui.button(style=discord.ButtonStyle.primary, row=0)
     async def btn_prev(self, interaction: discord.Interaction, button: discord.ui.Button):
         self.current_page -= 1
         self.update_components()
-        await interaction.response.edit_message(embed=self.get_embed(), view=self)
+        await interaction.response.edit_message(embed=await self.get_embed(), view=self)
 
-    @discord.ui.button(style=discord.ButtonStyle.primary, row=1)
+    @discord.ui.button(style=discord.ButtonStyle.primary, row=0)
     async def btn_next(self, interaction: discord.Interaction, button: discord.ui.Button):
         self.current_page += 1
         self.update_components()
-        await interaction.response.edit_message(embed=self.get_embed(), view=self)
+        await interaction.response.edit_message(embed=await self.get_embed(), view=self)

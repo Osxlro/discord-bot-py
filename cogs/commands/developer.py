@@ -205,6 +205,68 @@ class Developer(commands.Cog):
             return await ctx.send(embed=embed_service.error(lang_service.get_text("title_error", lang), error, lite=True), ephemeral=True)
         await ctx.send(embed=embed, ephemeral=True)
 
+    async def devedit_inventory_autocomplete(self, interaction: discord.Interaction, current: str) -> list[app_commands.Choice[str]]:
+        """Autocompleta los objetos de la tienda para el comando de inventario de desarrollador."""
+        from services.core import db_service
+        all_items = await db_service.get_all_shop_items()
+        lang = await lang_service.get_guild_lang(interaction.guild_id)
+        from services.features.shop_service import get_localized_field
+        choices = []
+        for item in all_items:
+            name = get_localized_field(item, "names", lang)
+            emoji = item.get("emoji") or ""
+            display_name = f"{emoji} {name}"[:100]
+            if current.lower() in name.lower() or current.lower() in item["item_id"].lower():
+                choices.append(app_commands.Choice(name=display_name, value=item["item_id"]))
+        return choices[:25]
+
+    @devedit_group.command(name="inventory", description="Modifica el inventario de un usuario (añade o quita objetos).")
+    @app_commands.describe(
+        usuario="El usuario a editar",
+        objeto="El objeto a añadir o quitar (ID)",
+        cantidad="Cantidad (usa números positivos para añadir y negativos para quitar)"
+    )
+    @app_commands.autocomplete(objeto=devedit_inventory_autocomplete)
+    async def devedit_inventory(self, ctx: commands.Context, usuario: discord.Member, objeto: str, cantidad: int):
+        """Añade o resta objetos del inventario de un usuario."""
+        await ctx.defer(ephemeral=True)
+        lang = await lang_service.get_guild_lang(ctx.guild.id if ctx.guild else None)
+
+        from services.core import db_service
+        item = await db_service.get_shop_item(objeto)
+        if not item:
+            return await ctx.send(
+                embed=embed_service.error(
+                    lang_service.get_text("error_title", lang),
+                    lang_service.get_text("shop_error_item_not_found", lang),
+                    lite=True
+                ),
+                ephemeral=True
+            )
+
+        from services.features.shop_service import get_localized_field
+        item_name = get_localized_field(item, "names", lang)
+        item_emoji = item.get("emoji") or ""
+
+        if cantidad > 0:
+            await db_service.add_item_to_inventory(usuario.id, objeto, cantidad)
+            msg = f"Se han añadido **{cantidad}** de **{item_emoji} {item_name}** al inventario de {usuario.mention}."
+        elif cantidad < 0:
+            success = await db_service.remove_item_from_inventory(usuario.id, objeto, abs(cantidad))
+            if success:
+                msg = f"Se han retirado **{abs(cantidad)}** de **{item_emoji} {item_name}** del inventario de {usuario.mention}."
+            else:
+                msg = f"{usuario.mention} no posee este objeto en su inventario para retirarlo."
+        else:
+            msg = "La cantidad debe ser distinta de cero."
+
+        embed = embed_service.success(
+            lang_service.get_text("shop_purchase_title", lang),
+            msg,
+            lite=True
+        )
+        await ctx.send(embed=embed, ephemeral=True)
+
     @devedit_group.command(name="shop_add", description="Añade o edita un objeto en el catálogo de la tienda.")
     @app_commands.describe(
         item_id="ID único del objeto sin espacios (ej: vip_pass)",

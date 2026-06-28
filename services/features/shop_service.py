@@ -86,12 +86,24 @@ async def process_purchase(user_id: int, item_id: str, quantity: int, lang: str)
         err_msg = lang_service.get_text("shop_error_no_coins", lang, cost=total_cost, coins=user_coins)
         return False, err_msg, embed_service.error(lang_service.get_text("error_title", lang), err_msg, lite=True)
 
-    # 6. Ejecutar transacción
+    # 6. Ejecutar transacción atómica
     try:
-        # Descontar saldo
-        await db_service.add_user_coins(user_id, -total_cost)
-        # Añadir al inventario
-        await db_service.add_item_to_inventory(user_id, item_id, quantity)
+        from services.core import database
+        
+        query_coins = (
+            "INSERT INTO users (user_id, coins) VALUES (?, ?) "
+            "ON CONFLICT(user_id) DO UPDATE SET coins = coins + excluded.coins"
+        )
+        query_inv = (
+            "INSERT INTO user_inventory (user_id, item_id, quantity) VALUES (?, ?, ?) "
+            "ON CONFLICT(user_id, item_id) DO UPDATE SET quantity = quantity + excluded.quantity"
+        )
+        
+        queries = [
+            (query_coins, (user_id, -total_cost)),
+            (query_inv, (user_id, item_id, quantity))
+        ]
+        await database.execute_transaction(queries)
         
         success_msg = lang_service.get_text(
             "shop_purchase_success", 

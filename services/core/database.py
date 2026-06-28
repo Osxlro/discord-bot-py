@@ -17,7 +17,8 @@ _connection = None
 
 REQUIRED_TABLES = {
     "users", "guild_stats", "guild_config", 
-    "bot_persistence", "bot_statuses", "sqlite_sequence", "warns", "stream_alerts"
+    "bot_persistence", "bot_statuses", "sqlite_sequence", "warns", "stream_alerts",
+    "user_inventory", "shop_items"
 }
 
 async def get_db() -> aiosqlite.Connection:
@@ -112,3 +113,17 @@ async def execute_with_retry(func, *args, **kwargs):
             raise e
         except Exception as e:
             raise e
+
+async def execute_transaction(queries: list[tuple[str, tuple]]):
+    """Ejecuta una lista de consultas (query, params) dentro de una única transacción atómica."""
+    async def _op():
+        db = await get_db()
+        await db.execute("BEGIN TRANSACTION;")
+        try:
+            for query, params in queries:
+                await db.execute(query, params)
+            await db.commit()
+        except Exception as e:
+            await db.rollback()
+            raise e
+    await execute_with_retry(_op)

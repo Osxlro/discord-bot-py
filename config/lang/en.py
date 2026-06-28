@@ -22,8 +22,6 @@ EN = {
     "music_seek_not_seekable": "❌ This track does not allow seeking (it is a live stream).",
     "music_seek_success": "⏩ Seeked to **{time}**.",
     "music_error_network": "❌ **Network Error:** Could not connect to Discord voice servers. The service might be saturated. Try again.",
-    "setup_logs_label": "Logs",
-    "setup_wordday_role_label": "Word of the Day Role",
     "dev_shutdown_msg": "👋 Shutting down systems... Goodbye!",
     "dev_reload_success": "✅ Extension `{extension}` reloaded successfully.",
     "dev_reload_error": "❌ Error reloading `{extension}`:\n```py\n{error}\n```",
@@ -101,7 +99,6 @@ EN = {
     "profile_desc": "No description.",
     "profile_no_bday": "Not set",
     "profile_server_stats": "**--- Server Stats ---**",
-    "profile_custom_msgs": "--- Custom Messages ---",
     "profile_field_desc": "📝 Desc",
     "profile_field_bday": "🎂 Birthday",
     "profile_field_prefix": "⌨️ Prefix",
@@ -109,11 +106,6 @@ EN = {
     "profile_field_rebirths": "🌀 Rebirths",
     "profile_field_xp": "✨ XP",
     "profile_progress": "Progress ({percent}%)",
-    "profile_field_coins": "🪙 Coins",
-    "profile_joined": "📅 Joined on: {date}",
-    "profile_btn_general": "General",
-    "profile_btn_stats": "Stats",
-    "profile_btn_msgs": "Messages",
     "profile_update_success": "Profile Updated",
     "profile_desc_saved": "Your description has been saved.",
     "profile_msg_saved": "Your message has been set.",
@@ -127,18 +119,10 @@ EN = {
     "rebirth_fail_generic": "❌ Rebirth could not be completed.",
     "rebirth_title_success": "🌀 Rebirth Successful",
     "rebirth_title_fail": "Rebirth Failed",
-    "rebirth_status": "🌀 Rebirths: {count}",
 
     # --- SIMULATION ---
-    "simulation_title": "🔮 Event Simulation: {event}",
-    "simulation_footer": "This is a test message only visible to you.",
-    "sim_welcome": "Welcome",
-    "sim_level": "Level Up",
-    "sim_birthday": "Birthday",
-    "sim_invalid": "❌ Invalid event. Use: `welcome`, `level`, `birthday`.",
     
     # --- BACKUP ---
-    "backup_disabled": "⚠️ Backup sending to owner is disabled in settings.",
     "backup_msg": "📦 **Backup** {date}",
     
     # --- BIRTHDAY ---
@@ -161,7 +145,6 @@ EN = {
     "role_removed": "❌ Removed role **{role}**.",
     "role_added": "✅ Added role **{role}**.",
     "role_title_success": "Done",
-    "role_title_error": "Error",
     "role_title_perms": "Permissions",
     "role_default_title": "Role",
     "role_default_desc": "Click to get role",
@@ -198,7 +181,6 @@ EN = {
     "voice_join": "✅ Connected to **{channel}**. (AFK Mode)",
     "voice_leave": "👋 Disconnected from voice channel.",
     "voice_error_user": "❌ You need to be in a voice channel first.",
-    "voice_error_bot": "❌ I am already connected somewhere else.",
     "voice_error_perms": "❌ I don't have permissions to join that channel.",
     "voice_title": "Voice",
     
@@ -221,19 +203,13 @@ EN = {
     # --- CONFIGURATION ---
     "setup_success": "Configuration Updated",
     "setup_desc": "✅ {type} successfully set to: {value}",
-    "setup_msg_updated": "✅ Message updated.",
-    "setup_autorol_on": "✅ Auto-Role enabled: {role}",
-    "setup_autorol_off": "⚪ Auto-Role disabled.",
     "setup_disabled": "Disabled",
-    "setup_autorol_label": "Auto-Role",
-    "setup_chaos_desc": "{status}\n🔫 Probability: **{prob}%**",
     "chaos_title": "🔫 Bang!",
     "setup_info_channels": "📂 Channels",
     "setup_info_settings": "🛠️ Settings",
     "wordday_title": "📖 Phrase of the Day",
     "wordday_footer": "Daily inspiration for the server.",
     "mod_reason_default": "No reason provided",
-    "lang_success": "Language changed to **English** 🇺🇸",
 
     # --- SERVERINFO ---
     "serverinfo_title": "ℹ️ {name} Info",
@@ -264,7 +240,6 @@ EN = {
     "dev_status_item_emoji": "🔸",
     
     # --- DEVELOPER ---
-    "dev_status_placeholder": "Select a status to delete...",
     "dev_status_deleted": "🗑️ Status deleted from list.",
     "dev_status_saved": "Status Saved",
     "dev_servers_none": "I am not in any server.",
@@ -273,11 +248,6 @@ EN = {
     "dev_sync_start": "🔄 Syncing...",
     "dev_sync_success": "✅ **{count}** commands synced.",
     "dev_sync_error": "❌ Error: {error}",
-    "dev_mem_start": "✅ **Tracemalloc started.**\nThe bot will now track memory allocations.\nUse `/memoria ver` in a few minutes.",
-    "dev_mem_active": "⚠️ Tracemalloc is already active.",
-    "dev_mem_stop": "🛑 **Tracemalloc stopped.**",
-    "dev_mem_inactive": "⚠️ Tracemalloc was not active.",
-    "dev_mem_total": "💾 **Total Usage (RSS):** `{mem:.2f} MB`\n\n",
     "dev_mem_nodetail": "⚠️ **Module detail not available.**\nStart tracking with `/memoria iniciar`.",
     "dev_mem_top": "**📊 Top Consumption (Differential):**\n",
     "dev_mem_summary": "**Summary:**\n",
@@ -288,7 +258,6 @@ EN = {
     "dev_interaction_error": "❌ Only the command executor can use this.",
     "dev_psutil_error": "⚠️ `psutil` is not installed.",
     "dev_status_more": "\n... and {count} more.",
-    "dev_mem_title": "Memory",
     "dev_db_maint_title": "Maintenance",
     "dev_db_maint_success": "✅ Database optimized (VACUUM completed).",
     "dev_restart_msg": "🔄 Restarting systems...",
@@ -320,39 +289,10 @@ EN = {
     "botinfo_btn_config": "Config",
 
     # --- HELP (CATEGORY DESCRIPTIONS) ---
-    "help_desc_general": "Basic utility commands.",
-    "help_desc_moderacion": "Moderation and cleanup tools.",
-    "help_desc_niveles": "Experience and ranking system.",
-    "help_desc_diversion": "Minigames and entertainment.",
-    "help_desc_configuracion": "Server settings and setup.",
-    "help_desc_developer": "Internal bot administration.",
-    "help_desc_cumpleanos": "Birthday reminders.",
-    "help_desc_roles": "Role management and buttons.",
-    "help_desc_voice": "Voice channels and AFK mode.",
-    "help_desc_perfil": "User profile management.",
-    "help_desc_backup": "System backups.",
-    "help_desc_optimizationtasks": "Internal maintenance tasks.",
-    "help_desc_usuario": "Profile, birthday and customization.",
-    "help_desc_music": "High quality music playback.",
-    "help_desc_shop": "Server shop and user inventory commands.",
 
     # --- MINECRAFT ---
-    "mc_bridge_set": "✅ Chat bridge linked: {channel}",
-    "mc_no_stats": "❌ No data found. Is the player online?",
-    "mc_stats_title": "{player}'s Status",
-    "mc_field_life": "❤️ Health",
-    "mc_field_food": "🍖 Food",
-    "mc_field_armor": "🛡️ Armor",
-    "mc_field_xp": "✨ XP Level",
-    "mc_field_coords": "📍 Coordinates",
-    "mc_field_biome": "🌲 Biome",
-    "mc_field_world": "🌎 World",
-    "mc_msg_sent": "📨 Sent: `{message}`",
-    "mc_chat_format": "**{user}:** {content}",
-    "mc_unknown": "?",
 
     # --- MUSIC ---
-    "music_joined": "✅ Connected to **{channel}**.",
     "music_track_enqueued": "🎵 Added to queue: **{title}**",
     "music_playing": "🎶 Now Playing",
     "music_paused": "⏸️ Music paused.",
@@ -365,7 +305,6 @@ EN = {
     "music_volume": "🔊 Volume set to **{vol}%**.",
     "music_error_join": "❌ Join a voice channel first.",
     "music_error_nothing": "❌ Nothing is playing.",
-    "music_node_connected": "🔗 Lavalink node connected.",
     "music_search_empty": "❌ No results found for `{query}`.",
     "music_loop_track": "🔂 Loop: **Track**",
     "music_loop_queue": "🔁 Loop: **Queue**",
@@ -374,7 +313,6 @@ EN = {
     "music_autoplay_on": "♾️ Autoplay: **On**",
     "music_autoplay_off": "♾️ Autoplay: **Off**",
     "music_now_playing_title": "🎶 Now Playing",
-    "music_now_listening": "🎧 Now Listening",
     "music_np_desc": "{title}\n\n`{pos}` [{bar}] `{len}`",
     "music_lyrics_title": "📝 Lyrics: {title}",
     "music_lyrics_not_found": "❌ Lyrics not found for this track.",
@@ -398,7 +336,6 @@ EN = {
     "music_field_author": "👤 Author",
     "music_field_album": "💽 Album",
     "music_field_year": "📅 Year",
-    "music_field_duration": "⏳ Duration",
     "music_err_lavalink_nodes": "❌ Lavalink is unavailable (Nodes down).",
     "music_err_youtube_block": "❌ **YouTube Block:** The music node is being rate-limited by YouTube.",
     "music_err_load_failed": "❌ Could not load track: {error}",
@@ -406,7 +343,6 @@ EN = {
     "music_vol_changed": "🔊 {vol}%",
     "music_effect_applied": "🎚️ Filter applied: **{filter}**",
     "music_effect_cleared": "✨ All audio effects have been disabled.",
-    "music_effect_invalid": "❌ Unrecognized filter.",
     "music_effect_title": "Audio Effects",
     
     # --- TITLES (GENERIC) ---
@@ -429,28 +365,8 @@ EN = {
     "setup_streamalert_not_found": "❌ No configured alert was found for that YouTube channel.",
     "setup_streamalert_list_title": "📢 YouTube Alerts",
     "setup_streamalert_empty": "There are no YouTube alerts configured on this server.",
-    "setup_streamalert_error_invalid_platform": "❌ Invalid platform. Only 'youtube' is supported.",
-    "setup_streamalert_error_youtube_channel_not_found": "❌ Could not find the YouTube channel. Verify the ID or handle.",
-    "setup_streamalert_error_youtube_resolver_error": "❌ Error resolving the YouTube channel. Try again later.",
-    "setup_streamalert_error_already_exists": "❌ That YouTube channel is already registered on this server.",
-    "stream_youtube_title": "🎥 New video from {author}!",
-    "stream_youtube_desc": "The channel **{author}** has uploaded a new video:\n\n**[{title}]({link})**\n\nDon't miss it!",
 
     # --- FESTIVE DAYS ---
-    "setup_festivedays_label": "Festive Days",
-    "setup_festivedays_need_channel": "❌ You must specify a channel to send festive day reminders.",
-    "festive_title_new_year": "🎆 Happy New Year!",
-    "festive_desc_new_year": "A new year full of opportunities and joy begins! May this year bring you happiness, health, and success in everything you set out to do. 🎉✨",
-    "festive_title_valentine": "💖 Happy Valentine's Day!",
-    "festive_desc_valentine": "Today we celebrate love and friendship. Have a wonderful day surrounded by the people you love most. 💕🌹",
-    "festive_title_halloween": "🎃 Happy Halloween!",
-    "festive_desc_halloween": "Have a spooktacular night filled with candy, scares, and dark magic! 👻🕯️",
-    "festive_title_christmas_eve": "🎄 Merry Christmas Eve!",
-    "festive_desc_christmas_eve": "May peace, harmony, and love reign in your homes on this special night. Happy holidays! ✨🍗",
-    "festive_title_christmas": "🎅 Merry Christmas!",
-    "festive_desc_christmas": "May the magic of Christmas light up your life and bring you peace, love, and happiness! Enjoy with your loved ones. 🎁❄️",
-    "festive_title_new_years_eve": "🥂 Happy New Year's Eve!",
-    "festive_desc_new_years_eve": "Let's say goodbye to this year with gratitude for everything we've learned and prepare to receive the new one with open arms! Cheers! 🔔🍾",
 
     # --- TRIVIA ---
     "trivia_error_api": "❌ An error occurred while fetching the trivia question. Try again.",
@@ -488,15 +404,8 @@ EN = {
     "anime_lbl_source": "Source",
     "anime_lbl_tags": "Tags",
     "anime_embed_title": "🖼️ Anime Image",
-    "leaderboard_your_rank": "👤 Your Position: **#{rank}** (Level **{level}** • ✨ `{xp}` XP)",
-    "leaderboard_no_rank": "👤 Your Position: *No rank yet*",
     "profile_field_gender": "Gender",
-    "gender_hombre": "Male",
-    "gender_mujer": "Female",
-    "gender_no_binario": "Non-Binary",
-    "gender_extraterrestre": "Alien",
     "profile_gender_saved": "✅ Gender successfully updated.",
-    "help_desc_roleplay": "Interaction and roleplay commands.",
 
     # --- HANGMAN ---
     "hangman_mode_solo": "SOLO",
@@ -600,12 +509,6 @@ EN = {
     "shop_admin_remove_success": "✅ Item `{item_id}` successfully removed from the shop.",
 
     # --- SHOP DEFAULT ITEMS ---
-    "item_color_role_name": "Custom Color Role",
-    "item_color_role_desc": "Allows you to request a custom color role in the server.",
-    "item_vip_status_name": "VIP Rank",
-    "item_vip_status_desc": "Special VIP rank in the server with exclusive benefits.",
-    "item_lucky_charm_name": "Lucky Charm",
-    "item_lucky_charm_desc": "A special limited stock charm (only 100 units global).",
 
     # --- PAGINATION ---
     "pagination_prev": "Previous",

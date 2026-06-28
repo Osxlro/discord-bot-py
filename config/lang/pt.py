@@ -22,8 +22,6 @@ PT = {
     "music_seek_not_seekable": "❌ Esta faixa não permite avançar (é uma transmissão ao vivo).",
     "music_seek_success": "⏩ Avançado para **{time}**.",
     "music_error_network": "❌ **Erro de Rede:** Não foi possível conectar aos servidores de voz do Discord. O serviço pode estar saturado. Tente novamente.",
-    "setup_logs_label": "Logs",
-    "setup_wordday_role_label": "Cargo de Frase do Dia",
     "dev_shutdown_msg": "👋 Desligando sistemas... Até logo!",
     "dev_reload_success": "✅ Extensão `{extension}` recarregada com sucesso.",
     "dev_reload_error": "❌ Erro ao recarregar `{extension}`:\n```py\n{error}\n```",
@@ -99,7 +97,6 @@ PT = {
     "profile_desc": "Sem descrição.",
     "profile_no_bday": "Não definido",
     "profile_server_stats": "**--- Estatísticas do Servidor ---**",
-    "profile_custom_msgs": "--- Mensagens Personalizadas ---",
     "profile_field_desc": "📝 Desc",
     "profile_field_bday": "🎂 Aniversário",
     "profile_field_prefix": "⌨️ Prefixo",
@@ -107,11 +104,6 @@ PT = {
     "profile_field_rebirths": "🌀 Rebirths",
     "profile_field_xp": "✨ XP",
     "profile_progress": "Progresso ({percent}%)",
-    "profile_field_coins": "🪙 Moedas",
-    "profile_joined": "📅 Juntou-se em: {date}",
-    "profile_btn_general": "Geral",
-    "profile_btn_stats": "Estatísticas",
-    "profile_btn_msgs": "Mensagens",
     "profile_update_success": "Perfil Atualizado",
     "profile_desc_saved": "A tua descrição foi guardada.",
     "profile_msg_saved": "A tua mensagem foi configurada.",
@@ -125,18 +117,10 @@ PT = {
     "rebirth_fail_generic": "❌ Não foi possível completar o renascimento.",
     "rebirth_title_success": "🌀 Rebirth com Sucesso",
     "rebirth_title_fail": "Rebirth Falhou",
-    "rebirth_status": "🌀 Rebirths: {count}",
 
     # --- SIMULAÇÃO ---
-    "simulation_title": "🔮 Simulação de Evento: {event}",
-    "simulation_footer": "Esta é uma mensagem de teste visível apenas para ti.",
-    "sim_welcome": "Boas-vindas",
-    "sim_level": "Subida de Nível",
-    "sim_birthday": "Aniversário",
-    "sim_invalid": "❌ Evento inválido. Usa: `welcome`, `level`, `birthday`.",
     
     # --- BACKUP ---
-    "backup_disabled": "⚠️ O envio de backups ao dono está desativado nas definições.",
     "backup_msg": "📦 **Backup** {date}",
     
     # --- ANIVERSÁRIO ---
@@ -159,7 +143,6 @@ PT = {
     "role_removed": "❌ Removi o cargo **{role}**.",
     "role_added": "✅ Dei-te o cargo **{role}**.",
     "role_title_success": "Pronto",
-    "role_title_error": "Erro",
     "role_title_perms": "Permissões",
     "role_default_title": "Cargo",
     "role_default_desc": "Clica para obter o cargo",
@@ -196,7 +179,6 @@ PT = {
     "voice_join": "✅ Conectado a **{channel}**. (Modo AFK)",
     "voice_leave": "👋 Desconectado do canal de voz.",
     "voice_error_user": "❌ Precisas de estar num canal de voz primeiro.",
-    "voice_error_bot": "❌ Já estou conectado noutro canal.",
     "voice_error_perms": "❌ Não tenho permissões para entrar nesse canal.",
     "voice_title": "Voz",
     
@@ -219,19 +201,13 @@ PT = {
     # --- CONFIGURAÇÃO ---
     "setup_success": "Configuração Atualizada",
     "setup_desc": "✅ {type} configurado com sucesso em: {value}",
-    "setup_msg_updated": "✅ Mensagem atualizada.",
-    "setup_autorol_on": "✅ Auto-Cargo ativado: {role}",
-    "setup_autorol_off": "⚪ Auto-Cargo desativado.",
     "setup_disabled": "Desativado",
-    "setup_autorol_label": "Auto-Rol",
-    "setup_chaos_desc": "{status}\n🔫 Probabilidade: **{prob}%**",
     "chaos_title": "🔫 Bang!",
     "setup_info_channels": "📂 Canais",
     "setup_info_settings": "🛠️ Definições",
     "wordday_title": "📖 Frase do Dia",
     "wordday_footer": "Inspiração diária para o servidor.",
     "mod_reason_default": "Sem motivo especificado",
-    "lang_success": "Idioma alterado para **Português** 🇵🇹",
 
     # --- SERVERINFO ---
     "serverinfo_title": "ℹ️ Informação de {name}",
@@ -262,7 +238,6 @@ PT = {
     "dev_status_item_emoji": "🔸",
     
     # --- DEVELOPER ---
-    "dev_status_placeholder": "Seleciona um estado para eliminar...",
     "dev_status_deleted": "🗑️ Estado eliminado da lista.",
     "dev_status_saved": "Status Guardado",
     "dev_servers_none": "Não estou em nenhum servidor.",
@@ -271,11 +246,6 @@ PT = {
     "dev_sync_start": "🔄 Sincronizando...",
     "dev_sync_success": "✅ **{count}** comandos sincronizados.",
     "dev_sync_error": "❌ Erro: {error}",
-    "dev_mem_start": "✅ **Tracemalloc iniciado.**\nO bot agora irá registar as alocações de memória.\nUsa `/memoria ver` em alguns minutos.",
-    "dev_mem_active": "⚠️ Tracemalloc já está ativo.",
-    "dev_mem_stop": "🛑 **Tracemalloc parado.**",
-    "dev_mem_inactive": "⚠️ Tracemalloc não estava ativo.",
-    "dev_mem_total": "💾 **Uso Total (RSS):** `{mem:.2f} MB`\n\n",
     "dev_mem_nodetail": "⚠️ **Detalhe por módulo não disponível.**\nInicia o rastreio com `/memoria iniciar`.",
     "dev_mem_top": "**📊 Top Consumo (Diferencial):**\n",
     "dev_status_more": "\n... e mais {count}.",
@@ -286,7 +256,6 @@ PT = {
     "dev_mem_others": "📄 Outros",
     "dev_interaction_error": "❌ Apenas quem executou o comando pode usar isto.",
     "dev_psutil_error": "⚠️ `psutil` não está instalado.",
-    "dev_mem_title": "Memória",
     "dev_db_maint_title": "Manutenção",
     "dev_db_maint_success": "✅ Base de datos otimizada (VACUUM concluído).",
     "dev_restart_msg": "🔄 Reiniciando sistemas...",
@@ -318,39 +287,10 @@ PT = {
     "botinfo_btn_config": "Config",
 
     # --- AJUDA (DESCRIÇÕES) ---
-    "help_desc_general": "Comandos básicos e utilitários.",
-    "help_desc_moderacion": "Ferramentas de moderação e limpeza.",
-    "help_desc_niveles": "Sistema de experiência e ranking.",
-    "help_desc_diversion": "Minijogos e entretenimento.",
-    "help_desc_configuracion": "Definições do servidor e setup.",
-    "help_desc_developer": "Administração interna do bot.",
-    "help_desc_cumpleanos": "Lembretes de aniversários.",
-    "help_desc_roles": "Gestão de cargos e botões.",
-    "help_desc_voice": "Canais de voz e modo AFK.",
-    "help_desc_perfil": "Gestão do teu cartão de utilizador.",
-    "help_desc_backup": "Cópias de segurança do sistema.",
-    "help_desc_optimizationtasks": "Tarefas de manutenção interna.",
-    "help_desc_usuario": "Perfil, aniversário e personalización.",
-    "help_desc_music": "Reprodução de música de alta qualidade.",
-    "help_desc_shop": "Comandos da loja do servidor e inventário do usuário.",
 
     # --- MINECRAFT ---
-    "mc_bridge_set": "✅ Canal de chat vinculado: {channel}",
-    "mc_no_stats": "❌ Sem dados. O jogador está online?",
-    "mc_stats_title": "Estado de {player}",
-    "mc_field_life": "❤️ Vida",
-    "mc_field_food": "🍖 Fome",
-    "mc_field_armor": "🛡️ Armadura",
-    "mc_field_xp": "✨ Nível XP",
-    "mc_field_coords": "📍 Coordenadas",
-    "mc_field_biome": "🌲 Bioma",
-    "mc_field_world": "🌎 Mundo",
-    "mc_msg_sent": "📨 Enviado: `{message}`",
-    "mc_chat_format": "**{user}:** {content}",
-    "mc_unknown": "?",
 
     # --- MÚSICA ---
-    "music_joined": "✅ Conectado a **{channel}**.",
     "music_track_enqueued": "🎵 Adicionado à fila: **{title}**",
     "music_playing": "🎶 A reproduzir agora",
     "music_paused": "⏸️ Música pausada.",
@@ -363,7 +303,6 @@ PT = {
     "music_volume": "🔊 Volume ajustado para **{vol}%**.",
     "music_error_join": "❌ Entra num canal de voz primeiro.",
     "music_error_nothing": "❌ Não há nada a reproduzir.",
-    "music_node_connected": "🔗 Nó Lavalink conectado.",
     "music_search_empty": "❌ Não encontrei resultados para `{query}`.",
     "music_loop_track": "🔂 Loop: **Música**",
     "music_loop_queue": "🔁 Loop: **Fila**",
@@ -372,7 +311,6 @@ PT = {
     "music_autoplay_on": "♾️ Autoplay: **Ligado**",
     "music_autoplay_off": "♾️ Autoplay: **Desligado**",
     "music_now_playing_title": "🎶 A Reproduzir Agora",
-    "music_now_listening": "🎧 A Ouvir Agora",
     "music_np_desc": "{title}\n\n`{pos}` [{bar}] `{len}`",
     "music_lyrics_title": "📝 Letra: {title}",
     "music_lyrics_not_found": "❌ Letra não encontrada para esta música.",
@@ -396,7 +334,6 @@ PT = {
     "music_field_author": "👤 Autor",
     "music_field_album": "💽 Álbum",
     "music_field_year": "📅 Ano",
-    "music_field_duration": "⏳ Duração",
     "music_err_lavalink_nodes": "❌ Lavalink indisponível (Nós em baixo).",
     "music_err_youtube_block": "❌ **Bloqueio do YouTube:** O nó de música está a ser limitado pelo YouTube.",
     "music_err_load_failed": "❌ Não foi possível carregar a música: {error}",
@@ -404,7 +341,6 @@ PT = {
     "music_vol_changed": "🔊 {vol}%",
     "music_effect_applied": "🎚️ Filtro aplicado: **{filter}**",
     "music_effect_cleared": "✨ Todos os efeitos de áudio foram desativados.",
-    "music_effect_invalid": "❌ Filtro não reconhecido.",
     "music_effect_title": "Efeitos de Áudio",
     
     # --- TÍTULOS (GENÉRICOS) ---
@@ -429,28 +365,8 @@ PT = {
     "setup_streamalert_not_found": "❌ Nenhum alerta configurado foi encontrado para esse canal do YouTube.",
     "setup_streamalert_list_title": "📢 Alertas do YouTube",
     "setup_streamalert_empty": "Não há alertas do YouTube configurados neste servidor.",
-    "setup_streamalert_error_invalid_platform": "❌ Plataforma inválida. Apenas 'youtube' é suportado.",
-    "setup_streamalert_error_youtube_channel_not_found": "❌ Não foi possível encontrar o canal do YouTube. Verifique o ID ou o handle.",
-    "setup_streamalert_error_youtube_resolver_error": "❌ Erro ao resolver o canal do YouTube. Tente novamente mais tarde.",
-    "setup_streamalert_error_already_exists": "❌ Esse canal do YouTube já está registrado neste servidor.",
-    "stream_youtube_title": "🎥 Novo vídeo de {author}!",
-    "stream_youtube_desc": "O canal **{author}** enviou um novo vídeo:\n\n**[{title}]({link})**\n\nNão perca!",
 
     # --- FESTIVE DAYS ---
-    "setup_festivedays_label": "Dias Festivos",
-    "setup_festivedays_need_channel": "❌ Você deve especificar um canal para enviar os lembretes de dias festivos.",
-    "festive_title_new_year": "🎆 Feliz Ano Novo!",
-    "festive_desc_new_year": "Começa um novo ano cheio de oportunidades e alegria! Que este ano traga felicidade, saúde e sucesso em tudo o que você propuser. 🎉✨",
-    "festive_title_valentine": "💖 Feliz Dia dos Namorados!",
-    "festive_desc_valentine": "Hoje celebramos o amor e a amizade. Tenha um dia maravilhoso rodeado pelas pessoas que você mais ama. 💕🌹",
-    "festive_title_halloween": "🎃 Feliz Halloween!",
-    "festive_desc_halloween": "Tenha uma noite assustadoramente divertida cheia de doces, sustos e magia negra! 👻🕯️",
-    "festive_title_christmas_eve": "🎄 Feliz Véspera de Natal!",
-    "festive_desc_christmas_eve": "Que a paz, a harmonia e o amor reinem em seus lares nesta noite tão especial. Boas festas! ✨🍗",
-    "festive_title_christmas": "🎅 Feliz Natal!",
-    "festive_desc_christmas": "Que a magia do Natal ilumine a sua vida e lhe traga paz, amor e felicidade! Aproveite com seus entes queridos. 🎁❄️",
-    "festive_title_new_years_eve": "🥂 Feliz Véspera de Ano Novo!",
-    "festive_desc_new_years_eve": "Vamos nos despedir deste ano com gratidão por tudo o que aprendemos e nos preparar para receber o novo de braços abertos! Saúde! 🔔🍾",
 
     # --- TRIVIA ---
     "trivia_error_api": "❌ Ocorreu um erro ao obter a pergunta de trivia. Tente novamente.",
@@ -488,15 +404,8 @@ PT = {
     "anime_lbl_source": "Fonte",
     "anime_lbl_tags": "Tags",
     "anime_embed_title": "🖼️ Imagem de Anime",
-    "leaderboard_your_rank": "👤 Sua Posição: **#{rank}** (Nível **{level}** • ✨ `{xp}` XP)",
-    "leaderboard_no_rank": "👤 Sua Posição: *Sem rank ainda*",
     "profile_field_gender": "Gênero",
-    "gender_hombre": "Homem",
-    "gender_mujer": "Mulher",
-    "gender_no_binario": "Não Binário",
-    "gender_extraterrestre": "Extraterrestre",
     "profile_gender_saved": "✅ Gênero atualizado com sucesso.",
-    "help_desc_roleplay": "Comandos de interação e roleplay.",
 
     # --- HANGMAN ---
     "hangman_mode_solo": "SOLO",
@@ -600,12 +509,6 @@ PT = {
     "shop_admin_remove_success": "✅ Item `{item_id}` removido com sucesso da loja.",
 
     # --- OBJETOS POR DEFEITO ---
-    "item_color_role_name": "Cor de Cargo Personalizada",
-    "item_color_role_desc": "Permite que solicite uma cor de cargo personalizada no servidor.",
-    "item_vip_status_name": "Cargo VIP",
-    "item_vip_status_desc": "Cargo VIP especial no servidor com benefícios exclusivos.",
-    "item_lucky_charm_name": "Amuleto da Sorte",
-    "item_lucky_charm_desc": "Um amuleto especial com estoque global limitado (apenas 100 unidades).",
 
     # --- PAGINAÇÃO ---
     "pagination_prev": "Anterior",
