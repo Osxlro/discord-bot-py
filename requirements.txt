@@ -5,4 +5,7 @@ deep-translator
 PyNacl
 psutil
 wavelink
-tzdata
+tzdata
+fastapi
+uvicorn
+jinja2

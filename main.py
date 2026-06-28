@@ -176,14 +176,24 @@ class BotPersonal(commands.AutoShardedBot):
 
 async def main():
     from services.utils import http_client
+    from web.app import create_app
+    from web.server import WebServer
+
     bot = BotPersonal()
+    
+    app = create_app()
+    app.state.bot = bot
+    web_server = WebServer(app, host="0.0.0.0", port=5058)
+    
     try:
+        web_server.start()
         async with bot:
             await bot.start(settings.TOKEN)
     except Exception as e:
         logger.error(f"❌ Error inesperado al iniciar el bot: {e}")
     finally:
         logger.info("--- 🛑 APAGANDO SERVICIOS ---")
+        await web_server.stop()
         await db_service.close_db()
         await http_client.close_session()
 
