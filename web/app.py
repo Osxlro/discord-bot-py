@@ -36,7 +36,10 @@ def get_common_context(request: Request, active_page: str = "") -> dict:
         "bot_name": bot_name,
         "bot_avatar": bot_avatar,
         "is_ready": is_ready,
-        "active_page": active_page
+        "active_page": active_page,
+        "web_domain": web_settings.WEB_DOMAIN,
+        "web_port": web_settings.WEB_PORT,
+        "expose_port": web_settings.WEB_EXPOSE_PORT
     }
 
 def create_app() -> FastAPI:

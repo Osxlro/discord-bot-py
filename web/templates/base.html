@@ -32,7 +32,7 @@
         <div class="nav-container">
             <span class="footer-text">
                 Friday Bot © 2026. Hospedado en 
-                <a href="http://fridaybot.duckdns.org:5058" class="footer-link" target="_blank">fridaybot.duckdns.org:5058</a>
+                <a href="http://{{ web_domain }}{% if expose_port %}:{{ web_port }}{% endif %}" class="footer-link" target="_blank">{{ web_domain }}{% if expose_port %}:{{ web_port }}{% endif %}</a>
             </span>
         </div>
     </footer>
