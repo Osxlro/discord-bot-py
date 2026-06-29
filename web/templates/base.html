@@ -33,12 +33,6 @@
                 <li><a href="/commands" class="nav-link {% if active_page == 'commands' %}active{% endif %}" data-i18n="web_commands">Comandos</a></li>
                 <li><a href="/docs" class="nav-link {% if active_page == 'docs' %}active{% endif %}" data-i18n="web_docs">Documentos</a></li>
                 <li><a href="/profile" class="btn-login" data-i18n="web_login">Login</a></li>
-                <li class="lang-selector">
-                    <a href="#" class="lang-btn" data-lang="es">ES</a>
-                    <a href="#" class="lang-btn" data-lang="en">EN</a>
-                    <a href="#" class="lang-btn" data-lang="pt">PT</a>
-                    <a href="#" class="lang-btn" data-lang="fr">FR</a>
-                </li>
             </ul>
         </div>
     </nav>
@@ -59,7 +53,7 @@
                 </span>
                 <span class="footer-text">
                     <span data-i18n="web_hosted_on">Hospedado en</span> 
-                    <a href="http://{{ web_domain }}{% if expose_port %}:{{ web_port }}{% endif %}" class="footer-link" target="_blank">{{ web_domain }}{% if expose_port %}:{{ web_port }}{% endif %}</a>
+                    <a href="https://{{ web_domain }}" class="footer-link" target="_blank">{{ web_domain }}</a>
                 </span>
             </div>
             
