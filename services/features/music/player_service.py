@@ -215,6 +215,15 @@ async def restore_players(bot):
         if not v_channel: continue
 
         try:
+            connected_nodes = [n for n in wavelink.Pool.nodes.values() if n.status == wavelink.NodeStatus.CONNECTED]
+            if not connected_nodes:
+                logger.warning(f"⚠️ [Music Service] No hay nodos Lavalink conectados para restaurar la sesión en {guild.name}. Omitiendo.")
+                continue
+
+            chosen_node = min(connected_nodes, key=lambda n: len(n.players))
+            global _next_connection_node
+            _next_connection_node = chosen_node
+
             player: BotPlayer = await v_channel.connect(cls=BotPlayer, self_deaf=True)
             await player.set_volume(data['volume'])
             player.home = t_channel
