@@ -39,15 +39,44 @@
     </main>
 
     <footer class="footer">
-        <div class="footer-content">
-            <span class="footer-text">
-                Friday Bot © 2026. Hospedado en 
-                <a href="http://{{ web_domain }}{% if expose_port %}:{{ web_port }}{% endif %}" class="footer-link" target="_blank">{{ web_domain }}{% if expose_port %}:{{ web_port }}{% endif %}</a>
-            </span>
-            <ul class="footer-nav">
-                <li><a href="/terms" class="nav-link {% if active_page == 'terms' %}active{% endif %}">Términos de Servicio</a></li>
-                <li><a href="/privacy" class="nav-link {% if active_page == 'privacy' %}active{% endif %}">Privacidad</a></li>
-            </ul>
+        <div class="footer-columns">
+            <div class="footer-brand">
+                <a href="/" class="footer-brand-logo">
+                    <img src="{{ bot_avatar }}" alt="Logo">
+                    <span>{{ bot_name }}</span>
+                </a>
+                <span class="footer-text">
+                    Friday Bot © 2026. Todos los derechos reservados.
+                </span>
+                <span class="footer-text">
+                    Hospedado en 
+                    <a href="http://{{ web_domain }}{% if expose_port %}:{{ web_port }}{% endif %}" class="footer-link" target="_blank">{{ web_domain }}{% if expose_port %}:{{ web_port }}{% endif %}</a>
+                </span>
+            </div>
+            
+            <div class="footer-column">
+                <h4>Legal</h4>
+                <ul>
+                    <li><a href="/terms">Términos de Servicio</a></li>
+                    <li><a href="/privacy">Política de Privacidad</a></li>
+                </ul>
+            </div>
+            
+            <div class="footer-column">
+                <h4>Recursos</h4>
+                <ul>
+                    <li><a href="/commands">Comandos</a></li>
+                    <li><a href="/docs">Documentación</a></li>
+                </ul>
+            </div>
+            
+            <div class="footer-column">
+                <h4>Soporte</h4>
+                <ul>
+                    <li><a href="https://discord.gg/soporte" target="_blank">Servidor de Soporte</a></li>
+                    <li><a href="https://discord.com/api/oauth2/authorize?client_id=1446949757598826617&permissions=8&scope=bot%20applications.commands" target="_blank">Invitar al Bot</a></li>
+                </ul>
+            </div>
         </div>
     </footer>
 </body>
