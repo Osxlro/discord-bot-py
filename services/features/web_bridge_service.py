@@ -1,4 +1,5 @@
 import datetime
+import discord
 from discord.ext import commands
 from typing import Dict, List, Any
 from services.repositories.user_repository import UserRepository
@@ -73,6 +74,10 @@ def get_commands_by_category(bot: commands.Bot) -> Dict[str, List[Dict[str, Any]
     if tree_commands:
         slash_list = []
         for cmd in tree_commands:
+            # Los ContextMenu no son comandos Slash de escribir y no tienen descripción, los ignoramos
+            if isinstance(cmd, discord.app_commands.ContextMenu):
+                continue
+                
             # Evitar duplicar si ya está listado en Cogs
             already_listed = False
             for cat_list in categories.values():
@@ -84,7 +89,7 @@ def get_commands_by_category(bot: commands.Bot) -> Dict[str, List[Dict[str, Any]
                 
             slash_list.append({
                 "name": cmd.name,
-                "description": cmd.description or "Sin descripción.",
+                "description": getattr(cmd, "description", "Sin descripción.") or "Sin descripción.",
                 "type": "Slash"
             })
             
