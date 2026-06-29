@@ -4,13 +4,13 @@
 
 {% block content %}
 <div class="card">
-    <h1>Mi Perfil</h1>
-    <p class="subtitle" style="margin-bottom: 24px;">Gestiona tus datos de usuario, coins y privacidad en {{ bot_name }}.</p>
+    <h1 data-i18n="web_profile_title">Perfil de Usuario</h1>
+    <p class="subtitle" style="margin-bottom: 24px;" data-i18n="web_profile_desc">Gestiona tus datos personales y visualiza tus estadísticas globales.</p>
     
     <div style="background: rgba(255, 255, 255, 0.02); border: 1px dashed var(--card-border); border-radius: 16px; padding: 32px 16px; text-align: center;">
         <span style="font-size: 2rem;">🔑</span>
-        <h3 style="margin: 12px 0 8px; font-weight: 600;">Sección en construcción</h3>
-        <p style="font-size: 0.9rem; color: var(--text-muted);">Pronto podrás iniciar sesión de forma segura utilizando tu cuenta de Discord para administrar tus preferencias y datos.</p>
+        <h3 style="margin: 12px 0 8px; font-weight: 600;" data-i18n="web_in_construction">Sección en construcción</h3>
+        <p style="font-size: 0.9rem; color: var(--text-muted);" data-i18n="web_profile_construction_desc">Pronto podrás iniciar sesión de forma segura utilizando tu cuenta de Discord para administrar tus preferencias y datos.</p>
     </div>
 </div>
 {% endblock %}

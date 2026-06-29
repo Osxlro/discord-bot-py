@@ -131,7 +131,7 @@ body {
 .nav-menu {
     display: flex;
     list-style: none;
-    gap: 28px;
+    gap: 24px;
     align-items: center;
 }
 
@@ -146,6 +146,31 @@ body {
 .nav-link:hover, .nav-link.active {
     color: #ffffff;
     text-shadow: 0 0 8px rgba(0, 198, 255, 0.5);
+}
+
+.lang-selector {
+    display: flex;
+    gap: 6px;
+    margin-left: 8px;
+    align-items: center;
+}
+
+.lang-btn {
+    text-decoration: none;
+    color: var(--text-muted);
+    font-size: 0.72rem;
+    font-weight: 800;
+    padding: 3px 6px;
+    border-radius: 6px;
+    border: 1px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.lang-btn:hover, .lang-btn.active {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.15);
+    text-shadow: 0 0 5px rgba(0, 198, 255, 0.4);
 }
 
 /* BOTÓN GLOSSY FRUTIGER AERO */

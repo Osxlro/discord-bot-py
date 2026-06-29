@@ -105,8 +105,8 @@
 {% block content %}
 <div class="commands-container">
     <div style="text-align: center; margin-bottom: 40px;">
-        <h1 style="font-size: 2.5rem;">Lista de Comandos</h1>
-        <p class="subtitle">Explora todos los comandos interactivos, slash e híbridos de {{ bot_name }} agrupados por módulos.</p>
+        <h1 style="font-size: 2.5rem;" data-i18n="web_command_list_title">Lista de Comandos</h1>
+        <p class="subtitle" data-i18n="web_command_list_desc">Explora todos los comandos interactivos, slash e híbridos de Friday Bot agrupados por módulos.</p>
     </div>
     
     {% if categories %}
@@ -123,8 +123,9 @@
                                 <span class="command-badge 
                                     {% if cmd.type == 'Híbrido' %}badge-hibrido
                                     {% elif cmd.type == 'Slash' %}badge-slash
-                                    {% else %}badge-prefijo{% endif %}">
-                                    {{ cmd.type }}
+                                    {% else %}badge-prefijo{% endif %}"
+                                    data-i18n="{% if cmd.type == 'Híbrido' %}cmd_type_hybrid{% elif cmd.type == 'Slash' %}cmd_type_slash{% else %}cmd_type_prefix{% endif %}">
+                                    {% if cmd.type == 'Híbrido' %}Híbrido{% elif cmd.type == 'Slash' %}Slash{% else %}Prefijo{% endif %}
                                 </span>
                             </div>
                             <p class="command-desc">{{ cmd.description }}</p>
@@ -137,8 +138,8 @@
         <div class="card" style="margin: 0 auto;">
             <div style="background: rgba(255, 255, 255, 0.02); border: 1px dashed var(--card-border); border-radius: 16px; padding: 32px 16px; text-align: center;">
                 <span style="font-size: 2rem;">📭</span>
-                <h3 style="margin: 12px 0 8px; font-weight: 600;">Sin comandos</h3>
-                <p style="font-size: 0.9rem; color: var(--text-muted);">No se encontraron comandos registrados o el bot no está en línea.</p>
+                <h3 style="margin: 12px 0 8px; font-weight: 600;" data-i18n="web_no_commands_title">Sin comandos</h3>
+                <p style="font-size: 0.9rem; color: var(--text-muted);" data-i18n="web_no_commands_desc">No se encontraron comandos registrados o el bot no está en línea.</p>
             </div>
         </div>
     {% endif %}

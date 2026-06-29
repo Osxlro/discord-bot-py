@@ -9,20 +9,20 @@
         <div class="status-indicator {% if is_ready %}status-online{% else %}status-offline{% endif %}"></div>
     </div>
     <h1>{{ bot_name }}</h1>
-    <p class="subtitle">¡Hola Mundo! El portal web del bot de Discord funciona correctamente.</p>
+    <p class="subtitle" data-i18n="web_welcome_subtitle">¡Hola Mundo! El portal web del bot de Discord funciona correctamente.</p>
     
     <div class="stats-grid">
         <div class="stat-item">
             <div class="stat-val">{{ guilds_count }}</div>
-            <div class="stat-lbl">Servidores</div>
+            <div class="stat-lbl" data-i18n="web_servers">Servidores</div>
         </div>
         <div class="stat-item">
             <div class="stat-val">{{ users_count }}</div>
-            <div class="stat-lbl">Usuarios</div>
+            <div class="stat-lbl" data-i18n="web_users">Usuarios</div>
         </div>
         <div class="stat-item">
             <div class="stat-val">{{ commands_count }}</div>
-            <div class="stat-lbl">Comandos</div>
+            <div class="stat-lbl" data-i18n="web_commands_count">Comandos</div>
         </div>
     </div>
 </div>
