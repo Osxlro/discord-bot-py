@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}{{ bot_name }} - Términos de Servicio{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 800px; text-align: left;">
+    <h1 style="text-align: center; margin-bottom: 24px;">Términos de Servicio</h1>
+    <p class="subtitle" style="text-align: center;">Última actualización: 28 de junio de 2026</p>
+    
+    <div style="line-height: 1.6; font-size: 0.95rem; color: var(--text-muted);">
+        <h3 style="color: #ffffff; margin-top: 20px; margin-bottom: 8px;">1. Aceptación de los Términos</h3>
+        <p style="margin-bottom: 16px;">Al invitar a {{ bot_name }} a tu servidor de Discord o al utilizar cualquiera de nuestras funciones web, aceptas cumplir y estar sujeto a estos términos de servicio de forma incondicional.</p>
+        
+        <h3 style="color: #ffffff; margin-top: 20px; margin-bottom: 8px;">2. Uso Autorizado</h3>
+        <p style="margin-bottom: 16px;">El bot está diseñado para entretenimiento, niveles, moderación y música. Te comprometes a no abusar del bot (spam, exploiting de bugs o saturación intencional de servicios) ni a usarlo para violar las directrices de la comunidad de Discord.</p>
+        
+        <h3 style="color: #ffffff; margin-top: 20px; margin-bottom: 8px;">3. Modificaciones del Servicio</h3>
+        <p style="margin-bottom: 16px;">Nos reservamos el derecho de modificar, suspender o descontinuar temporal o permanentemente el bot o cualquiera de sus funciones (incluido el sistema de coins y niveles) en cualquier momento y sin previo aviso.</p>
+        
+        <h3 style="color: #ffffff; margin-top: 20px; margin-bottom: 8px;">4. Limitación de Responsabilidad</h3>
+        <p style="margin-bottom: 16px;">{{ bot_name }} se proporciona "tal cual" y "según disponibilidad". No nos hacemos responsables de pérdidas de datos (como pérdida de XP o monedas), interrupciones del servicio o acciones tomadas por los moderadores de tu servidor mediante el uso del bot.</p>
+    </div>
+</div>
+{% endblock %}

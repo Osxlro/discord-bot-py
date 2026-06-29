@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}{{ bot_name }} - Política de Privacidad{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 800px; text-align: left;">
+    <h1 style="text-align: center; margin-bottom: 24px;">Política de Privacidad</h1>
+    <p class="subtitle" style="text-align: center;">Última actualización: 28 de junio de 2026</p>
+    
+    <div style="line-height: 1.6; font-size: 0.95rem; color: var(--text-muted);">
+        <h3 style="color: #ffffff; margin-top: 20px; margin-bottom: 8px;">1. Datos que Recopilamos</h3>
+        <p style="margin-bottom: 16px;">Para garantizar el funcionamiento de los sistemas de niveles y cumpleaños, recopilamos y almacenamos los siguientes datos en una base de datos segura (SQLite):</p>
+        <ul style="margin-left: 20px; margin-bottom: 16px; list-style-type: disc;">
+            <li>ID de usuario de Discord y ID de servidor (para asociar estadísticas y perfiles).</li>
+            <li>Experiencia (XP), nivel y número de renacimientos.</li>
+            <li>Fecha de cumpleaños ("DD-MM") (únicamente si decides establecerla de forma voluntaria).</li>
+            <li>Descripción/biografía personalizada del perfil y cantidad de coins globales.</li>
+        </ul>
+        
+        <h3 style="color: #ffffff; margin-top: 20px; margin-bottom: 8px;">2. Derechos del Usuario (Derecho al Borrado)</h3>
+        <p style="margin-bottom: 16px;">Creemos firmemente en tu privacidad. Tienes el control total sobre tus datos. Puedes eliminar permanentemente tu registro de cumpleaños o datos personales mediante los comandos de Discord directos (ej: `/birthday delete`) o solicitando la depuración en tu perfil.</p>
+        
+        <h3 style="color: #ffffff; margin-top: 20px; margin-bottom: 8px;">3. Seguridad y Cookies</h3>
+        <p style="margin-bottom: 16px;">El portal web no almacena cookies de rastreo de terceros. Toda la comunicación está cifrada mediante HTTPS seguro a través de los servidores de Cloudflare. Tu dirección IP real es leída con fines exclusivos de prevención de abuso mediante limitación de tasa (Rate Limiting) y no es guardada.</p>
+    </div>
+</div>
+{% endblock %}

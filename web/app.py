@@ -143,4 +143,14 @@ def create_app() -> FastAPI:
         ctx = get_common_context(request, active_page="profile")
         return templates.TemplateResponse(request, "profile.html", ctx)
         
+    @app.get("/terms", response_class=HTMLResponse)
+    async def terms_page(request: Request):
+        ctx = get_common_context(request, active_page="terms")
+        return templates.TemplateResponse(request, "terms.html", ctx)
+        
+    @app.get("/privacy", response_class=HTMLResponse)
+    async def privacy_page(request: Request):
+        ctx = get_common_context(request, active_page="privacy")
+        return templates.TemplateResponse(request, "privacy.html", ctx)
+        
     return app

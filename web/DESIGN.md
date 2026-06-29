@@ -1,27 +1,28 @@
 # Directrices de Diseño y Estructura del Portal Web - Friday Bot
 
-Este documento establece las directrices obligatorias de diseño visual, organización de archivos estáticos, enrutamiento de subpáginas y el flujo de autenticación (Discord OAuth2) para el portal web de Friday Bot, inspirado en el diseño moderno e interactivo de **Nekotina**.
+Este documento establece las directrices obligatorias de diseño visual, organización de archivos estáticos, enrutamiento de subpáginas y el flujo de autenticación (Discord OAuth2) para el portal web de Friday Bot, inspirado en la fusión de **Frutiger Aero** y **Glassmorphism** (estilo MEE6, Nekotina y Dank Memer).
 
 ---
 
-## 🎨 1. Estética Visual y Componentes (Estilo Nekotina)
+## 🎨 1. Estética Visual: Frutiger Aero + Glassmorphism
 
-El diseño del portal debe ser moderno, fluido y responsivo, utilizando una paleta oscura con acentos vibrantes de color y efectos de desenfoque de fondo.
+El diseño visual busca dar una sensación orgánica, brillante y cristalina de alta tecnología.
 
 ### Paleta de Colores
-* **Fondo de Página (`--bg-color`)**: `#0f111a` (azul oscuro profundo).
-* **Fondo de Tarjetas (`--card-bg`)**: `rgba(255, 255, 255, 0.03)` (efecto esmerilado translúcido).
-* **Color Primario (`--primary-color`)**: `#5865F2` (azul Discord blurple).
-* **Acentuación / Destacados**: Gradients lineales fluidos (ej. `#8b5cf6` a `#ec4899`).
-* **Estado Activo (`--online-color`)**: `#22c55e` (verde brillante con pulso).
+* **Fondo Base (`--bg-color`)**: `#0b132b` (azul noche/océano profundo).
+* **Fondo de Tarjetas (`--card-bg`)**: `rgba(255, 255, 255, 0.04)` (vidrio translúcido).
+* **Acentuación Primaria (`--primary-color`)**: `#00c6ff` a `#0072ff` (azul brillante con gloss).
+* **Acentuación Secundaria (`--accent-color`)**: `#38ef7d` (verde lima brillante).
 
-### Tipografía
-* Utilizar **Outfit** o **Inter** desde Google Fonts para textos generales y títulos.
-* Evitar fuentes por defecto del navegador para mantener el diseño premium.
-
-### Efectos y Transiciones
-* **Glassmorphism**: Uso de `backdrop-filter: blur(16px)` en tarjetas y barras de navegación.
-* **Micro-animaciones**: Transiciones suaves (`transition: all 0.3s ease`) en botones y enlaces.
+### Principios de Diseño
+1. **Glassmorphism**: Todos los contenedores importantes deben llevar `backdrop-filter: blur(24px)` y un borde blanco semitransparente con `box-shadow` interna sutil para simular el brillo del vidrio.
+2. **Frutiger Aero Elements**:
+   * Fondo con auroras suaves usando degradados radiales.
+   * Burbujas animadas y flotantes en el fondo mediante animaciones de transición en CSS (`floatUp`).
+   * Botones brillantes estilo skeuomorphic con efecto tridimensional en el color de fondo y sombreado.
+3. **Responsividad (Mobile-First)**:
+   * La barra de navegación debe envolver sus elementos para pantallas pequeñas.
+   * Los grids de estadísticas y el listado de comandos deben colapsar a una columna en dispositivos móviles.
 
 ---
 
@@ -31,53 +32,36 @@ Para mantener el código ordenado y separado de la lógica del bot, seguiremos e
 
 ```
 /web/
-├── app.py                # Inicialización de FastAPI y Middlewares
-├── server.py             # Clase controladora de Uvicorn
+├── app.py                # Inicialización de FastAPI, Middlewares y Enrutamiento
+├── server.py             # Clase controladora de Uvicorn y Configuración SSL
 ├── config/
 │   └── web_settings.py   # Variables de entorno y configuraciones web
 ├── static/               # Recursos Estáticos
 │   ├── css/
-│   │   ├── main.css      # Estilos generales y tokens globales
+│   │   ├── main.css      # Estilos generales, animaciones Frutiger Aero y media queries
 │   │   ├── docs.css      # Estilos específicos de documentación
 │   │   └── profile.css   # Estilos del dashboard del usuario
 │   ├── js/
 │   │   └── main.js       # Interactividad del lado del cliente
 │   └── images/           # Logos, banners e iconos
 └── templates/            # Plantillas Jinja2
-    ├── base.html         # Plantilla base (Navbar, Footer, CSS)
+    ├── base.html         # Plantilla base (Navbar, Footer, Burbujas de fondo, CSS)
     ├── index.html        # Página de inicio
     ├── commands.html     # Listado interactivo de comandos (/commands)
     ├── docs.html         # Documentación de configuración (/docs)
     ├── profile.html      # Panel privado del usuario (/profile)
-    └── legacy_v1.html    # Archivo histórico preservando el origen
+    ├── terms.html        # Términos de Servicio del bot (/terms)
+    ├── privacy.html      # Política de Privacidad y Derechos de Borrado (/privacy)
+    └── legacy_v1.html    # Archivo histórico de la versión original
 ```
 
 ---
 
 ## 🔗 3. Enrutamiento y Subpáginas
 Todas las rutas deben responder a URL semánticas y amigables:
-1. **`/` (Inicio)**: Presentación del bot, botón de invitación, enlace al soporte y estadísticas rápidas.
-2. **`/commands` (Comandos)**: Buscador y listado categorizado de comandos (ej. Música, Niveles, Diversión) consumidos dinámicamente de `bot.commands`.
-3. **`/docs` (Documentación)**: Guías detalladas sobre configuración de canales, sistema de XP y roles.
-4. **`/profile` (Usuario)**: Panel privado del usuario tras iniciar sesión.
-
----
-
-## 🔐 4. Flujo Conceptual del Login (Discord OAuth2)
-
-Para permitir a los usuarios gestionar sus datos (cumpleaños, biografía, desvincular cuenta) de forma segura y sin necesidad de un dashboard complejo, implementaremos el login nativo de Discord:
-
-### Diagrama del Flujo OAuth2:
-
-```
-Usuario Click "Login" ---> Redirige a Discord Auth URL
-  ---> Usuario Autoriza ---> Redirige a Web con code
-  ---> Web cambia code por token ---> Obtiene datos del usuario (identify)
-  ---> Web crea sesión segura (Cookie/JWT) ---> Muestra perfil /profile
-```
-
-### Gestión de Datos en el Dashboard:
-Una vez logeado, el usuario podrá ver una interfaz minimalista donde:
-1. **Visualizar Datos**: Ver sus coins actuales, fecha de cumpleaños guardada y biografía establecida.
-2. **Borrar Datos**: Un botón de "Eliminar mis datos" que ejecuta una consulta DELETE en la base de datos (mediante `UserRepository.delete_user_birthday` y similares) garantizando el derecho de borrado y privacidad.
-3. **Modificar Preferencias**: Configurar la privacidad de su cumpleaños (Visible/Oculto) de forma visual.
+1. **`/` (Inicio)**: Presentación del bot, botón de invitación y estadísticas en tiempo real.
+2. **`/commands` (Comandos)**: Listado dinámico categorizado por cogs con tags de colores.
+3. **`/docs` (Documentación)**: Guías de configuración.
+4. **`/profile` (Usuario)**: Panel privado del usuario.
+5. **`/terms` (Términos)**: Aspectos legales sobre el uso aceptable y limitaciones del bot.
+6. **`/privacy` (Privacidad)**: Transparencia de almacenamiento de datos de base de datos y derechos.

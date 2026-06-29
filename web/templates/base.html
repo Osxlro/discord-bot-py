@@ -9,6 +9,16 @@
     {% block extra_css %}{% endblock %}
 </head>
 <body>
+    <!-- Burbujas animadas estilo Frutiger Aero en el background -->
+    <div class="bubbles-container">
+        <div class="bubble"></div>
+        <div class="bubble"></div>
+        <div class="bubble"></div>
+        <div class="bubble"></div>
+        <div class="bubble"></div>
+        <div class="bubble"></div>
+    </div>
+
     <nav class="navbar">
         <div class="nav-container">
             <a href="/" class="logo-link">
@@ -29,11 +39,15 @@
     </main>
 
     <footer class="footer">
-        <div class="nav-container">
+        <div class="footer-content">
             <span class="footer-text">
                 Friday Bot © 2026. Hospedado en 
                 <a href="http://{{ web_domain }}{% if expose_port %}:{{ web_port }}{% endif %}" class="footer-link" target="_blank">{{ web_domain }}{% if expose_port %}:{{ web_port }}{% endif %}</a>
             </span>
+            <ul class="footer-nav">
+                <li><a href="/terms" class="nav-link {% if active_page == 'terms' %}active{% endif %}">Términos de Servicio</a></li>
+                <li><a href="/privacy" class="nav-link {% if active_page == 'privacy' %}active{% endif %}">Privacidad</a></li>
+            </ul>
         </div>
     </footer>
 </body>
