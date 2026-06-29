@@ -62,6 +62,12 @@
             }
         });
 
+        // Actualizar el valor seleccionado en el selector de idiomas del footer (si existe)
+        const footerSelect = document.getElementById('footerLangSelect');
+        if (footerSelect) {
+            footerSelect.value = lang;
+        }
+
         // Actualizar el atributo lang del HTML para accesibilidad
         document.documentElement.setAttribute('lang', lang);
 
@@ -114,6 +120,14 @@
                 window.setLanguage(selectedLang);
             });
         });
+
+        // Enlazar evento de cambio en el selector de idiomas del footer (dropdown select)
+        const footerSelect = document.getElementById('footerLangSelect');
+        if (footerSelect) {
+            footerSelect.addEventListener('change', (e) => {
+                window.setLanguage(e.target.value);
+            });
+        }
 
         // Traducir al idioma detectado al cargar la página
         translateDOM(currentLanguage);

@@ -480,3 +480,33 @@ h1 {
         box-shadow: 0 0 0 0 rgba(46, 204, 113, 0);
     }
 }
+
+/* SELECTOR DE IDIOMAS EN FOOTER */
+.footer-lang-picker {
+    margin-top: 15px;
+}
+
+.footer-lang-select {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    color: #ffffff;
+    padding: 6px 12px;
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.85rem;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.3s ease;
+}
+
+.footer-lang-select:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.footer-lang-select option {
+    background: #0f1626;
+    color: #ffffff;
+}

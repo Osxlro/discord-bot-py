@@ -1,4 +1,4 @@
-const WEB_TRANSLATIONS = {
+window.WEB_TRANSLATIONS = {
     es: {
         web_home: "Inicio",
         web_commands: "Comandos",
