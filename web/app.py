@@ -4,6 +4,7 @@ from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from web.config import web_settings
+from services.features import web_bridge_service
 import pathlib
 import time
 
@@ -70,10 +71,20 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
     
-    # 2. Middleware de Rate Limiting
+    # 2. Middleware de Rate Limiting con soporte para IP Real detrás de Cloudflare
     @app.middleware("http")
     async def rate_limit_middleware(request: Request, call_next):
-        client_ip = request.client.host if request.client else "unknown"
+        # Intentar extraer cabezales de Cloudflare
+        cf_ip = request.headers.get("cf-connecting-ip")
+        x_forwarded = request.headers.get("x-forwarded-for")
+        
+        if cf_ip:
+            client_ip = cf_ip
+        elif x_forwarded:
+            client_ip = x_forwarded.split(",")[0].strip()
+        else:
+            client_ip = request.client.host if request.client else "unknown"
+            
         now = time.time()
         
         # Obtener historial de peticiones de esta IP y limpiarlo de eventos expirados
@@ -96,21 +107,30 @@ def create_app() -> FastAPI:
         bot = getattr(request.app.state, "bot", None)
         ctx = get_common_context(request, active_page="index")
         
-        # Agregar estadísticas específicas de index
-        ctx["guilds_count"] = 0
-        ctx["users_count"] = 0
-        ctx["commands_count"] = 0
-        
+        stats = {
+            "latency": 0.0,
+            "uptime_seconds": 0.0,
+            "uptime_str": "0m",
+            "guilds_count": 0,
+            "users_count": 0,
+            "commands_count": 0
+        }
         if bot and bot.is_ready():
-            ctx["guilds_count"] = len(bot.guilds)
-            ctx["users_count"] = sum(guild.member_count for guild in bot.guilds if guild.member_count)
-            ctx["commands_count"] = len(bot.commands) + len(bot.tree.get_commands())
+            stats = web_bridge_service.get_bot_status(bot)
             
+        ctx.update(stats)
         return templates.TemplateResponse(request, "index.html", ctx)
         
     @app.get("/commands", response_class=HTMLResponse)
     async def commands_page(request: Request):
+        bot = getattr(request.app.state, "bot", None)
         ctx = get_common_context(request, active_page="commands")
+        
+        categories = {}
+        if bot:
+            categories = web_bridge_service.get_commands_by_category(bot)
+            
+        ctx["categories"] = categories
         return templates.TemplateResponse(request, "commands.html", ctx)
         
     @app.get("/docs", response_class=HTMLResponse)

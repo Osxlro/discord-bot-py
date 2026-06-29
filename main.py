@@ -2,6 +2,7 @@ import asyncio
 import logging
 import logging.handlers
 import pathlib
+import datetime
 import discord
 from discord.ext import commands
 from discord import app_commands
@@ -81,6 +82,7 @@ class BotPersonal(commands.AutoShardedBot):
                 assets={'large_image': settings.CONFIG["bot_config"]["presence_asset"]}
             )
         )
+        self.start_time = datetime.datetime.now(datetime.timezone.utc)
         # Cooldown Global: 1 comando cada 3.0 segundos por usuario
         self.global_cd = commands.CooldownMapping.from_cooldown(1, 3.0, commands.BucketType.user)
 
