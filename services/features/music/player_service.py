@@ -149,7 +149,7 @@ async def ensure_player(ctx, lang: str) -> wavelink.Player | None:
                         player._node = chosen_node  # _node es el atributo privado real (node es solo lectura)
                         logger.debug(f"🎵 [Music Service] Asignando nodo {chosen_node.identifier} al player existente.")
                     logger.debug(f"🎵 [Music Service] Reconectando player existente (intento {i+1}/3)...")
-                    await player.connect(self_deaf=True, timeout=20)
+                    await player.connect(reconnect=True, self_deaf=True, timeout=20)
 
             if player and player.volume == 0:
                 await player.set_volume(settings.LAVALINK_CONFIG.get("DEFAULT_VOLUME", 50))
