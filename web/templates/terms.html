@@ -2,23 +2,126 @@
 
 {% block title %}{{ bot_name }} - Términos de Servicio{% endblock %}
 
-{% block content %}
-<div class="card" style="max-width: 800px; text-align: left;">
-    <h1 style="text-align: center; margin-bottom: 24px;">Términos de Servicio</h1>
-    <p class="subtitle" style="text-align: center;">Última actualización: 28 de junio de 2026</p>
+{% block extra_css %}
+<style>
+    .legal-container {
+        width: 100%;
+        max-width: 800px;
+        margin: 0 auto;
+        text-align: left;
+    }
     
-    <div style="line-height: 1.6; font-size: 0.95rem; color: var(--text-muted);">
-        <h3 style="color: #ffffff; margin-top: 20px; margin-bottom: 8px;">1. Aceptación de los Términos</h3>
-        <p style="margin-bottom: 16px;">Al invitar a {{ bot_name }} a tu servidor de Discord o al utilizar cualquiera de nuestras funciones web, aceptas cumplir y estar sujeto a estos términos de servicio de forma incondicional.</p>
+    .legal-content {
+        line-height: 1.6;
+        font-size: 0.95rem;
+        color: var(--text-muted);
+    }
+    
+    .legal-content h3 {
+        color: #ffffff;
+        margin-top: 24px;
+        margin-bottom: 12px;
+        font-weight: 700;
+        border-bottom: 1px solid var(--card-border);
+        padding-bottom: 6px;
+    }
+    
+    .legal-content ul {
+        margin-left: 20px;
+        margin-bottom: 16px;
+        list-style-type: disc;
+    }
+    
+    .legal-content p {
+        margin-bottom: 16px;
+    }
+    
+    .legal-sub-list {
+        margin-bottom: 16px;
+        padding-left: 0;
+        list-style: none;
+    }
+    
+    .legal-sub-list li {
+        margin-bottom: 14px;
+        background: rgba(255, 255, 255, 0.01);
+        border: 1px solid var(--card-border);
+        border-radius: 12px;
+        padding: 14px;
+    }
+    
+    .legal-sub-list li strong {
+        color: #ffffff;
+        display: block;
+        margin-bottom: 4px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card legal-container">
+    <h1 style="text-align: center; margin-bottom: 12px;">Términos y Condiciones de Uso</h1>
+    <p class="subtitle" style="text-align: center; margin-bottom: 32px;">Última actualización: 28 de junio de 2026</p>
+    
+    <div class="legal-content">
+        <p>El presente documento establece los Términos y Condiciones de Uso (en adelante, los "Términos") que regulan la relación legal entre los usuarios (en adelante, el "Usuario") y los desarrolladores y operadores de Friday Bot (en adelante, "Nosotros" o "El Proveedor"). Al agregar el bot a un servidor de Discord, interactuar con sus comandos, o acceder a sus servicios web alojados bajo el dominio <strong>friday.oscurin.uk</strong>, el Usuario acepta obligarse legal y plenamente por estos Términos. Si el Usuario no está de acuerdo con alguna de las disposiciones aquí establecidas, deberá abstenerse de utilizar el Servicio y proceder a expulsar la aplicación de su servidor.</p>
         
-        <h3 style="color: #ffffff; margin-top: 20px; margin-bottom: 8px;">2. Uso Autorizado</h3>
-        <p style="margin-bottom: 16px;">El bot está diseñado para entretenimiento, niveles, moderación y música. Te comprometes a no abusar del bot (spam, exploiting de bugs o saturación intencional de servicios) ni a usarlo para violar las directrices de la comunidad de Discord.</p>
+        <h3>1. DEFINICIONES GENERALES</h3>
+        <ul>
+            <li><strong>Servicio:</strong> Se refiere a la aplicación de Discord "Friday Bot", sus servicios de música, herramientas de moderación, sistemas automatizados, código fuente asociado y la plataforma web de visualización provista en el dominio friday.oscurin.uk.</li>
+            <li><strong>Créditos / Monedas Virtuales:</strong> Unidades numéricas de contabilidad interna ("Coins") otorgadas de forma lúdica dentro del sistema de economía del bot.</li>
+            <li><strong>Sistema de Niveles (XP):</strong> Datos numéricos que representan la actividad y permanencia del Usuario dentro de las celdas de datos operadas por el Servicio.</li>
+            <li><strong>Contenido de Terceros:</strong> Datos, API externas, enlaces o metadatos consumidos e integrados en los módulos de música, traducción o entretenimiento que escapan del control directo del Proveedor.</li>
+        </ul>
         
-        <h3 style="color: #ffffff; margin-top: 20px; margin-bottom: 8px;">3. Modificaciones del Servicio</h3>
-        <p style="margin-bottom: 16px;">Nos reservamos el derecho de modificar, suspender o descontinuar temporal o permanentemente el bot o cualquiera de sus funciones (incluido el sistema de coins y niveles) en cualquier momento y sin previo aviso.</p>
+        <h3>2. LICENCIA DE USO Y REQUISITOS DEL ECOSISTEMA DISCORD</h3>
+        <p>De conformidad con las políticas oficiales de Discord Inc., se otorga al Usuario una licencia limitada, revocable, no exclusiva, personal y no transferible para interactuar con el Servicio dentro de la plataforma autorizada. El Usuario declara conocer y cumplir estrictamente con los Términos de Servicio y las Directrices de la Comunidad de Discord. Cualquier infracción a las reglas de la plataforma matriz dará lugar a la rescisión inmediata del Servicio bajo este ecosistema.</p>
         
-        <h3 style="color: #ffffff; margin-top: 20px; margin-bottom: 8px;">4. Limitación de Responsabilidad</h3>
-        <p style="margin-bottom: 16px;">{{ bot_name }} se proporciona "tal cual" y "según disponibilidad". No nos hacemos responsables de pérdidas de datos (como pérdida de XP o monedas), interrupciones del servicio o acciones tomadas por los moderadores de tu servidor mediante el uso del bot.</p>
+        <h3>3. REGLAMENTO DE COMPORTAMIENTO Y POLÍTICA ANTIFRAUDE (BOT RULES)</h3>
+        <p><strong>Normas conductuales:</strong> Para salvaguardar la integridad de las bases de datos y la equidad en las interacciones, queda estrictamente prohibido:</p>
+        
+        <ul class="legal-sub-list">
+            <li>
+                <strong>1. Automatización No Autorizada:</strong>
+                El uso de programas de terceros, macros, auto-clickers, bots externos o scripts personalizados destinados a interactuar de forma masiva o automatizada con los comandos de economía, juegos o niveles (XP).
+            </li>
+            <li>
+                <strong>2. Explotación de Vulnerabilidades:</strong>
+                Explotar, divulgar o retener información sobre errores informáticos (bugs) o vulnerabilidades (exploits) en el código de comandos o base de datos del bot para obtener ventajas injustas. Cualquier hallazgo debe notificarse de inmediato a los desarrolladores.
+            </li>
+            <li>
+                <strong>3. Transacciones con Valor Real:</strong>
+                La venta, intercambio o subasta de monedas virtuales ("Coins"), ítems de la tienda del bot, niveles informáticos o asignaciones de roles a cambio de dinero real, códigos de regalo (como Discord Nitros), pases de juego u otros bienes tangibles o digitales ajenos al Servicio.
+            </li>
+            <li>
+                <strong>4. Abuso de Comandos (Spamming):</strong>
+                La ejecución masiva, repetitiva y maliciosa de peticiones a los módulos informáticos (música, economía, etc.) que tengan por objeto o resultado saturar la CPU del servidor de alojamiento o los límites de cuota de las API externas.
+            </li>
+            <li>
+                <strong>5. Invasión de Cuentas:</strong>
+                Ejecutar comandos de gestión económica o alteración de perfiles simulando la identidad o propiedad sobre cuentas pertenecientes a otros usuarios sin su consentimiento expreso.
+            </li>
+            <li>
+                <strong>6. Contenido Ilícito:</strong>
+                Utilizar los comandos personalizados, perfiles o configuraciones del bot para propagar, almacenar o difundir material que constituya acoso, discursos de odio (racismo, sexismo, homofobia), difamación o hilos de información lesiva contra los encargados o miembros del Servicio.
+            </li>
+        </ul>
+        
+        <h3>4. PROPIEDAD INTELECTUAL Y RÉGIMEN DE BIENES VIRTUALES</h3>
+        <ul>
+            <li><strong>Propiedad del Código y Datos:</strong> Todo el software, archivos de configuración (incluyendo el diseño web y estructuras de estilos en web/), marcas, logotipos y algoritmos integrados en Friday Bot son propiedad exclusiva del Proveedor.</li>
+            <li><strong>Naturaleza Jurídica de los Objetos Virtuales:</strong> Las monedas ("Coins"), ítems de la tienda virtual, insignias y puntos de experiencia (XP) reflejados en los perfiles de los usuarios constituyen licencias de uso de software revocables y de carácter puramente recreativo. No poseen valor económico intrínseco ni constituyen derechos de propiedad adquirida. El Proveedor se reserva la facultad de alterar, restablecer, disminuir o remover dichos valores de las bases de datos de forma temporal o permanente, de manera individual o generalizada, por razones de mantenimiento, balance informático o sanciones disciplinarias, sin necesidad de previo aviso ni responsabilidad alguna de reembolso o indemnización.</li>
+        </ul>
+        
+        <h3>5. EXCLUSIÓN DE GARANTÍAS Y LIMITACIÓN DE RESPONSABILIDAD</h3>
+        <p>El Servicio se proporciona estrictamente "TAL CUAL" (AS IS) y "SEGÚN DISPONIBILIDAD" (AS AVAILABLE). En la máxima medida permitida por la ley aplicable, el Proveedor no garantiza que el funcionamiento del bot o la visualización web en friday.oscurin.uk sea ininterrumpido, seguro, libre de errores de software o esté disponible en todo momento; que las API externas de reproducción de música, traducción o generación de contenido multimedia mantengan su estabilidad operativa de forma permanente; o que los datos de progreso en niveles o almacenamiento económico no sufran pérdidas imprevistas derivadas de fallos técnicos ajenos en el alojamiento centralizado (Cybrancee).</p>
+        <p>El Proveedor queda eximido de cualquier responsabilidad civil, penal o administrativa por daños incidentales, consecuenciales, pérdidas de datos, suspensiones de servidores de Discord o perjuicios morales derivados del uso directo, indirecto o la imposibilidad de uso del Servicio por parte del Usuario o de terceros administradores.</p>
+        
+        <h3>6. TERMINACIÓN Y MEDIDAS DISCIPLINARIAS</h3>
+        <p>El Proveedor se reserva el derecho absoluto y discrecional de rescindir, suspender, restringir o bloquear de forma temporal o permanente el acceso de cualquier Usuario o servidor de Discord al Servicio, eliminando de forma parcial o total sus datos asociados en las bases de datos permanentes, de manera inmediata y sin derecho a réplica, ante cualquier indicio o constatación de violación a los presentes Términos o a las políticas del entorno tecnológico de Discord.</p>
+        
+        <h3>7. MODIFICACIONES A LOS TÉRMINOS</h3>
+        <p>Nos reservamos la facultad de enmendar, sustituir o actualizar estas disposiciones legales en cualquier momento a nuestra entera discreción. En caso de que las modificaciones impliquen un cambio sustancial o material en las obligaciones del Usuario, se publicará un aviso destacado a través de los canales del servidor de soporte oficial o la plataforma web asociada. El acceso continuo al Servicio con posterioridad a la entrada en vigor de los nuevos términos constituye una aceptación tácita y vinculante de los mismos.</p>
     </div>
 </div>
 {% endblock %}

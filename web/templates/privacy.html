@@ -2,26 +2,134 @@
 
 {% block title %}{{ bot_name }} - Política de Privacidad{% endblock %}
 
-{% block content %}
-<div class="card" style="max-width: 800px; text-align: left;">
-    <h1 style="text-align: center; margin-bottom: 24px;">Política de Privacidad</h1>
-    <p class="subtitle" style="text-align: center;">Última actualización: 28 de junio de 2026</p>
+{% block extra_css %}
+<style>
+    .legal-container {
+        width: 100%;
+        max-width: 800px;
+        margin: 0 auto;
+        text-align: left;
+    }
     
-    <div style="line-height: 1.6; font-size: 0.95rem; color: var(--text-muted);">
-        <h3 style="color: #ffffff; margin-top: 20px; margin-bottom: 8px;">1. Datos que Recopilamos</h3>
-        <p style="margin-bottom: 16px;">Para garantizar el funcionamiento de los sistemas de niveles y cumpleaños, recopilamos y almacenamos los siguientes datos en una base de datos segura (SQLite):</p>
-        <ul style="margin-left: 20px; margin-bottom: 16px; list-style-type: disc;">
-            <li>ID de usuario de Discord y ID de servidor (para asociar estadísticas y perfiles).</li>
-            <li>Experiencia (XP), nivel y número de renacimientos.</li>
-            <li>Fecha de cumpleaños ("DD-MM") (únicamente si decides establecerla de forma voluntaria).</li>
-            <li>Descripción/biografía personalizada del perfil y cantidad de coins globales.</li>
+    .legal-content {
+        line-height: 1.6;
+        font-size: 0.95rem;
+        color: var(--text-muted);
+    }
+    
+    .legal-content h3 {
+        color: #ffffff;
+        margin-top: 24px;
+        margin-bottom: 12px;
+        font-weight: 700;
+        border-bottom: 1px solid var(--card-border);
+        padding-bottom: 6px;
+    }
+    
+    .legal-content ul {
+        margin-left: 20px;
+        margin-bottom: 16px;
+        list-style-type: disc;
+    }
+    
+    .legal-content p {
+        margin-bottom: 16px;
+    }
+    
+    .legal-sub-list {
+        margin-bottom: 16px;
+        padding-left: 0;
+        list-style: none;
+    }
+    
+    .legal-sub-list li {
+        margin-bottom: 14px;
+        background: rgba(255, 255, 255, 0.01);
+        border: 1px solid var(--card-border);
+        border-radius: 12px;
+        padding: 14px;
+    }
+    
+    .legal-sub-list li strong {
+        color: #ffffff;
+        display: block;
+        margin-bottom: 4px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card legal-container">
+    <h1 style="text-align: center; margin-bottom: 12px;">Política de Privacidad</h1>
+    <p class="subtitle" style="text-align: center; margin-bottom: 32px;">Última actualización: 28 de junio de 2026</p>
+    
+    <div class="legal-content">
+        <p>Friday Bot valora profundamente la privacidad de sus usuarios y está plenamente comprometido con su protección. La presente Política de Privacidad describe de manera detallada el modo en que recopilamos, utilizamos, almacenamos y protegemos los Datos Personales y de funcionamiento de los usuarios que interactúan con la aplicación Friday Bot y sus servicios web asociados bajo el dominio <strong>friday.oscurin.uk</strong>. Al hacer uso del bot o integrar el mismo en su servidor, usted acepta expresamente los términos y condiciones contenidos en esta política.</p>
+        
+        <h3>1. DEFINICIONES</h3>
+        <ul>
+            <li><strong>Friday Bot / El Bot:</strong> Se refiere a la aplicación de Discord "Friday Bot", sus módulos informáticos y la plataforma web asociada.</li>
+            <li><strong>Datos Personales:</strong> Cualquier información que pueda identificar directa o indirectamente a un usuario de la plataforma.</li>
+            <li><strong>Starboard / Canales Destacados:</strong> Funcionalidad del Bot orientada a destacar y almacenar mensajes específicos dentro de un canal designado del servidor a petición de la comunidad.</li>
+            <li><strong>Spam de Comandos:</strong> El uso excesivo, masivo o repetitivo de comandos en un período de tiempo reducido, capaz de afectar negativamente el rendimiento del Bot y la experiencia de los usuarios.</li>
         </ul>
         
-        <h3 style="color: #ffffff; margin-top: 20px; margin-bottom: 8px;">2. Derechos del Usuario (Derecho al Borrado)</h3>
-        <p style="margin-bottom: 16px;">Creemos firmemente en tu privacidad. Tienes el control total sobre tus datos. Puedes eliminar permanentemente tu registro de cumpleaños o datos personales mediante los comandos de Discord directos (ej: `/birthday delete`) o solicitando la depuración en tu perfil.</p>
+        <h3>2. INFORMACIÓN RECOPILADA POR EL SERVICIO</h3>
+        <p>Friday Bot almacena exclusivamente los siguientes datos numéricos e identificadores con el único propósito de garantizar el correcto funcionamiento técnico de sus módulos interactivos:</p>
         
-        <h3 style="color: #ffffff; margin-top: 20px; margin-bottom: 8px;">3. Seguridad y Cookies</h3>
-        <p style="margin-bottom: 16px;">El portal web no almacena cookies de rastreo de terceros. Toda la comunicación está cifrada mediante HTTPS seguro a través de los servidores de Cloudflare. Tu dirección IP real es leída con fines exclusivos de prevención de abuso mediante limitación de tasa (Rate Limiting) y no es guardada.</p>
+        <ul class="legal-sub-list">
+            <li>
+                <strong>IDs de Usuario (User IDs):</strong>
+                Identificadores numéricos únicos provistos por Discord para asociar de forma persistente al usuario y a los miembros del servidor con sus configuraciones, inventarios de la tienda, perfiles de experiencia (XP) y saldos de la economía virtual.
+            </li>
+            <li>
+                <strong>IDs de Servidor (Server IDs):</strong>
+                Almacenados bajo circunstancias específicas de personalización para guardar configuraciones del servidor, tales como prefijos de comandos personalizados, sistemas de moderación automáticos y la activación de módulos independientes.
+            </li>
+            <li>
+                <strong>IDs de Canal (Channel IDs):</strong>
+                Registrados para la aplicación de restricciones de comandos, exclusiones de canales de voz/música y configuraciones específicas aplicadas a canales de texto determinados.
+            </li>
+            <li>
+                <strong>IDs de Rol (Role IDs):</strong>
+                Conservados para la gestión de permisos especiales, asignación automática de roles (autorole) y configuraciones de seguridad relativas a la jerarquía del servidor.
+            </li>
+            <li>
+                <strong>IDs de Mensaje (Message IDs):</strong>
+                Utilizados para funciones que dependen de mensajes específicos, tales como los menús de roles por reacción (reaction roles) y el correcto enrutamiento del sistema de Starboard.
+            </li>
+            <li>
+                <strong>Información Proporcionada Voluntariamente:</strong>
+                Cualquier información suministrada voluntariamente por el usuario a través de la ejecución de comandos interactivos, perfiles personalizados o sistemas lúdicos del bot.
+            </li>
+        </ul>
+        
+        <h3>3. USO DE LAS INFORMACIONES RECOPILADAS</h3>
+        <p>Las informaciones y metadatos recopilados por Friday Bot son procesados estrictamente bajo los siguientes fines de soporte y optimización:</p>
+        <ul>
+            <li><strong>a) Correcto Funcionamiento del Servicio:</strong> Permitir la persistencia de datos en bases de datos para módulos de niveles (XP), tablas de clasificación, estado de la música y saldos de economía sin pérdida de progreso.</li>
+            <li><strong>b) Estadísticas y Analítica Interna:</strong> Analizar patrones de uso interno para corregir fallos técnicos (bugs) y optimizar el rendimiento del servidor centralizado (Cybrancee).</li>
+            <li><strong>c) Prevención de Abuso y Spam:</strong> Monitorear la tasa de peticiones entrantes para activar mitigaciones automatizadas contra el spam de comandos, protegiendo la CPU y garantizando la disponibilidad del servicio.</li>
+        </ul>
+        
+        <h3>4. PROTECCIÓN Y SEGURIDAD DE LOS DATOS</h3>
+        <p>Implementamos medidas de seguridad de carácter comercial estándar para proteger la información almacenada contra pérdidas, robos, alteraciones, accesos no autorizados, divulgación, copia o modificaciones ilícitas. Toda comunicación web realizada a través del dominio friday.oscurin.uk se encuentra cifrada bajo certificados SSL/TLS administrados a través de reglas de proxy perimetral (Cloudflare), asegurando un canal de comunicación seguro (HTTPS) de extremo a extremo.</p>
+        
+        <h3>5. DIVULGACIÓN DE INFORMACIÓN A TERCEROS</h3>
+        <p>Friday Bot no solicita, comparte, comercializa ni vende información personal o identificadores de sus usuarios a terceras entidades, con la única excepción de los siguientes supuestos legales:</p>
+        <ul>
+            <li><strong>Cumplimiento Legal:</strong> Cuando sea estrictamente requerido por una orden legal, proceso judicial o solicitud gubernamental legítima, o bien para proteger de forma indispensable los derechos legales y la seguridad del Proveedor y sus usuarios.</li>
+        </ul>
+        
+        <h3>6. DERECHOS DEL USUARIO Y EXCLUSIÓN DE DATOS</h3>
+        <p>Los usuarios mantienen el control sobre los identificadores y datos proporcionados de conformidad con los siguientes derechos:</p>
+        <ul>
+            <li><strong>Acceso y Rectificación:</strong> Derecho a consultar la información almacenada en su perfil mediante los comandos específicos del bot, así como rectificar la información provista de manera voluntaria.</li>
+            <li><strong>Exclusión de Datos y Cuenta:</strong> El usuario puede solicitar la eliminación completa y definitiva de su cuenta, registros económicos y progreso en las bases de datos de Friday Bot. Para hacer efectiva la exclusión de datos, el usuario deberá ponerse en contacto con el equipo de desarrollo a través de los canales de soporte del servidor oficial de Discord o remitiendo una solicitud formal. Se notifica oficialmente que, una vez ejecutada la eliminación de datos, el usuario no podrá volver a utilizar las funciones persistentes del bot a menos que inicie un nuevo registro de datos desde cero.</li>
+        </ul>
+        
+        <h3>7. MODIFICACIONES A LA POLÍTICA DE PRIVACIDAD</h3>
+        <p>Nos reservamos el derecho de actualizar, modificar o enmendar la presente Política de Privacidad en cualquier momento y a nuestra entera discreción para adaptarla a cambios técnicos en las API de Discord o actualizaciones en nuestros servicios de hosting. Se recomienda a los usuarios revisar periódicamente este documento para mantenerse informados sobre los protocolos de protección y el uso seguro de sus informaciones.</p>
     </div>
 </div>
 {% endblock %}
