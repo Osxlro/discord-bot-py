@@ -460,6 +460,21 @@ Para garantizar la estabilidad y fácil mantenimiento del bot en entornos de pro
 
 ---
 
+## 🌐 Portal Web y Seguridad (FastAPI + OAuth2)
+
+El bot cuenta con un portal web integrado desarrollado con FastAPI y Jinja2 que expone información y un panel interactivo para el perfil del usuario. Las pautas técnicas y de seguridad son:
+
+### 1. Flujo de Autenticación Seguro (OAuth2)
+- **Token de Estado Anti-CSRF**: Para mitigar ataques de falsificación de peticiones en sitios cruzados (CSRF), la ruta `/auth/login` debe generar un token de estado aleatorio (`secrets.token_urlsafe(16)`), almacenarlo en la sesión cifrada (`request.session["oauth_state"]`) y enviarlo a Discord. La ruta `/auth/callback` debe validar la correspondencia del parámetro `state` recibido con el almacenado y eliminarlo de la sesión de inmediato.
+- **Resolución Dinámica de Client ID**: Si no está declarada la variable `DISCORD_CLIENT_ID` en las variables de entorno locales o remotas, el sistema debe autogestionarse extrayendo el ID decodificando en Base64 el primer bloque del `DISCORD_TOKEN`, o bien llamando al bot activo mediante `bot.user.id`.
+
+### 2. Estructura y Estilos de Interfaz
+- **Bento Grid**: Los paneles de control de usuarios (`/profile`) deben estructurarse de manera modular mediante Bento Cards independientes y colapsables a 1 columna en móviles.
+- **Diseño Defensivo en HTML (Inline Styles)**: Los contenedores de imágenes y fotos críticas (como avatares y logos de servidores) deben llevar declarados sus estilos de tamaño y desbordamiento directamente de manera inline en el código HTML. Esto garantiza la integridad del layout visual en caso de que los estilos CSS externos no carguen, se retrasen, o se carguen versiones obsoletas desde la caché del navegador.
+- **Localización Frontend (data-i18n)**: Ninguna plantilla HTML de la web debe contener texto en bruto (hardcodeado). Todos los textos deben cargarse usando atributos `data-i18n="clave"` y gestionarse en el diccionario unificado en `/web/static/js/translations.js`.
+
+---
+
 ## 📋 Protocolo de Desarrollo y Feedback
 
 Para asegurar una comunicación clara y una ejecución ordenada en cada solicitud de cambio, se deben seguir de forma estricta las siguientes pautas:

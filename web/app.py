@@ -13,6 +13,7 @@ import pathlib
 import time
 import aiohttp
 import urllib.parse
+import secrets
 
 # Setup directories
 current_dir = pathlib.Path(__file__).parent.resolve()
@@ -166,19 +167,29 @@ def create_app() -> FastAPI:
         scheme = "https" if web_settings.WEB_SECURE_COOKIES or request.headers.get("x-forwarded-proto") == "https" else "http"
         redirect_uri = f"{scheme}://{host}/auth/callback"
         
+        # Generar un token de estado aleatorio para prevenir ataques CSRF
+        state = secrets.token_urlsafe(16)
+        request.session["oauth_state"] = state
+        
         params = {
             "client_id": client_id,
             "redirect_uri": redirect_uri,
             "response_type": "code",
-            "scope": "identify"
+            "scope": "identify",
+            "state": state
         }
         url = "https://discord.com/api/oauth2/authorize?" + urllib.parse.urlencode(params)
         return RedirectResponse(url)
 
     @app.get("/auth/callback")
-    async def auth_callback(request: Request, code: str = None):
+    async def auth_callback(request: Request, code: str = None, state: str = None):
         if not code:
             return RedirectResponse("/profile?error=no_code")
+            
+        # Validar el token de estado para prevenir ataques CSRF
+        session_state = request.session.pop("oauth_state", None)
+        if not session_state or state != session_state:
+            return HTMLResponse("Error de seguridad: verificación de estado (CSRF) fallida.", status_code=400)
             
         bot = getattr(request.app.state, "bot", None)
         client_id = web_settings.DISCORD_CLIENT_ID or (str(bot.user.id) if bot and bot.is_ready() else "")

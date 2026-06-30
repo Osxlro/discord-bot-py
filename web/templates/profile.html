@@ -57,26 +57,26 @@
                 <img src="{{ user.avatar_url }}" alt="{{ user.username }}" style="width: 80px; height: 80px; border-radius: 50%; border: 3px solid rgba(255, 255, 255, 0.2); box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3); object-fit: cover;">
                 <div class="user-names">
                     <h2>{{ user.username }}</h2>
-                    <p>ID: {{ user.id }}</p>
+                    <p><span data-i18n="web_user_id">ID:</span> {{ user.id }}</p>
                 </div>
             </div>
 
             <form action="/profile/update" method="POST" class="profile-form">
                 <div class="form-group">
-                    <label for="desc-input">Biografía / Descripción</label>
-                    <textarea id="desc-input" name="description" class="form-control" placeholder="Escribe algo sobre ti..." maxlength="200">{{ user_data.description }}</textarea>
+                    <label for="desc-input" data-i18n="web_bio">Biografía / Descripción</label>
+                    <textarea id="desc-input" name="description" class="form-control" data-i18n="web_bio_placeholder" placeholder="Escribe algo sobre ti..." maxlength="200">{{ user_data.description }}</textarea>
                 </div>
                 
                 <div class="form-group">
-                    <label for="bday-input">Cumpleaños (Día-Mes)</label>
-                    <input type="text" id="bday-input" name="birthday" class="form-control" placeholder="DD-MM (Ej. 28-06 o reset)" value="{% if user_data.birthday %}{{ user_data.birthday }}{% endif %}" pattern="^(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[0-2])|reset|none|$">
+                    <label for="bday-input" data-i18n="web_birthday">Cumpleaños (Día-Mes)</label>
+                    <input type="text" id="bday-input" name="birthday" class="form-control" data-i18n="web_birthday_placeholder" placeholder="DD-MM (Ej. 28-06 o reset)" value="{% if user_data.birthday %}{{ user_data.birthday }}{% endif %}" pattern="^(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[0-2])|reset|none|$">
                 </div>
 
                 <div class="form-group">
-                    <label for="privacy-select">Celebración de Cumpleaños</label>
+                    <label for="privacy-select" data-i18n="web_birthday_celebration">Celebración de Cumpleaños</label>
                     <select id="privacy-select" name="celebrate" class="form-control" style="background-color: #0f1626;">
-                        <option value="1" {% if user_data.celebrate == 1 %}selected{% endif %}>Visible (Festejar en el Servidor)</option>
-                        <option value="0" {% if user_data.celebrate == 0 %}selected{% endif %}>Privado (No felicitar)</option>
+                        <option value="1" data-i18n="web_birthday_visible" {% if user_data.celebrate == 1 %}selected{% endif %}>Visible (Festejar en el Servidor)</option>
+                        <option value="0" data-i18n="web_birthday_private" {% if user_data.celebrate == 0 %}selected{% endif %}>Privado (No felicitar)</option>
                     </select>
                 </div>
 
@@ -115,7 +115,7 @@
                         <span class="item-emoji">{{ item.emoji }}</span>
                         <div class="item-info">
                             <span class="item-name" title="{{ item.name }}">{{ item.name }}</span>
-                            <span class="item-qty">Cant: {{ item.quantity }}</span>
+                            <span class="item-qty"><span data-i18n="web_quantity">Cant:</span> {{ item.quantity }}</span>
                         </div>
                     </div>
                     {% endfor %}
@@ -190,7 +190,7 @@
                 Zona de Peligro
             </h3>
             <div class="danger-action-container">
-                <p class="danger-text">
+                <p class="danger-text" data-i18n="web_delete_warning_desc">
                     Al borrar tus datos, se eliminarán permanentemente tu biografía, cumpleaños, monedas globales y preferencias de la base de datos de Friday Bot de forma definitiva. Esta acción no se puede deshacer.
                 </p>
                 <button type="button" class="btn-danger" id="openDeleteModalBtn" data-i18n="web_delete_data">Eliminar mis Datos</button>
@@ -207,22 +207,22 @@
                     <line x1="12" y1="9" x2="12" y2="13"></line>
                     <line x1="12" y1="17" x2="12.01" y2="17"></line>
                 </svg>
-                <h3 style="margin: 0; font-size: 1.4rem; font-weight: 800;">ADVERTENCIA MUY SERIA</h3>
+                <h3 style="margin: 0; font-size: 1.4rem; font-weight: 800;" data-i18n="web_danger_zone">ADVERTENCIA MUY SERIA</h3>
             </div>
-            <p>
+            <p data-i18n="web_delete_modal_desc">
                 Estás a punto de borrar definitivamente todo tu perfil de Friday Bot (incluyendo biografía, cumpleaños, monedas globales e historial).
             </p>
             <p style="background: rgba(237, 66, 69, 0.1); padding: 12px; border-radius: 8px; border: 1px solid rgba(237, 66, 69, 0.2); font-weight: 600; color: #ed4245;">
-                Para confirmar, escribe exactamente tu nombre de usuario de Discord: <br><strong style="color: #ffffff; font-size: 1.1rem; display: block; margin-top: 6px;">{{ user.username }}</strong>
+                <span data-i18n="web_delete_confirm_prompt">Para confirmar, escribe exactamente tu nombre de usuario de Discord:</span> <br><strong style="color: #ffffff; font-size: 1.1rem; display: block; margin-top: 6px;">{{ user.username }}</strong>
             </p>
             
             <form action="/profile/delete-data" method="POST" id="deleteDataForm" class="profile-form" style="margin-top: 15px;">
                 <div class="form-group">
-                    <input type="text" id="confirmNameInput" name="confirm_name" class="form-control" placeholder="Escribe tu username aquí..." required autocomplete="off">
+                    <input type="text" id="confirmNameInput" name="confirm_name" class="form-control" data-i18n="web_delete_placeholder" placeholder="Escribe tu username aquí..." required autocomplete="off">
                 </div>
                 <div class="modal-buttons">
-                    <button type="button" class="btn-secondary" id="closeDeleteModalBtn">Cancelar</button>
-                    <button type="submit" class="btn-danger" id="confirmDeleteSubmitBtn" disabled>Borrar definitivamente</button>
+                    <button type="button" class="btn-secondary" id="closeDeleteModalBtn" data-i18n="web_cancel">Cancelar</button>
+                    <button type="submit" class="btn-danger" id="confirmDeleteSubmitBtn" data-i18n="web_confirm_delete" disabled>Borrar definitivamente</button>
                 </div>
             </form>
         </div>
