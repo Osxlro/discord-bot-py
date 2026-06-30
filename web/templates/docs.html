@@ -3,12 +3,15 @@
 {% block title %}{{ bot_name }} - Documentos{% endblock %}
 
 {% block content %}
-<div class="card">
+<div class="card reveal-on-scroll">
     <h1 data-i18n="web_docs_title">Documentación</h1>
     <p class="subtitle" style="margin-bottom: 24px;" data-i18n="web_docs_desc">Aprende cómo configurar y sacar el máximo provecho de Friday Bot.</p>
     
     <div style="background: rgba(255, 255, 255, 0.02); border: 1px dashed var(--card-border); border-radius: 16px; padding: 32px 16px; text-align: center;">
-        <span style="font-size: 2rem;">📚</span>
+        <svg class="icon-svg" viewBox="0 0 24 24" width="40" height="40" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary-color); margin-bottom: 8px;">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+        </svg>
         <h3 style="margin: 12px 0 8px; font-weight: 600;" data-i18n="web_in_construction">Sección en construcción</h3>
         <p style="font-size: 0.9rem; color: var(--text-muted);" data-i18n="web_in_construction_desc">Estamos redactando guías paso a paso detalladas para la configuración del servidor y sistemas de juego.</p>
     </div>

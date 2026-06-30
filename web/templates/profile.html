@@ -3,12 +3,14 @@
 {% block title %}{{ bot_name }} - Mi Perfil{% endblock %}
 
 {% block content %}
-<div class="card">
+<div class="card reveal-on-scroll">
     <h1 data-i18n="web_profile_title">Perfil de Usuario</h1>
     <p class="subtitle" style="margin-bottom: 24px;" data-i18n="web_profile_desc">Gestiona tus datos personales y visualiza tus estadísticas globales.</p>
     
     <div style="background: rgba(255, 255, 255, 0.02); border: 1px dashed var(--card-border); border-radius: 16px; padding: 32px 16px; text-align: center;">
-        <span style="font-size: 2rem;">🔑</span>
+        <svg class="icon-svg" viewBox="0 0 24 24" width="40" height="40" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary-color); margin-bottom: 8px;">
+            <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path>
+        </svg>
         <h3 style="margin: 12px 0 8px; font-weight: 600;" data-i18n="web_in_construction">Sección en construcción</h3>
         <p style="font-size: 0.9rem; color: var(--text-muted);" data-i18n="web_profile_construction_desc">Pronto podrás iniciar sesión de forma segura utilizando tu cuenta de Discord para administrar tus preferencias y datos.</p>
     </div>

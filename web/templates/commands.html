@@ -111,9 +111,11 @@
     
     {% if categories %}
         {% for cat_name, cmd_list in categories.items() %}
-            <div class="category-section">
+            <div class="category-section reveal-on-scroll">
                 <h2 class="category-title">
-                    <span>📁</span> {{ cat_name }}
+                    <svg class="icon-svg" viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary-color);">
+                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                    </svg> {{ cat_name }}
                 </h2>
                 <div class="commands-grid">
                     {% for cmd in cmd_list %}
@@ -135,9 +137,12 @@
             </div>
         {% endfor %}
     {% else %}
-        <div class="card" style="margin: 0 auto;">
+        <div class="card reveal-on-scroll" style="margin: 0 auto;">
             <div style="background: rgba(255, 255, 255, 0.02); border: 1px dashed var(--card-border); border-radius: 16px; padding: 32px 16px; text-align: center;">
-                <span style="font-size: 2rem;">📭</span>
+                <svg class="icon-svg" viewBox="0 0 24 24" width="40" height="40" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary-color); margin-bottom: 8px;">
+                    <polygon points="22 12 16 12 14 15 10 15 8 12 2 12 2 17 22 17"></polygon>
+                    <path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path>
+                </svg>
                 <h3 style="margin: 12px 0 8px; font-weight: 600;" data-i18n="web_no_commands_title">Sin comandos</h3>
                 <p style="font-size: 0.9rem; color: var(--text-muted);" data-i18n="web_no_commands_desc">No se encontraron comandos registrados o el bot no está en línea.</p>
             </div>

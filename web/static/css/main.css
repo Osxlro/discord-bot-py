@@ -509,3 +509,42 @@ h1 {
     background: #0f1626;
     color: #ffffff;
 }
+
+/* CURSOR Y CLICKABLES */
+.stat-item {
+    cursor: pointer;
+}
+
+/* UTILITY SVG ICONS */
+.icon-svg {
+    display: inline-block;
+    vertical-align: middle;
+    flex-shrink: 0;
+}
+
+/* REVEAL ON SCROLL ANIMATION (Optimized with GPU) */
+.reveal-on-scroll {
+    opacity: 0;
+    transform: translateY(22px);
+    will-change: transform, opacity;
+    transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.8s ease;
+}
+
+.reveal-on-scroll.in-view {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* COMPATIBILIDAD CON PREFERS-REDUCED-MOTION */
+@media (prefers-reduced-motion: reduce) {
+    .reveal-on-scroll {
+        opacity: 1 !important;
+        transform: translateY(0) !important;
+        transition: none !important;
+    }
+    .bubble {
+        animation: none !important;
+        display: none !important;
+    }
+}
+

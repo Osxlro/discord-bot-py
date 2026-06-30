@@ -3,7 +3,7 @@
 {% block title %}{{ bot_name }} - Inicio{% endblock %}
 
 {% block content %}
-<div class="card">
+<div class="card reveal-on-scroll">
     <div class="avatar-container">
         <img class="avatar" src="{{ bot_avatar }}" alt="Avatar de {{ bot_name }}">
         <div class="status-indicator {% if is_ready %}status-online{% else %}status-offline{% endif %}"></div>
