@@ -10,8 +10,19 @@ WEB_PORT = int(os.getenv("WEB_PORT", "5058"))
 WEB_DOMAIN = os.getenv("WEB_DOMAIN", "friday.oscurin.uk")
 WEB_EXPOSE_PORT = os.getenv("WEB_EXPOSE_PORT", "True") == "True"
 
+import base64
+
 # Credenciales de Discord OAuth2 (para el futuro Login)
 DISCORD_CLIENT_ID = os.getenv("DISCORD_CLIENT_ID", "")
+if not DISCORD_CLIENT_ID:
+    token = os.getenv("DISCORD_TOKEN", "")
+    if token:
+        try:
+            first_part = token.split(".")[0]
+            first_part += "=" * (4 - len(first_part) % 4)
+            DISCORD_CLIENT_ID = base64.b64decode(first_part.encode("utf-8")).decode("utf-8")
+        except Exception:
+            pass
 DISCORD_CLIENT_SECRET = os.getenv("DISCORD_CLIENT_SECRET", "")
 
 # Ajustes de sesión y cookies

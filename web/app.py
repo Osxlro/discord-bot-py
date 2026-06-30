@@ -159,13 +159,15 @@ def create_app() -> FastAPI:
     # --- RUTAS DE DISCORD OAUTH2 ---
     @app.get("/auth/login")
     async def auth_login(request: Request):
+        bot = getattr(request.app.state, "bot", None)
+        client_id = web_settings.DISCORD_CLIENT_ID or (str(bot.user.id) if bot and bot.is_ready() else "")
         # Determinar URI de redirección dinámica según el host de la petición
         host = request.headers.get("host", f"{web_settings.WEB_DOMAIN}:{web_settings.WEB_PORT}")
         scheme = "https" if web_settings.WEB_SECURE_COOKIES or request.headers.get("x-forwarded-proto") == "https" else "http"
         redirect_uri = f"{scheme}://{host}/auth/callback"
         
         params = {
-            "client_id": web_settings.DISCORD_CLIENT_ID,
+            "client_id": client_id,
             "redirect_uri": redirect_uri,
             "response_type": "code",
             "scope": "identify"
@@ -178,13 +180,16 @@ def create_app() -> FastAPI:
         if not code:
             return RedirectResponse("/profile?error=no_code")
             
+        bot = getattr(request.app.state, "bot", None)
+        client_id = web_settings.DISCORD_CLIENT_ID or (str(bot.user.id) if bot and bot.is_ready() else "")
+            
         host = request.headers.get("host", f"{web_settings.WEB_DOMAIN}:{web_settings.WEB_PORT}")
         scheme = "https" if web_settings.WEB_SECURE_COOKIES or request.headers.get("x-forwarded-proto") == "https" else "http"
         redirect_uri = f"{scheme}://{host}/auth/callback"
         
         # Intercambiar código por Access Token
         data = {
-            "client_id": web_settings.DISCORD_CLIENT_ID,
+            "client_id": client_id,
             "client_secret": web_settings.DISCORD_CLIENT_SECRET,
             "grant_type": "authorization_code",
             "code": code,
