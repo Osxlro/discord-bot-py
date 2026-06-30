@@ -9,4 +9,5 @@ tzdata
 fastapi
 uvicorn
 jinja2
-itsdangerous
+itsdangerous
+python-multipart
