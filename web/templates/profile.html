@@ -54,7 +54,7 @@
             </h3>
             
             <div class="user-info-header">
-                <img src="{{ user.avatar_url }}" alt="{{ user.username }}">
+                <img src="{{ user.avatar_url }}" alt="{{ user.username }}" style="width: 80px; height: 80px; border-radius: 50%; border: 3px solid rgba(255, 255, 255, 0.2); box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3); object-fit: cover;">
                 <div class="user-names">
                     <h2>{{ user.username }}</h2>
                     <p>ID: {{ user.id }}</p>
@@ -97,7 +97,13 @@
             <div class="wallet-card">
                 <div class="wallet-details">
                     <span data-i18n="web_coins">Monedas</span>
-                    <span>{{ user_data.coins }} 🪙</span>
+                    <div style="display: flex; align-items: center; gap: 10px; margin-top: 6px;">
+                        <span style="font-size: 2rem; font-weight: 800; color: #ffffff; line-height: 1;">{{ user_data.coins }}</span>
+                        <svg class="icon-svg" viewBox="0 0 24 24" width="26" height="26" fill="#f1c40f" style="filter: drop-shadow(0 0 5px rgba(241, 196, 15, 0.6)); vertical-align: middle;">
+                            <circle cx="12" cy="12" r="10" stroke="#f39c12" stroke-width="1.5"></circle>
+                            <path d="M12 6v12M15 9H11.5a2.5 2.5 0 0 0 0 5H13a2.5 2.5 0 0 1 0 5H9.5" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"></path>
+                        </svg>
+                    </div>
                 </div>
             </div>
 
@@ -136,11 +142,11 @@
                     {% for guild in guilds_data %}
                     <div class="server-card">
                         <div class="server-header">
-                            <div class="server-icon">
+                            <div class="server-icon" style="width: 42px; height: 42px; border-radius: 50%; overflow: hidden; display: flex; align-items: center; justify-content: center; background: var(--primary-color); border: 2px solid rgba(255,255,255,0.15); box-shadow: 0 3px 8px rgba(0,0,0,0.2); flex-shrink: 0;">
                                 {% if guild.guild_icon %}
-                                <img src="{{ guild.guild_icon }}" alt="{{ guild.guild_name }}">
+                                <img src="{{ guild.guild_icon }}" alt="{{ guild.guild_name }}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
                                 {% else %}
-                                {{ guild.guild_name[:2].upper() }}
+                                <span style="font-weight: 800; font-size: 1.1rem; color: #ffffff;">{{ guild.guild_name[:2].upper() }}</span>
                                 {% endif %}
                             </div>
                             <span class="server-title" title="{{ guild.guild_name }}">{{ guild.guild_name }}</span>
@@ -149,7 +155,13 @@
                             <span><strong data-i18n="web_level_short">Nvl</strong>: {{ guild.level }}</span>
                             <span><strong>{{ guild.xp }}</strong> / {{ guild.xp_required }} XP</span>
                             {% if guild.rebirths > 0 %}
-                            <span><strong>{{ guild.rebirths }}</strong> 🔄 Rebirths</span>
+                            <span style="display: inline-flex; align-items: center; gap: 4px;">
+                                <svg class="icon-svg" viewBox="0 0 24 24" width="14" height="14" stroke="#38ef7d" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;">
+                                    <polyline points="23 4 23 10 17 10"></polyline>
+                                    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                                </svg>
+                                <strong>{{ guild.rebirths }}</strong>
+                            </span>
                             {% endif %}
                         </div>
                         <div class="progress-container">
@@ -170,7 +182,7 @@
         <!-- BENTO 4: ZONA DE PELIGRO -->
         <div class="bento-box full-width danger-zone">
             <h3 class="bento-title" style="color: #ed4245;" data-i18n="web_danger_zone">
-                <svg class="icon-svg" viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="color: #ed4245;">
+                <svg class="icon-svg" viewBox="0 0 24 24" width="20" height="20" stroke="#ed4245" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
                     <line x1="12" y1="9" x2="12" y2="13"></line>
                     <line x1="12" y1="17" x2="12.01" y2="17"></line>
@@ -189,7 +201,14 @@
     <!-- MODAL DE BORRADO SEGURO -->
     <div class="modal-overlay" id="deleteModalOverlay">
         <div class="modal-card">
-            <h3 data-i18n="web_danger_zone">⚠️ ADVERTENCIA MUY SERIA</h3>
+            <div style="display: flex; align-items: center; justify-content: center; gap: 10px; color: #ed4245; margin-bottom: 12px;">
+                <svg class="icon-svg" viewBox="0 0 24 24" width="28" height="28" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                    <line x1="12" y1="9" x2="12" y2="13"></line>
+                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>
+                <h3 style="margin: 0; font-size: 1.4rem; font-weight: 800;">ADVERTENCIA MUY SERIA</h3>
+            </div>
             <p>
                 Estás a punto de borrar definitivamente todo tu perfil de Friday Bot (incluyendo biografía, cumpleaños, monedas globales e historial).
             </p>
