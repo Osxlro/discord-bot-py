@@ -25,6 +25,7 @@ EN = {
     "dev_shutdown_msg": "👋 Shutting down systems... Goodbye!",
     "dev_reload_success": "✅ Extension `{extension}` reloaded successfully.",
     "dev_reload_error": "❌ Error reloading `{extension}`:\n```py\n{error}\n```",
+    "dev_edit_xp_invalid": "❌ XP must be >= 0 and level must be >= 1.",
     "level_user_fallback": "User {id}",
     "level_rank_lvl_short": "Lvl",
     "mod_action_completed": "Action {action} completed for **{user}**.",

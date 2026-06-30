@@ -31,7 +31,18 @@ window.WEB_TRANSLATIONS = {
         web_no_commands_desc: "No se encontraron comandos registrados o el bot no está en línea.",
         web_in_construction: "Sección en construcción",
         web_in_construction_desc: "Estamos redactando guías paso a paso detalladas para la configuración del servidor y sistemas de juego.",
-        web_profile_construction_desc: "Pronto podrás iniciar sesión de forma segura utilizando tu cuenta de Discord para administrar tus preferencias y datos."
+        web_profile_construction_desc: "Em pronto podrás iniciar sesión de forma segura utilizando tu cuenta de Discord para administrar tus preferencias y datos.",
+        web_my_profile: "Mi Perfil",
+        web_logout: "Cerrar Sesión",
+        web_coins: "Monedas",
+        web_inventory: "Inventario",
+        web_no_items: "Tu inventario está vacío.",
+        web_danger_zone: "Zona de Peligro",
+        web_delete_data: "Eliminar mis Datos",
+        web_levels_by_server: "Niveles por Servidor",
+        web_level_short: "Nvl",
+        web_save_changes: "Guardar Cambios",
+        web_edit_profile: "Editar Perfil"
     },
     en: {
         web_home: "Home",
@@ -65,7 +76,18 @@ window.WEB_TRANSLATIONS = {
         web_no_commands_desc: "No registered commands found or the bot is offline.",
         web_in_construction: "Section under construction",
         web_in_construction_desc: "We are writing step-by-step guides for server configuration and game systems.",
-        web_profile_construction_desc: "Soon you will be able to log in securely using your Discord account to manage your preferences and data."
+        web_profile_construction_desc: "Soon you will be able to log in securely using your Discord account to manage your preferences and data.",
+        web_my_profile: "My Profile",
+        web_logout: "Logout",
+        web_coins: "Coins",
+        web_inventory: "Inventory",
+        web_no_items: "Your inventory is empty.",
+        web_danger_zone: "Danger Zone",
+        web_delete_data: "Delete my Data",
+        web_levels_by_server: "Levels by Server",
+        web_level_short: "Lvl",
+        web_save_changes: "Save Changes",
+        web_edit_profile: "Edit Profile"
     },
     pt: {
         web_home: "Início",
@@ -99,7 +121,18 @@ window.WEB_TRANSLATIONS = {
         web_no_commands_desc: "Não foram encontrados comandos registrados ou o bot está offline.",
         web_in_construction: "Seção em construção",
         web_in_construction_desc: "Estamos escrevendo guias detalhados passo a passo para configuração do servidor e sistemas de jogo.",
-        web_profile_construction_desc: "Em breve você poderá fazer login com segurança usando sua conta do Discord para gerenciar suas preferências e dados."
+        web_profile_construction_desc: "Em breve você poderá fazer login com segurança usando sua conta do Discord para gerenciar suas preferências e dados.",
+        web_my_profile: "Meu Perfil",
+        web_logout: "Sair",
+        web_coins: "Moedas",
+        web_inventory: "Inventário",
+        web_no_items: "Seu inventário está vazio.",
+        web_danger_zone: "Zona de Perigo",
+        web_delete_data: "Excluir meus Dados",
+        web_levels_by_server: "Níveis por Servidor",
+        web_level_short: "Nvl",
+        web_save_changes: "Salvar Alterações",
+        web_edit_profile: "Editar Perfil"
     },
     fr: {
         web_home: "Début",
@@ -133,6 +166,17 @@ window.WEB_TRANSLATIONS = {
         web_no_commands_desc: "Aucune commande enregistrée n'a été trouvée ou le bot est hors ligne.",
         web_in_construction: "Section en construction",
         web_in_construction_desc: "Nous rédigeons des guides détaillés étape par étape pour la configuration du serveur et les systèmes de jeu.",
-        web_profile_construction_desc: "Bientôt, vous pourrez vous connecter en toute sécurité en utilisant votre compte Discord pour gérer vos préférences et vos données."
+        web_profile_construction_desc: "Bientôt, vous pourrez vous connecter en toute sécurité en utilisant votre compte Discord pour gérer vos préférences et vos données.",
+        web_my_profile: "Mon Profil",
+        web_logout: "Déconnexion",
+        web_coins: "Pièces",
+        web_inventory: "Inventaire",
+        web_no_items: "Votre inventaire est vide.",
+        web_danger_zone: "Zone de Danger",
+        web_delete_data: "Supprimer mes Données",
+        web_levels_by_server: "Niveaux par Serveur",
+        web_level_short: "Niv",
+        web_save_changes: "Enregistrer les modifications",
+        web_edit_profile: "Modifier le profil"
     }
 };

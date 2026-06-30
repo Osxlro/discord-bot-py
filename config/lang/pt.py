@@ -25,6 +25,7 @@ PT = {
     "dev_shutdown_msg": "👋 Desligando sistemas... Até logo!",
     "dev_reload_success": "✅ Extensão `{extension}` recarregada com sucesso.",
     "dev_reload_error": "❌ Erro ao recarregar `{extension}`:\n```py\n{error}\n```",
+    "dev_edit_xp_invalid": "❌ O XP deve ser >= 0 e o nível deve ser >= 1.",
     "level_user_fallback": "Usuário {id}",
     "level_rank_lvl_short": "Nvl",
     "mod_action_completed": "Ação {action} concluída para **{user}**.",

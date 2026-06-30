@@ -25,6 +25,7 @@ FR = {
     "dev_shutdown_msg": "👋 Extinction des systèmes... Au revoir !",
     "dev_reload_success": "✅ Extension `{extension}` rechargée avec succès.",
     "dev_reload_error": "❌ Erreur lors du rechargement de `{extension}` :\n```py\n{error}\n```",
+    "dev_edit_xp_invalid": "❌ L'XP doit être >= 0 et le niveau doit être >= 1.",
     "level_user_fallback": "Utilisateur {id}",
     "level_rank_lvl_short": "Niv",
     "mod_action_completed": "Action {action} terminée pour **{user}**.",

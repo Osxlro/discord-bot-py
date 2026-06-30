@@ -25,6 +25,7 @@ ES = {
     "dev_shutdown_msg": "👋 Apagando sistemas... ¡Hasta luego!",
     "dev_reload_success": "✅ Extensión `{extension}` recargada correctamente.",
     "dev_reload_error": "❌ Error al recargar `{extension}`:\n```py\n{error}\n```",
+    "dev_edit_xp_invalid": "❌ La XP debe ser >= 0 y el nivel >= 1.",
     "level_user_fallback": "Usuario {id}",
     "level_rank_lvl_short": "Nvl",
     "mod_action_completed": "Acción {action} completada para **{user}**.",

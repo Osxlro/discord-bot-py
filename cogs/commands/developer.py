@@ -187,7 +187,8 @@ class Developer(commands.Cog):
         await ctx.defer(ephemeral=True)
         lang = await lang_service.get_guild_lang(ctx.guild.id if ctx.guild else None)
         if xp < 0 or nivel < 1:
-            return await ctx.send("La XP debe ser >= 0 y el nivel >= 1.", ephemeral=True)
+            msg = lang_service.get_text("dev_edit_xp_invalid", lang)
+            return await ctx.send(msg, ephemeral=True)
         embed = await developer_service.handle_edit_xp(ctx.guild.id, usuario.id, xp, nivel, lang)
         await ctx.send(embed=embed, ephemeral=True)
 

@@ -1,18 +1,260 @@
 {% extends "base.html" %}
 
-{% block title %}{{ bot_name }} - Mi Perfil{% endblock %}
+{% block title %}{{ bot_name }} - {% if user %}Mi Perfil{% else %}Login{% endif %}{% endblock %}
 
 {% block content %}
-<div class="card reveal-on-scroll">
-    <h1 data-i18n="web_profile_title">Perfil de Usuario</h1>
-    <p class="subtitle" style="margin-bottom: 24px;" data-i18n="web_profile_desc">Gestiona tus datos personales y visualiza tus estadísticas globales.</p>
-    
-    <div style="background: rgba(255, 255, 255, 0.02); border: 1px dashed var(--card-border); border-radius: 16px; padding: 32px 16px; text-align: center;">
-        <svg class="icon-svg" viewBox="0 0 24 24" width="40" height="40" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary-color); margin-bottom: 8px;">
-            <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path>
+<div class="profile-container reveal-on-scroll">
+    {% if not user %}
+    <!-- VISTA DE LOGIN: USUARIO NO AUTENTICADO -->
+    <div class="card" style="margin: 0 auto;">
+        <svg class="icon-svg" viewBox="0 0 24 24" width="60" height="60" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary-color); margin-bottom: 20px;">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
         </svg>
-        <h3 style="margin: 12px 0 8px; font-weight: 600;" data-i18n="web_in_construction">Sección en construcción</h3>
-        <p style="font-size: 0.9rem; color: var(--text-muted);" data-i18n="web_profile_construction_desc">Pronto podrás iniciar sesión de forma segura utilizando tu cuenta de Discord para administrar tus preferencias y datos.</p>
+        <h1 data-i18n="web_profile_title">Perfil de Usuario</h1>
+        <p class="subtitle" data-i18n="web_profile_construction_desc">Inicia sesión de forma segura utilizando tu cuenta de Discord para administrar tu biografía, cumpleaños e inventario.</p>
+        <a href="/auth/login" class="btn-login" style="display: inline-flex; align-items: center; gap: 10px; padding: 14px 36px; font-size: 1rem;">
+            <svg viewBox="0 0 127.14 96.36" width="20" height="20" fill="currentColor">
+                <path d="M107.7,8.07A105.15,105.15,0,0,0,77.26,0a77.19,77.19,0,0,0-3.3,6.83A96.67,96.67,0,0,0,53.22,6.83,77.19,77.19,0,0,0,49.88,0,105.15,105.15,0,0,0,19.44,8.07C3.66,31.58-1.86,54.65,1,77.53A105.73,105.73,0,0,0,32,96.36a77.7,77.7,0,0,0,6.63-10.85,68.43,68.43,0,0,1-10.5-5c1-.73,2-1.5,2.92-2.3a68.18,68.18,0,0,0,72.06,0c.93.8,1.91,1.57,2.92,2.3a68.43,68.43,0,0,1-10.5,5,77.7,77.7,0,0,0,6.63,10.85,105.73,105.73,0,0,0,31-18.83C129.87,49.52,123.57,26.74,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53S36.18,40.36,42.45,40.36,53.83,46,53.83,53,48.72,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.24,60,73.24,53S78.41,40.36,84.69,40.36,96.07,46,96.07,53,91,65.69,84.69,65.69Z"/>
+            </svg>
+            <span data-i18n="web_login">Login con Discord</span>
+        </a>
     </div>
+    {% else %}
+    <!-- VISTA DE PERFIL: USUARIO AUTENTICADO -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <div>
+            <h1 style="text-align: left; margin: 0;" data-i18n="web_profile_title">Perfil de Usuario</h1>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 4px;" data-i18n="web_profile_desc">Gestiona tus datos personales y visualiza tus estadísticas globales.</p>
+        </div>
+        <a href="/auth/logout" class="logout-text-link" data-i18n="web_logout">Cerrar Sesión</a>
+    </div>
+
+    <!-- Alert status messages -->
+    {% if request.query_params.get('success') == 'updated' %}
+    <div class="stat-item" style="background: rgba(46, 204, 113, 0.1); border: 1px solid rgba(46, 204, 113, 0.3); border-radius: 12px; padding: 12px 16px; margin: 15px 0; color: #2ecc71; text-align: left; font-size: 0.9rem;">
+        ✅ ¡Perfil actualizado correctamente!
+    </div>
+    {% endif %}
+    {% if request.query_params.get('error') == 'delete_verification_failed' %}
+    <div class="stat-item" style="background: rgba(237, 66, 69, 0.1); border: 1px solid rgba(237, 66, 69, 0.3); border-radius: 12px; padding: 12px 16px; margin: 15px 0; color: #ed4245; text-align: left; font-size: 0.9rem;">
+        ❌ El nombre de usuario ingresado no coincide. El borrado fue cancelado.
+    </div>
+    {% endif %}
+
+    <div class="bento-grid">
+        <!-- BENTO 1: IDENTIDAD Y EDICIÓN -->
+        <div class="bento-box">
+            <h3 class="bento-title" data-i18n="web_edit_profile">
+                <svg class="icon-svg" viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary-color);">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                    <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                </svg>
+                Editar Perfil
+            </h3>
+            
+            <div class="user-info-header">
+                <img src="{{ user.avatar_url }}" alt="{{ user.username }}">
+                <div class="user-names">
+                    <h2>{{ user.username }}</h2>
+                    <p>ID: {{ user.id }}</p>
+                </div>
+            </div>
+
+            <form action="/profile/update" method="POST" class="profile-form">
+                <div class="form-group">
+                    <label for="desc-input">Biografía / Descripción</label>
+                    <textarea id="desc-input" name="description" class="form-control" placeholder="Escribe algo sobre ti..." maxlength="200">{{ user_data.description }}</textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="bday-input">Cumpleaños (Día-Mes)</label>
+                    <input type="text" id="bday-input" name="birthday" class="form-control" placeholder="DD-MM (Ej. 28-06 o reset)" value="{% if user_data.birthday %}{{ user_data.birthday }}{% endif %}" pattern="^(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[0-2])|reset|none|$">
+                </div>
+
+                <div class="form-group">
+                    <label for="privacy-select">Celebración de Cumpleaños</label>
+                    <select id="privacy-select" name="celebrate" class="form-control" style="background-color: #0f1626;">
+                        <option value="1" {% if user_data.celebrate == 1 %}selected{% endif %}>Visible (Festejar en el Servidor)</option>
+                        <option value="0" {% if user_data.celebrate == 0 %}selected{% endif %}>Privado (No felicitar)</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn-save" style="align-self: flex-start; margin-top: 10px;" data-i18n="web_save_changes">Guardar Cambios</button>
+            </form>
+        </div>
+
+        <!-- BENTO 2: RECURSOS E INVENTARIO -->
+        <div class="bento-box">
+            <h3 class="bento-title">
+                <svg class="icon-svg" viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary-color);">
+                    <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                    <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+                </svg>
+                Cartera e Inventario
+            </h3>
+
+            <div class="wallet-card">
+                <div class="wallet-details">
+                    <span data-i18n="web_coins">Monedas</span>
+                    <span>{{ user_data.coins }} 🪙</span>
+                </div>
+            </div>
+
+            <h4 style="font-size: 0.9rem; font-weight: 700; color: #ffffff; margin-bottom: 12px;" data-i18n="web_inventory">Inventario</h4>
+            <div class="inventory-list">
+                {% if inventory %}
+                    {% for item in inventory %}
+                    <div class="inventory-item">
+                        <span class="item-emoji">{{ item.emoji }}</span>
+                        <div class="item-info">
+                            <span class="item-name" title="{{ item.name }}">{{ item.name }}</span>
+                            <span class="item-qty">Cant: {{ item.quantity }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div style="grid-column: span 2; text-align: center; padding: 30px 10px; color: var(--text-muted); font-size: 0.88rem;" data-i18n="web_no_items">
+                        Tu inventario está vacío.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- BENTO 3: NIVELES POR SERVIDOR -->
+        <div class="bento-box full-width">
+            <h3 class="bento-title" data-i18n="web_levels_by_server">
+                <svg class="icon-svg" viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary-color);">
+                    <path d="M23 18l-3.37-3.37a2 2 0 0 0-2.82 0l-3.59 3.59a2 2 0 0 1-2.82 0l-5-5A2 2 0 0 0 2.58 13L1 14.5"></path>
+                    <path d="M8 6h.01M16 10h.01M12 14h.01M6 18h.01M12 2v20"></path>
+                </svg>
+                Niveles por Servidor
+            </h3>
+
+            <div class="server-grid">
+                {% if guilds_data %}
+                    {% for guild in guilds_data %}
+                    <div class="server-card">
+                        <div class="server-header">
+                            <div class="server-icon">
+                                {% if guild.guild_icon %}
+                                <img src="{{ guild.guild_icon }}" alt="{{ guild.guild_name }}">
+                                {% else %}
+                                {{ guild.guild_name[:2].upper() }}
+                                {% endif %}
+                            </div>
+                            <span class="server-title" title="{{ guild.guild_name }}">{{ guild.guild_name }}</span>
+                        </div>
+                        <div class="server-stats-inline">
+                            <span><strong data-i18n="web_level_short">Nvl</strong>: {{ guild.level }}</span>
+                            <span><strong>{{ guild.xp }}</strong> / {{ guild.xp_required }} XP</span>
+                            {% if guild.rebirths > 0 %}
+                            <span><strong>{{ guild.rebirths }}</strong> 🔄 Rebirths</span>
+                            {% endif %}
+                        </div>
+                        <div class="progress-container">
+                            <div class="progress-bar-bg">
+                                <div class="progress-bar-fill" style="width: {{ guild.progress_percent }}%;"></div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div style="grid-column: span 2; text-align: center; padding: 40px 10px; color: var(--text-muted); font-size: 0.9rem;">
+                        No tienes niveles ni XP registrados en ningún servidor con Friday Bot.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- BENTO 4: ZONA DE PELIGRO -->
+        <div class="bento-box full-width danger-zone">
+            <h3 class="bento-title" style="color: #ed4245;" data-i18n="web_danger_zone">
+                <svg class="icon-svg" viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="color: #ed4245;">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                    <line x1="12" y1="9" x2="12" y2="13"></line>
+                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>
+                Zona de Peligro
+            </h3>
+            <div class="danger-action-container">
+                <p class="danger-text">
+                    Al borrar tus datos, se eliminarán permanentemente tu biografía, cumpleaños, monedas globales y preferencias de la base de datos de Friday Bot de forma definitiva. Esta acción no se puede deshacer.
+                </p>
+                <button type="button" class="btn-danger" id="openDeleteModalBtn" data-i18n="web_delete_data">Eliminar mis Datos</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE BORRADO SEGURO -->
+    <div class="modal-overlay" id="deleteModalOverlay">
+        <div class="modal-card">
+            <h3 data-i18n="web_danger_zone">⚠️ ADVERTENCIA MUY SERIA</h3>
+            <p>
+                Estás a punto de borrar definitivamente todo tu perfil de Friday Bot (incluyendo biografía, cumpleaños, monedas globales e historial).
+            </p>
+            <p style="background: rgba(237, 66, 69, 0.1); padding: 12px; border-radius: 8px; border: 1px solid rgba(237, 66, 69, 0.2); font-weight: 600; color: #ed4245;">
+                Para confirmar, escribe exactamente tu nombre de usuario de Discord: <br><strong style="color: #ffffff; font-size: 1.1rem; display: block; margin-top: 6px;">{{ user.username }}</strong>
+            </p>
+            
+            <form action="/profile/delete-data" method="POST" id="deleteDataForm" class="profile-form" style="margin-top: 15px;">
+                <div class="form-group">
+                    <input type="text" id="confirmNameInput" name="confirm_name" class="form-control" placeholder="Escribe tu username aquí..." required autocomplete="off">
+                </div>
+                <div class="modal-buttons">
+                    <button type="button" class="btn-secondary" id="closeDeleteModalBtn">Cancelar</button>
+                    <button type="submit" class="btn-danger" id="confirmDeleteSubmitBtn" disabled>Borrar definitivamente</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const openModalBtn = document.getElementById('openDeleteModalBtn');
+            const closeModalBtn = document.getElementById('closeDeleteModalBtn');
+            const overlay = document.getElementById('deleteModalOverlay');
+            const confirmInput = document.getElementById('confirmNameInput');
+            const submitBtn = document.getElementById('confirmDeleteSubmitBtn');
+            
+            const expectedUsername = "{{ user.username }}";
+            
+            if (openModalBtn) {
+                openModalBtn.addEventListener('click', () => {
+                    overlay.classList.add('active');
+                    confirmInput.value = '';
+                    submitBtn.disabled = true;
+                    confirmInput.focus();
+                });
+            }
+            
+            if (closeModalBtn) {
+                closeModalBtn.addEventListener('click', () => {
+                    overlay.classList.remove('active');
+                });
+            }
+            
+            if (confirmInput) {
+                confirmInput.addEventListener('input', () => {
+                    const typed = confirmInput.value.trim();
+                    if (typed === expectedUsername) {
+                        submitBtn.disabled = false;
+                        submitBtn.style.opacity = '1';
+                    } else {
+                        submitBtn.disabled = true;
+                        submitBtn.style.opacity = '0.5';
+                    }
+                });
+            }
+            
+            // Cerrar al hacer clic fuera del modal card
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) {
+                    overlay.classList.remove('active');
+                }
+            });
+        });
+    </script>
+    {% endif %}
 </div>
 {% endblock %}

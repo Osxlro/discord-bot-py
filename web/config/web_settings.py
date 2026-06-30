@@ -13,3 +13,7 @@ WEB_EXPOSE_PORT = os.getenv("WEB_EXPOSE_PORT", "True") == "True"
 # Credenciales de Discord OAuth2 (para el futuro Login)
 DISCORD_CLIENT_ID = os.getenv("DISCORD_CLIENT_ID", "")
 DISCORD_CLIENT_SECRET = os.getenv("DISCORD_CLIENT_SECRET", "")
+
+# Ajustes de sesión y cookies
+SESSION_SECRET_KEY = os.getenv("SESSION_SECRET_KEY", "FridayBotWebSessionCryptedKey2026_Secure")
+WEB_SECURE_COOKIES = os.getenv("WEB_SECURE_COOKIES", "False").lower() == "true"
