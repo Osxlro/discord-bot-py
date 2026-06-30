@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block title %}{{ bot_name }} - {{ web_leaderboard_title }}{% endblock %}
+
+{% block content %}
+<div class="profile-container reveal-on-scroll">
+    <div style="margin-bottom: 25px;">
+        <h1 style="text-align: left; margin: 0;" data-i18n="web_leaderboard_title">Tabla de Clasificación</h1>
+        <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 4px;" data-i18n="web_leaderboard_desc">Visualiza los usuarios con mayor experiencia (XP), nivel y renacimientos.</p>
+    </div>
+
+    <!-- SELECTOR DE SERVIDOR -->
+    <div class="card" style="margin-bottom: 30px; display: flex; align-items: center; gap: 15px; flex-wrap: wrap; padding: 15px 20px;">
+        <label for="leaderboard-guild-select" style="font-weight: 600; font-size: 0.95rem; color: #ffffff;" data-i18n="web_select_guild">Seleccionar Servidor</label>
+        <select id="leaderboard-guild-select" class="form-control" style="max-width: 320px; background-color: #0f1626; margin: 0;">
+            <option value="" disabled {% if not current_guild_id %}selected{% endif %} data-i18n="web_select_guild">Seleccionar Servidor</option>
+            {% for g in guilds %}
+            <option value="{{ g.id }}" {% if current_guild_id == g.id %}selected{% endif %}>{{ g.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    {% if current_guild_id %}
+    <!-- BENTO GRID CONTENEDOR DEL LEADERBOARD -->
+    <div class="bento-box full-width" style="padding: 10px 0; overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; text-align: left; min-width: 600px;">
+            <thead>
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.08); color: var(--text-muted); font-size: 0.85rem;">
+                    <th style="padding: 15px 20px;" data-i18n="web_rank">Rango</th>
+                    <th style="padding: 15px 20px;" data-i18n="web_user">Usuario</th>
+                    <th style="padding: 15px 20px;" data-i18n="web_rebirths">Renacimientos</th>
+                    <th style="padding: 15px 20px;">Nivel</th>
+                    <th style="padding: 15px 20px;" data-i18n="web_xp">Experiencia</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if leaderboard_rows %}
+                    {% for row in leaderboard_rows %}
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 0.95rem; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.02)'" onmouseout="this.style.background='transparent'">
+                        <td style="padding: 15px 20px; font-weight: 800;">
+                            {% if loop.index == 1 %}
+                            <span style="font-size: 1.3rem;">🥇</span>
+                            {% elif loop.index == 2 %}
+                            <span style="font-size: 1.3rem;">🥈</span>
+                            {% elif loop.index == 3 %}
+                            <span style="font-size: 1.3rem;">🥉</span>
+                            {% else %}
+                            #{{ loop.index }}
+                            {% endif %}
+                        </td>
+                        <td style="padding: 15px 20px;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <div style="width: 32px; height: 32px; border-radius: 50%; overflow: hidden; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.05); flex-shrink: 0; border: 1px solid rgba(255,255,255,0.15);">
+                                    <img src="{{ row.avatar_url }}" alt="{{ row.username }}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png';">
+                                </div>
+                                <span style="font-weight: 600; color: #ffffff;">{{ row.username }}</span>
+                            </div>
+                        </td>
+                        <td style="padding: 15px 20px; font-weight: 700;">
+                            {% if row.rebirths > 0 %}
+                            <span style="color: #38ef7d; display: inline-flex; align-items: center; gap: 4px;">
+                                <svg class="icon-svg" viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;">
+                                    <polyline points="23 4 23 10 17 10"></polyline>
+                                    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                                </svg>
+                                {{ row.rebirths }}
+                            </span>
+                            {% else %}
+                            0
+                            {% endif %}
+                        </td>
+                        <td style="padding: 15px 20px; font-weight: bold; color: var(--primary-color);">{{ row.level }}</td>
+                        <td style="padding: 15px 20px; color: var(--text-muted); font-size: 0.9rem;">
+                            <strong>{{ row.xp }}</strong> XP
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="5" style="text-align: center; padding: 40px; color: var(--text-muted); font-size: 0.9rem;" data-i18n="web_no_commands_desc">
+                            Nadie tiene experiencia en este servidor aún o el servidor no tiene registros.
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const select = document.getElementById('leaderboard-guild-select');
+        if (select) {
+            select.addEventListener('change', (e) => {
+                const guildId = e.target.value;
+                if (guildId) {
+                    window.location.href = `/leaderboard?guild_id=${guildId}`;
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

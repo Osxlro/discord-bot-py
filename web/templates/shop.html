@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}{{ bot_name }} - {{ web_shop }}{% endblock %}
+
+{% block content %}
+<div class="profile-container reveal-on-scroll">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
+        <div>
+            <h1 style="text-align: left; margin: 0;" data-i18n="web_shop_title">Tienda Virtual de Friday Bot</h1>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 4px;" data-i18n="web_shop_desc">Usa tus monedas globales para comprar objetos exclusivos del bot.</p>
+        </div>
+        
+        {% if user %}
+        <div class="wallet-card" style="margin: 0; padding: 10px 20px; border-radius: 12px; display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);">
+            <span style="font-size: 0.88rem; color: var(--text-muted);" data-i18n="web_coins">Monedas</span>
+            <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="font-size: 1.4rem; font-weight: 800; color: #ffffff;">{{ user_coins }}</span>
+                <svg class="icon-svg" viewBox="0 0 24 24" width="20" height="20" fill="#f1c40f" style="filter: drop-shadow(0 0 4px rgba(241, 196, 15, 0.5));">
+                    <circle cx="12" cy="12" r="10" stroke="#f39c12" stroke-width="1.5"></circle>
+                    <path d="M12 6v12M15 9H11.5a2.5 2.5 0 0 0 0 5H13a2.5 2.5 0 0 1 0 5H9.5" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"></path>
+                </svg>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Alert success/error messages -->
+    {% if request.query_params.get('success') == 'purchased' %}
+    <div class="stat-item" style="background: rgba(46, 204, 113, 0.1); border: 1px solid rgba(46, 204, 113, 0.3); border-radius: 12px; padding: 12px 16px; margin: 15px 0; color: #2ecc71; text-align: left; font-size: 0.9rem;">
+        ✅ ¡Compra realizada con éxito!
+    </div>
+    {% endif %}
+    {% if request.query_params.get('error') == 'insufficient_coins' %}
+    <div class="stat-item" style="background: rgba(237, 66, 69, 0.1); border: 1px solid rgba(237, 66, 69, 0.3); border-radius: 12px; padding: 12px 16px; margin: 15px 0; color: #ed4245; text-align: left; font-size: 0.9rem;">
+        ❌ Monedas insuficientes para realizar esta compra.
+    </div>
+    {% endif %}
+    {% if request.query_params.get('error') and request.query_params.get('error') != 'insufficient_coins' %}
+    <div class="stat-item" style="background: rgba(237, 66, 69, 0.1); border: 1px solid rgba(237, 66, 69, 0.3); border-radius: 12px; padding: 12px 16px; margin: 15px 0; color: #ed4245; text-align: left; font-size: 0.9rem;">
+        ❌ Error: {{ request.query_params.get('error') }}
+    </div>
+    {% endif %}
+
+    {% if categories %}
+        {% for cat_name, items in categories.items() %}
+        <div style="margin-top: 30px;">
+            <!-- Category Title -->
+            <h2 style="font-size: 1.25rem; font-weight: 800; color: #ffffff; text-align: left; border-left: 4px solid var(--primary-color); padding-left: 10px; margin-bottom: 15px;">
+                {% if cat_name == 'Roles' %}
+                <span data-i18n="web_category_roles">Roles</span>
+                {% elif cat_name == 'Objetos' %}
+                <span data-i18n="web_category_items">Objetos</span>
+                {% else %}
+                <span data-i18n="web_category_other">Otros</span>
+                {% endif %}
+            </h2>
+
+            <div class="server-grid" style="grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px;">
+                {% for item in items %}
+                <div class="server-card" style="display: flex; flex-direction: column; justify-content: space-between; padding: 20px; min-height: 220px; align-items: flex-start; text-align: left;">
+                    <div style="width: 100%;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; margin-bottom: 8px;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span style="font-size: 1.4rem;">{{ item.emoji }}</span>
+                                <h3 style="font-size: 1.1rem; font-weight: 700; color: #ffffff; margin: 0; max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="{{ item.name }}">{{ item.name }}</h3>
+                            </div>
+                            <span style="font-size: 0.8rem; background: rgba(0, 198, 255, 0.1); border: 1px solid rgba(0, 198, 255, 0.2); color: var(--primary-color); padding: 2px 8px; border-radius: 20px; font-weight: 600;">{{ item.item_id }}</span>
+                        </div>
+                        <p style="color: var(--text-muted); font-size: 0.85rem; line-height: 1.4; min-height: 40px; margin-bottom: 12px;">{{ item.description }}</p>
+                    </div>
+
+                    <div style="width: 100%; display: flex; align-items: center; justify-content: space-between; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 12px; margin-top: auto;">
+                        <div style="display: flex; flex-direction: column;">
+                            <span style="font-size: 0.75rem; color: var(--text-muted);" data-i18n="web_item_cost">Costo:</span>
+                            <div style="display: flex; align-items: center; gap: 4px;">
+                                <span style="font-weight: 800; font-size: 1.1rem; color: #ffffff;">{{ item.cost }}</span>
+                                <svg class="icon-svg" viewBox="0 0 24 24" width="16" height="16" fill="#f1c40f">
+                                    <circle cx="12" cy="12" r="10" stroke="#f39c12" stroke-width="1.5"></circle>
+                                    <path d="M12 6v12M15 9H11.5a2.5 2.5 0 0 0 0 5H13a2.5 2.5 0 0 1 0 5H9.5" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"></path>
+                                </svg>
+                            </div>
+                        </div>
+
+                        {% if user %}
+                        <form action="/shop/buy" method="POST" style="display: flex; align-items: center; gap: 6px;">
+                            <input type="hidden" name="item_id" value="{{ item.item_id }}">
+                            <div style="display: flex; flex-direction: column;">
+                                <select name="quantity" class="form-control" style="padding: 4px 6px; font-size: 0.85rem; margin: 0; background: #0f1626; border-radius: 6px; width: 60px; height: 32px;">
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                    <option value="5">5</option>
+                                    <option value="10">10</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn-login" style="padding: 8px 14px; font-size: 0.85rem; border-radius: 6px;" data-i18n="web_buy_button">Comprar</button>
+                        </form>
+                        {% else %}
+                        <a href="/auth/login" class="btn-login" style="padding: 8px 12px; font-size: 0.8rem; border-radius: 6px;" data-i18n="web_login">Login</a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="card" style="text-align: center; padding: 40px; margin-top: 30px; color: var(--text-muted);" data-i18n="web_no_commands_desc">
+            No hay objetos disponibles en el catálogo de la tienda en este momento.
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

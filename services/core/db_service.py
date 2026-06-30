@@ -55,7 +55,8 @@ async def init_db():
         personal_level_msg TEXT DEFAULT NULL,
         personal_birthday_msg TEXT DEFAULT NULL,
         coins INTEGER DEFAULT 0,
-        gender TEXT DEFAULT NULL
+        gender TEXT DEFAULT NULL,
+        web_notifications BOOLEAN DEFAULT 1
     )
     """)
     
@@ -187,6 +188,7 @@ async def init_db():
     await _ensure_column("users", "coins", "INTEGER DEFAULT 0")
     await _ensure_column("users", "gender", "TEXT DEFAULT NULL")
     await _ensure_column("users", "bank_coins", "INTEGER DEFAULT 0")
+    await _ensure_column("users", "web_notifications", "BOOLEAN DEFAULT 1")
     
     await _ensure_column("shop_items", "category", "TEXT DEFAULT 'Otros'")
     await _ensure_column("shop_items", "names_json", "TEXT DEFAULT NULL")

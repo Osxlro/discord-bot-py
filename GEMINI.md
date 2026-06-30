@@ -37,6 +37,7 @@ La persistencia del bot se maneja a través de SQLite3 utilizando `db_service.py
    - `personal_level_msg` (TEXT DEFAULT NULL) - Mensaje personalizado al subir de nivel
    - `personal_birthday_msg` (TEXT DEFAULT NULL) - Mensaje personalizado de cumpleaños
    - `coins` (INTEGER DEFAULT 0) - Monedas globales del usuario (sistema de economía)
+   - `web_notifications` (BOOLEAN DEFAULT 1) - Recibir alertas de perfil por DM de Discord cuando se edita el perfil desde la web
 
 2. **`guild_stats`** (Estadísticas de experiencia por servidor):
    - `guild_id` (INTEGER)

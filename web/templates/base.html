@@ -33,7 +33,10 @@
                 <li><a href="/" class="nav-link {% if active_page == 'index' %}active{% endif %}" data-i18n="web_home">Inicio</a></li>
                 <li><a href="/commands" class="nav-link {% if active_page == 'commands' %}active{% endif %}" data-i18n="web_commands">Comandos</a></li>
                 <li><a href="/docs" class="nav-link {% if active_page == 'docs' %}active{% endif %}" data-i18n="web_docs">Documentos</a></li>
+                <li><a href="/leaderboard" class="nav-link {% if active_page == 'leaderboard' %}active{% endif %}" data-i18n="web_leaderboard">Clasificación</a></li>
+                <li><a href="/shop" class="nav-link {% if active_page == 'shop' %}active{% endif %}" data-i18n="web_shop">Tienda</a></li>
                 {% if user %}
+                <li><a href="/dashboard" class="nav-link {% if active_page == 'dashboard' %}active{% endif %}" data-i18n="web_dashboard">Servidores</a></li>
                 <li><a href="/profile" class="btn-login active" data-i18n="web_my_profile">Mi Perfil</a></li>
                 {% else %}
                 <li><a href="/auth/login" class="btn-login" data-i18n="web_login">Login</a></li>

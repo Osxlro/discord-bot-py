@@ -130,3 +130,18 @@ class UserRepository:
         )
         return [dict(row) for row in rows]
 
+    @classmethod
+    async def update_user_data(cls, user_id: int, updates: dict):
+        """Actualiza campos genéricos en la tabla users."""
+        if not updates:
+            return
+        set_clause = ", ".join([f"{k} = ?" for k in updates.keys()])
+        params = list(updates.values()) + [user_id]
+        
+        # Primero aseguramos que el usuario existe en la DB
+        row = await database.fetch_one("SELECT 1 FROM users WHERE user_id = ?", (user_id,))
+        if not row:
+            await database.execute("INSERT INTO users (user_id) VALUES (?)", (user_id,))
+            
+        await database.execute(f"UPDATE users SET {set_clause} WHERE user_id = ?", params)
+

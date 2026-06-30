@@ -64,6 +64,24 @@ class Usuario(commands.Cog):
         embed = await profile_service.handle_update_gender(ctx.author.id, val, lang)
         await ctx.reply(embed=embed)
 
+    @profile_group.command(name="notifications", description="Activa o desactiva las notificaciones por DM desde la web.")
+    @app_commands.describe(estado="¿Deseas recibir avisos por DM al hacer cambios desde la web?")
+    async def set_notifications(self, ctx: commands.Context, estado: Literal["Activar", "Desactivar"]):
+        lang = await lang_service.get_guild_lang(ctx.guild.id if ctx.guild else None)
+        val = 1 if estado == "Activar" else 0
+        
+        from services.repositories.user_repository import UserRepository
+        await UserRepository.update_user_data(ctx.author.id, {"web_notifications": val})
+        
+        msg_key = "profile_notifications_enabled" if val == 1 else "profile_notifications_disabled"
+        msg = lang_service.get_text(msg_key, lang)
+        
+        embed = embed_service.success(
+            lang_service.get_text("title_success", lang),
+            msg
+        )
+        await ctx.reply(embed=embed)
+
     # --- GRUPO RAÍZ DE CUMPLEAÑOS ---
     @commands.hybrid_group(name="birthday", description="Comandos relacionados con cumpleanos.")
     async def birthday(self, ctx: commands.Context):

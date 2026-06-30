@@ -14,6 +14,9 @@ import time
 import aiohttp
 import urllib.parse
 import secrets
+import logging
+
+logger = logging.getLogger("web.app")
 
 # Setup directories
 current_dir = pathlib.Path(__file__).parent.resolve()
@@ -175,7 +178,7 @@ def create_app() -> FastAPI:
             "client_id": client_id,
             "redirect_uri": redirect_uri,
             "response_type": "code",
-            "scope": "identify",
+            "scope": "identify guilds",
             "state": state
         }
         url = "https://discord.com/api/oauth2/authorize?" + urllib.parse.urlencode(params)
@@ -227,6 +230,13 @@ def create_app() -> FastAPI:
                     return HTMLResponse("Error obteniendo datos del usuario en Discord", status_code=400)
                 discord_user = await resp.json()
                 
+            # Obtener servidores del usuario
+            async with session.get("https://discord.com/api/users/@me/guilds", headers=user_headers) as resp:
+                if resp.status == 200:
+                    discord_guilds = await resp.json()
+                else:
+                    discord_guilds = []
+                
         # Guardar en sesión
         user_id = int(discord_user["id"])
         username = discord_user["username"]
@@ -240,11 +250,21 @@ def create_app() -> FastAPI:
             default_avatar_index = (user_id >> 22) % 6 if discriminator == 0 else discriminator % 5
             avatar_url = f"https://cdn.discordapp.com/embed/avatars/{default_avatar_index}.png"
             
+        # Filtrar servidores administrados por el usuario para almacenar en cookie sin exceder 4KB
+        admin_guilds = []
+        for g in discord_guilds:
+            is_owner = g.get("owner", False)
+            perms = int(g.get("permissions", 0))
+            # Administrador (0x8) o Gestionar Servidor (0x20)
+            if is_owner or (perms & 0x8) == 0x8 or (perms & 0x20) == 0x20:
+                admin_guilds.append(int(g["id"]))
+            
         request.session["user"] = {
             "id": user_id,
             "username": username,
             "avatar_url": avatar_url
         }
+        request.session["admin_guilds"] = admin_guilds
         
         return RedirectResponse("/profile")
 
@@ -252,6 +272,32 @@ def create_app() -> FastAPI:
     async def auth_logout(request: Request):
         request.session.clear()
         return RedirectResponse("/profile")
+
+    async def send_profile_update_dm(bot, user_id: int, description: str, birthday: str, celebrate: bool, lang: str):
+        try:
+            user = bot.get_user(user_id)
+            if not user:
+                user = await bot.fetch_user(user_id)
+            if user:
+                from services.core import lang_service
+                from services.utils import embed_service
+                
+                title = lang_service.get_text("web_dm_notification_title", lang)
+                desc_text = lang_service.get_text(
+                    "web_dm_notification_desc_text", 
+                    lang, 
+                    bio=description or "-", 
+                    bday=birthday or "-", 
+                    cel="Sí" if celebrate else "No"
+                )
+                embed = embed_service.info(
+                    title=title,
+                    description=desc_text,
+                    lite=False
+                )
+                await user.send(embed=embed)
+        except Exception as e:
+            logger.exception(f"Error al enviar DM de notificacion a {user_id}: {e}")
 
     @app.post("/profile/update")
     async def profile_update(
@@ -266,24 +312,60 @@ def create_app() -> FastAPI:
             
         user_id = user["id"]
         
+        # Procesar checkbox web_notifications
+        form_data = await request.form()
+        web_notif_val = 1 if "web_notifications" in form_data else 0
+        
+        # Obtener datos antiguos para comparar cambios
+        old_data = await UserRepository.get_user_data(user_id)
+        if not old_data:
+            old_data = {
+                "description": "",
+                "birthday": None,
+                "celebrate": 1,
+                "web_notifications": 1
+            }
+            
+        desc_val = old_data.get("description")
         # Validar y actualizar descripción
         if description is not None:
-            # Sanitizar y limitar a 200
-            desc = description.strip()[:200]
-            await UserRepository.update_description(user_id, desc)
+            desc_val = description.strip()[:200]
+            await UserRepository.update_description(user_id, desc_val)
             
         # Validar y actualizar cumpleaños (DD-MM)
+        bday_val = old_data.get("birthday")
+        celebrate_val = bool(celebrate)
         if birthday:
-            bday = birthday.strip()
+            bday_val = birthday.strip()
             # Validar formato DD-MM
             import re
-            if re.match(r"^(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[0-2])$", bday):
-                await UserRepository.set_user_birthday(user_id, bday, celebrate=bool(celebrate))
-            elif bday.lower() in ("reset", "none", ""):
+            if re.match(r"^(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[0-2])$", bday_val):
+                await UserRepository.set_user_birthday(user_id, bday_val, celebrate=celebrate_val)
+            elif bday_val.lower() in ("reset", "none", ""):
+                bday_val = None
                 await UserRepository.set_user_birthday(user_id, None, celebrate=False)
         else:
             # Si no se pasó bday, actualizar solo celebrate
             await database.execute("UPDATE users SET celebrate = ? WHERE user_id = ?", (celebrate, user_id))
+            
+        # Guardar preferencia de notificaciones
+        await UserRepository.update_user_data(user_id, {"web_notifications": web_notif_val})
+        
+        # Detectar cambios reales
+        changed = (
+            desc_val != old_data.get("description") or
+            bday_val != old_data.get("birthday") or
+            celebrate_val != bool(old_data.get("celebrate")) or
+            web_notif_val != old_data.get("web_notifications")
+        )
+        
+        bot = getattr(request.app.state, "bot", None)
+        if changed and web_notif_val == 1 and bot:
+            # Detectar idioma del servidor/usuario (por defecto 'es')
+            lang = "es"
+            bot.loop.create_task(
+                send_profile_update_dm(bot, user_id, desc_val, bday_val, celebrate_val, lang)
+            )
             
         return RedirectResponse("/profile?success=updated", status_code=status.HTTP_303_SEE_OTHER)
 
@@ -321,7 +403,7 @@ def create_app() -> FastAPI:
                 # Si es la primera vez del usuario, crear un registro vacío en DB
                 await database.execute("INSERT OR IGNORE INTO users (user_id) VALUES (?)", (user_id,))
                 user_data = await UserRepository.get_user_data(user_id) or {
-                    "user_id": user_id, "coins": 0, "description": "Sin descripción.", "birthday": None, "celebrate": 1
+                    "user_id": user_id, "coins": 0, "description": "Sin descripción.", "birthday": None, "celebrate": 1, "web_notifications": 1
                 }
                 
             # 2. Obtener y resolver inventario
@@ -392,5 +474,223 @@ def create_app() -> FastAPI:
     async def privacy_page(request: Request):
         ctx = get_common_context(request, active_page="privacy")
         return templates.TemplateResponse(request, "privacy.html", ctx)
+
+    # --- SERVER SETUP DASHBOARD ---
+    @app.get("/dashboard", response_class=HTMLResponse)
+    async def dashboard_page(request: Request):
+        user = request.session.get("user")
+        if not user:
+            return RedirectResponse("/auth/login")
+            
+        bot = getattr(request.app.state, "bot", None)
+        user_admin_ids = request.session.get("admin_guilds", [])
         
+        mutual_guilds = []
+        if bot and bot.is_ready():
+            for g_id in user_admin_ids:
+                guild = bot.get_guild(g_id)
+                if guild:
+                    icon_url = guild.icon.url if guild.icon else None
+                    mutual_guilds.append({
+                        "id": str(guild.id),
+                        "name": guild.name,
+                        "icon_url": icon_url
+                    })
+                    
+        ctx = get_common_context(request, active_page="dashboard")
+        ctx.update({
+            "mutual_guilds": mutual_guilds
+        })
+        return templates.TemplateResponse(request, "dashboard.html", ctx)
+
+    @app.get("/dashboard/guild/{guild_id}", response_class=HTMLResponse)
+    async def guild_setup_page(request: Request, guild_id: int):
+        user = request.session.get("user")
+        if not user:
+            return RedirectResponse("/auth/login")
+            
+        user_admin_ids = request.session.get("admin_guilds", [])
+        if guild_id not in user_admin_ids:
+            return RedirectResponse("/dashboard?error=forbidden")
+            
+        bot = getattr(request.app.state, "bot", None)
+        if not bot or not bot.is_ready():
+            return RedirectResponse("/dashboard?error=bot_offline")
+            
+        guild = bot.get_guild(guild_id)
+        if not guild:
+            return RedirectResponse("/dashboard?error=guild_not_found")
+            
+        # Obtener canales de texto y roles para los dropdowns
+        channels = [{"id": str(c.id), "name": c.name} for c in guild.text_channels]
+        roles = [{"id": str(r.id), "name": r.name} for r in guild.roles if not r.is_default()]
+        
+        current_config = await db_service.get_guild_config(guild_id)
+        
+        config_resolved = {}
+        for k, v in current_config.items():
+            if k.endswith("_id"):
+                config_resolved[k] = str(v)
+            else:
+                config_resolved[k] = v
+                
+        guild_icon = guild.icon.url if guild.icon else None
+        
+        ctx = get_common_context(request, active_page="dashboard")
+        ctx.update({
+            "guild_id": str(guild_id),
+            "guild_name": guild.name,
+            "guild_icon": guild_icon,
+            "channels": channels,
+            "roles": roles,
+            "current_config": config_resolved
+        })
+        return templates.TemplateResponse(request, "guild_setup.html", ctx)
+
+    @app.post("/dashboard/guild/{guild_id}/update")
+    async def guild_setup_update(
+        request: Request,
+        guild_id: int,
+        welcome_channel_id: int = Form(0),
+        logs_channel_id: int = Form(0),
+        confessions_channel_id: int = Form(0),
+        birthday_channel_id: int = Form(0),
+        minecraft_channel_id: int = Form(0),
+        wordday_channel_id: int = Form(0),
+        autorole_id: int = Form(0),
+        wordday_role_id: int = Form(0),
+        language: str = Form("es")
+    ):
+        user = request.session.get("user")
+        if not user:
+            return RedirectResponse("/auth/login", status_code=status.HTTP_303_SEE_OTHER)
+            
+        user_admin_ids = request.session.get("admin_guilds", [])
+        if guild_id not in user_admin_ids:
+            return RedirectResponse("/dashboard?error=forbidden", status_code=status.HTTP_303_SEE_OTHER)
+            
+        updates = {
+            "welcome_channel_id": welcome_channel_id,
+            "logs_channel_id": logs_channel_id,
+            "confessions_channel_id": confessions_channel_id,
+            "birthday_channel_id": birthday_channel_id,
+            "minecraft_channel_id": minecraft_channel_id,
+            "wordday_channel_id": wordday_channel_id,
+            "autorole_id": autorole_id,
+            "wordday_role_id": wordday_role_id,
+            "language": language
+        }
+        
+        await db_service.update_guild_config(guild_id, updates)
+        return RedirectResponse(f"/dashboard/guild/{guild_id}?success=saved", status_code=status.HTTP_303_SEE_OTHER)
+
+    # --- XP LEADERBOARD ---
+    @app.get("/leaderboard", response_class=HTMLResponse)
+    async def leaderboard_page(request: Request, guild_id: int = None):
+        bot = getattr(request.app.state, "bot", None)
+        
+        guilds = []
+        if bot and bot.is_ready():
+            for g in bot.guilds:
+                guilds.append({
+                    "id": str(g.id),
+                    "name": g.name
+                })
+                
+        leaderboard_rows = []
+        current_guild_id = None
+        
+        if guild_id and bot and bot.is_ready():
+            guild = bot.get_guild(guild_id)
+            if guild:
+                current_guild_id = str(guild.id)
+                from services.repositories.xp_repository import XpRepository
+                rows = await XpRepository.get_leaderboard(guild_id, 50)
+                
+                for row in rows:
+                    u_id = row["user_id"]
+                    member = guild.get_member(u_id)
+                    if not member:
+                        member = bot.get_user(u_id)
+                        if not member:
+                            try:
+                                member = await bot.fetch_user(u_id)
+                            except Exception:
+                                member = None
+                                
+                    username = member.name if member else f"ID: {u_id}"
+                    avatar_url = member.display_avatar.url if member else "https://cdn.discordapp.com/embed/avatars/0.png"
+                    
+                    leaderboard_rows.append({
+                        "username": username,
+                        "avatar_url": avatar_url,
+                        "rebirths": row.get("rebirths", 0),
+                        "level": row.get("level", 1),
+                        "xp": row.get("xp", 0)
+                    })
+                    
+        ctx = get_common_context(request, active_page="leaderboard")
+        ctx.update({
+            "guilds": guilds,
+            "current_guild_id": current_guild_id,
+            "leaderboard_rows": leaderboard_rows
+        })
+        return templates.TemplateResponse(request, "leaderboard.html", ctx)
+
+    # --- SHOP ENDPOINTS ---
+    @app.get("/shop", response_class=HTMLResponse)
+    async def shop_page(request: Request):
+        items = await db_service.get_all_shop_items()
+        
+        user = request.session.get("user")
+        user_coins = 0
+        if user:
+            user_coins = await db_service.get_user_coins(user["id"])
+            
+        lang = request.session.get("lang", "es")
+        from services.features.shop_service import get_localized_field
+        
+        categories = {}
+        for item in items:
+            cat = item.get("category", "Otros")
+            if cat not in categories:
+                categories[cat] = []
+            categories[cat].append({
+                "item_id": item["item_id"],
+                "emoji": item["emoji"] or "📦",
+                "cost": item["cost"],
+                "name": get_localized_field(item, "names", lang),
+                "description": get_localized_field(item, "descs", lang),
+                "category": cat
+            })
+            
+        ctx = get_common_context(request, active_page="shop")
+        ctx.update({
+            "user_coins": user_coins,
+            "categories": categories
+        })
+        return templates.TemplateResponse(request, "shop.html", ctx)
+
+    @app.post("/shop/buy")
+    async def shop_buy(
+        request: Request,
+        item_id: str = Form(...),
+        quantity: int = Form(1)
+    ):
+        user = request.session.get("user")
+        if not user:
+            return RedirectResponse("/auth/login", status_code=status.HTTP_303_SEE_OTHER)
+            
+        user_id = user["id"]
+        lang = request.session.get("lang", "es")
+        
+        from services.features import shop_service
+        success, err_msg, embed = await shop_service.process_purchase(user_id, item_id, quantity, lang)
+        
+        if success:
+            return RedirectResponse("/shop?success=purchased", status_code=status.HTTP_303_SEE_OTHER)
+        else:
+            err_code = "insufficient_coins" if "coins" in (err_msg or "").lower() else urllib.parse.quote(err_msg or "error")
+            return RedirectResponse(f"/shop?error={err_code}", status_code=status.HTTP_303_SEE_OTHER)
+
     return app

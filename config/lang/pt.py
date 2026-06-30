@@ -554,4 +554,10 @@ PT = {
     # --- PAGINAÇÃO ---
     "pagination_prev": "Anterior",
     "pagination_next": "Seguinte",
+
+    # --- WEB NOTIFICATIONS ---
+    "profile_notifications_enabled": "✅ Notificações de perfil por DM ativadas.",
+    "profile_notifications_disabled": "❌ Notificações de perfil por DM desativadas.",
+    "web_dm_notification_title": "🔔 Perfil Atualizado via Web",
+    "web_dm_notification_desc_text": "Olá, seu perfil do Friday Bot foi modificado recentemente via web.\n\n> **Nova Biografia:** {bio}\n> **Aniversário:** {bday}\n> **Celebração ativa:** {cel}",
 }
