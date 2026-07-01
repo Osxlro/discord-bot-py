@@ -15,6 +15,10 @@ from services.utils.embed_service import NonVitalRenderError
 async def handle_profile(guild, target, lang, author_id: int):
     """Orquesta la obtención de datos y generación del embed y vista de perfil."""
     user_data = await UserRepository.get_user_data(target.id)
+    if user_data:
+        from services.features import badge_service
+        user_data = dict(user_data)
+        user_data["badges_str"] = await badge_service.get_badges_string(target.id)
     
     if guild:
         guild_data = await XpRepository.get_user_guild_data(guild.id, target.id)

@@ -560,4 +560,5 @@ EN = {
     "profile_notifications_disabled": "❌ Profile notifications via DM disabled.",
     "web_dm_notification_title": "🔔 Profile Updated from the Web",
     "web_dm_notification_desc_text": "Hello, your Friday Bot profile was recently modified via the web.\n\n> **New Biography:** {bio}\n> **Birthday:** {bday}\n> **Celebration active:** {cel}",
+    "profile_field_badges": "Badges",
 }

@@ -41,6 +41,34 @@
     </div>
     {% endif %}
 
+    <!-- SECCIÓN LOTERÍA DIARIA -->
+    <div class="card" style="margin-bottom: 30px; display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; padding: 20px; border-left: 5px solid #f1c40f; background: rgba(241, 196, 15, 0.03);">
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <div style="font-size: 2.2rem; filter: drop-shadow(0 2px 5px rgba(241, 196, 15, 0.4));">🎟️</div>
+            <div>
+                <h3 style="margin: 0; font-size: 1.15rem; font-weight: 700; color: #ffffff;">Sorteo de Lotería Diaria</h3>
+                <p style="margin: 3px 0 0 0; font-size: 0.88rem; color: var(--text-muted);">
+                    Costo del boleto: <strong>50</strong> coins • Total de boletos en juego: <strong>{{ total_tickets }}</strong>
+                    {% if user %} • Tus boletos: <strong>{{ user_tickets }}</strong>{% endif %}
+                </p>
+            </div>
+        </div>
+
+        {% if user %}
+        <form action="/shop/buy-ticket" method="POST" style="display: flex; align-items: center; gap: 10px;">
+            <select name="quantity" class="form-control" style="width: 70px; height: 38px; margin: 0; background: #0f1626;">
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="5">5</option>
+                <option value="10">10</option>
+            </select>
+            <button type="submit" class="btn-login" style="padding: 10px 20px; border-radius: 8px; font-weight: bold; background: #f1c40f; color: #000; border: none; box-shadow: 0 4px 10px rgba(241, 196, 15, 0.3);">Comprar Boletos</button>
+        </form>
+        {% else %}
+        <a href="/auth/login" class="btn-login" style="padding: 10px 20px; border-radius: 8px;" data-i18n="web_login">Login</a>
+        {% endif %}
+    </div>
+
     {% if categories %}
         {% for cat_name, items in categories.items() %}
         <div style="margin-top: 30px;">

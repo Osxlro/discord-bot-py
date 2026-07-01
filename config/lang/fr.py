@@ -560,4 +560,5 @@ FR = {
     "profile_notifications_disabled": "❌ Notifications de profil par DM désactivées.",
     "web_dm_notification_title": "🔔 Profil Mis à Jour depuis le Web",
     "web_dm_notification_desc_text": "Bonjour, votre profil Friday Bot a été récemment modifié via le web.\n\n> **Nouvelle Biographie:** {bio}\n> **Anniversaire:** {bday}\n> **Célébration active:** {cel}",
+    "profile_field_badges": "Badges",
 }

@@ -26,6 +26,10 @@ def get_general_embed(target: discord.Member, user_data: dict, lang: str) -> dis
     except Exception as e:
         raise NonVitalRenderError(embed, e, "gender")
 
+    badges_str = user_dict.get("badges_str")
+    if badges_str:
+        embed.add_field(name=lang_service.get_text("profile_field_badges", lang), value=badges_str, inline=True)
+
     return embed
 
 def get_stats_embed(target: discord.Member, guild_data: dict, xp_next: int, lang: str) -> discord.Embed:

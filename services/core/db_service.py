@@ -180,6 +180,23 @@ async def init_db():
     )
     """)
 
+    # 10. Insignias de Usuario
+    await db.execute("""
+    CREATE TABLE IF NOT EXISTS user_badges (
+        user_id INTEGER,
+        badge_id TEXT,
+        PRIMARY KEY (user_id, badge_id)
+    )
+    """)
+
+    # 11. Boletos de Lotería Diaria
+    await db.execute("""
+    CREATE TABLE IF NOT EXISTS raffle_tickets (
+        user_id INTEGER PRIMARY KEY,
+        ticket_count INTEGER DEFAULT 1
+    )
+    """)
+
     # Sincronizar catálogo con config/shop_items.json
     await sync_shop_catalog()
 

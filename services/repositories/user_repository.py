@@ -145,3 +145,30 @@ class UserRepository:
             
         await database.execute(f"UPDATE users SET {set_clause} WHERE user_id = ?", params)
 
+    @classmethod
+    async def get_user_badges(cls, user_id: int) -> list[str]:
+        """Obtiene la lista de IDs de insignias obtenidas por un usuario."""
+        rows = await database.fetch_all("SELECT badge_id FROM user_badges WHERE user_id = ?", (user_id,))
+        return [row["badge_id"] for row in rows]
+
+    @classmethod
+    async def grant_badge(cls, user_id: int, badge_id: str) -> bool:
+        """Otorga una insignia al usuario si no la posee ya."""
+        try:
+            await database.execute(
+                "INSERT OR IGNORE INTO user_badges (user_id, badge_id) VALUES (?, ?)",
+                (user_id, badge_id)
+            )
+            return True
+        except Exception:
+            return False
+
+    @classmethod
+    async def has_badge(cls, user_id: int, badge_id: str) -> bool:
+        """Verifica si el usuario posee una insignia específica."""
+        row = await database.fetch_one(
+            "SELECT 1 FROM user_badges WHERE user_id = ? AND badge_id = ?",
+            (user_id, badge_id)
+        )
+        return row is not None
+

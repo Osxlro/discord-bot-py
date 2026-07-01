@@ -250,14 +250,21 @@ def create_app() -> FastAPI:
             default_avatar_index = (user_id >> 22) % 6 if discriminator == 0 else discriminator % 5
             avatar_url = f"https://cdn.discordapp.com/embed/avatars/{default_avatar_index}.png"
             
-        # Filtrar servidores administrados por el usuario para almacenar en cookie sin exceder 4KB
+        # Filtrar servidores administrados y mutuos con el bot
         admin_guilds = []
+        mutual_guilds = []
+        bot = getattr(request.app.state, "bot", None)
+        
         for g in discord_guilds:
+            g_id = int(g["id"])
             is_owner = g.get("owner", False)
             perms = int(g.get("permissions", 0))
             # Administrador (0x8) o Gestionar Servidor (0x20)
             if is_owner or (perms & 0x8) == 0x8 or (perms & 0x20) == 0x20:
-                admin_guilds.append(int(g["id"]))
+                admin_guilds.append(g_id)
+            # Servidores mutuos con el bot
+            if bot and bot.get_guild(g_id):
+                mutual_guilds.append(g_id)
             
         request.session["user"] = {
             "id": user_id,
@@ -265,6 +272,7 @@ def create_app() -> FastAPI:
             "avatar_url": avatar_url
         }
         request.session["admin_guilds"] = admin_guilds
+        request.session["mutual_guilds"] = mutual_guilds
         
         return RedirectResponse("/profile")
 
@@ -457,10 +465,16 @@ def create_app() -> FastAPI:
                     "progress_percent": progress_percent
                 })
                 
+            # Auto-grant "pioneer" badge y resolver insignias
+            await UserRepository.grant_badge(user_id, "pioneer")
+            from services.features import badge_service
+            user_badges = await badge_service.get_resolved_badges(user_id, lang=lang)
+
             ctx.update({
                 "user_data": user_data,
                 "inventory": inventory_resolved,
-                "guilds_data": guilds_data
+                "guilds_data": guilds_data,
+                "user_badges": user_badges
             })
             
         return templates.TemplateResponse(request, "profile.html", ctx)
@@ -569,6 +583,23 @@ def create_app() -> FastAPI:
         if guild_id not in user_admin_ids:
             return RedirectResponse("/dashboard?error=forbidden", status_code=status.HTTP_303_SEE_OTHER)
             
+        form_data = await request.form()
+        chaos_enabled = 1 if "chaos_enabled" in form_data else 0
+        
+        try:
+            chaos_prob_pct = float(form_data.get("chaos_probability", "1.0"))
+            chaos_probability = max(0.1, min(100.0, chaos_prob_pct)) / 100.0
+        except ValueError:
+            chaos_probability = 0.01
+
+        server_welcome_msg = form_data.get("server_welcome_msg", "").strip() or None
+        server_goodbye_msg = form_data.get("server_goodbye_msg", "").strip() or None
+        server_level_msg = form_data.get("server_level_msg", "").strip() or None
+        server_birthday_msg = form_data.get("server_birthday_msg", "").strip() or None
+        server_kick_msg = form_data.get("server_kick_msg", "").strip() or None
+        server_ban_msg = form_data.get("server_ban_msg", "").strip() or None
+        mention_response = form_data.get("mention_response", "").strip() or None
+
         updates = {
             "welcome_channel_id": welcome_channel_id,
             "logs_channel_id": logs_channel_id,
@@ -578,7 +609,16 @@ def create_app() -> FastAPI:
             "wordday_channel_id": wordday_channel_id,
             "autorole_id": autorole_id,
             "wordday_role_id": wordday_role_id,
-            "language": language
+            "language": language,
+            "chaos_enabled": chaos_enabled,
+            "chaos_probability": chaos_probability,
+            "server_welcome_msg": server_welcome_msg,
+            "server_goodbye_msg": server_goodbye_msg,
+            "server_level_msg": server_level_msg,
+            "server_birthday_msg": server_birthday_msg,
+            "server_kick_msg": server_kick_msg,
+            "server_ban_msg": server_ban_msg,
+            "mention_response": mention_response
         }
         
         await db_service.update_guild_config(guild_id, updates)
@@ -587,20 +627,29 @@ def create_app() -> FastAPI:
     # --- XP LEADERBOARD ---
     @app.get("/leaderboard", response_class=HTMLResponse)
     async def leaderboard_page(request: Request, guild_id: int = None):
+        user = request.session.get("user")
+        if not user:
+            return RedirectResponse("/auth/login")
+            
         bot = getattr(request.app.state, "bot", None)
+        mutual_guild_ids = request.session.get("mutual_guilds", [])
         
         guilds = []
         if bot and bot.is_ready():
             for g in bot.guilds:
-                guilds.append({
-                    "id": str(g.id),
-                    "name": g.name
-                })
+                if g.id in mutual_guild_ids:
+                    guilds.append({
+                        "id": str(g.id),
+                        "name": g.name
+                    })
                 
         leaderboard_rows = []
         current_guild_id = None
         
         if guild_id and bot and bot.is_ready():
+            if guild_id not in mutual_guild_ids:
+                return RedirectResponse("/leaderboard?error=forbidden")
+                
             guild = bot.get_guild(guild_id)
             if guild:
                 current_guild_id = str(guild.id)
@@ -644,8 +693,16 @@ def create_app() -> FastAPI:
         
         user = request.session.get("user")
         user_coins = 0
+        user_tickets = 0
         if user:
-            user_coins = await db_service.get_user_coins(user["id"])
+            user_id = user["id"]
+            user_coins = await db_service.get_user_coins(user_id)
+            row = await database.fetch_one("SELECT ticket_count FROM raffle_tickets WHERE user_id = ?", (user_id,))
+            user_tickets = row["ticket_count"] if row else 0
+            
+        # Obtener total de boletos en juego
+        row_total = await database.fetch_one("SELECT SUM(ticket_count) as total FROM raffle_tickets")
+        total_tickets = row_total["total"] if (row_total and row_total["total"]) else 0
             
         lang = request.session.get("lang", "es")
         from services.features.shop_service import get_localized_field
@@ -667,6 +724,8 @@ def create_app() -> FastAPI:
         ctx = get_common_context(request, active_page="shop")
         ctx.update({
             "user_coins": user_coins,
+            "user_tickets": user_tickets,
+            "total_tickets": total_tickets,
             "categories": categories
         })
         return templates.TemplateResponse(request, "shop.html", ctx)
@@ -692,5 +751,47 @@ def create_app() -> FastAPI:
         else:
             err_code = "insufficient_coins" if "coins" in (err_msg or "").lower() else urllib.parse.quote(err_msg or "error")
             return RedirectResponse(f"/shop?error={err_code}", status_code=status.HTTP_303_SEE_OTHER)
+
+    @app.post("/shop/buy-ticket")
+    async def shop_buy_ticket(
+        request: Request,
+        quantity: int = Form(1)
+    ):
+        user = request.session.get("user")
+        if not user:
+            return RedirectResponse("/auth/login", status_code=status.HTTP_303_SEE_OTHER)
+            
+        user_id = user["id"]
+        if quantity <= 0:
+            return RedirectResponse("/shop?error=invalid_quantity", status_code=status.HTTP_303_SEE_OTHER)
+            
+        ticket_cost = 50
+        total_cost = ticket_cost * quantity
+        
+        # Check coins
+        user_coins = await db_service.get_user_coins(user_id)
+        if user_coins < total_cost:
+            return RedirectResponse("/shop?error=insufficient_coins", status_code=status.HTTP_303_SEE_OTHER)
+            
+        # Deduct coins and add tickets atomically
+        try:
+            query_coins = (
+                "INSERT INTO users (user_id, coins) VALUES (?, ?) "
+                "ON CONFLICT(user_id) DO UPDATE SET coins = coins + excluded.coins"
+            )
+            query_tickets = (
+                "INSERT INTO raffle_tickets (user_id, ticket_count) VALUES (?, ?) "
+                "ON CONFLICT(user_id) DO UPDATE SET ticket_count = ticket_count + excluded.ticket_count"
+            )
+            
+            queries = [
+                (query_coins, (user_id, -total_cost)),
+                (query_tickets, (user_id, quantity))
+            ]
+            await database.execute_transaction(queries)
+            return RedirectResponse("/shop?success=purchased", status_code=status.HTTP_303_SEE_OTHER)
+        except Exception as e:
+            logger.exception(f"Error al comprar boletos de loteria para {user_id}: {e}")
+            return RedirectResponse("/shop?error=db_error", status_code=status.HTTP_303_SEE_OTHER)
 
     return app

@@ -58,6 +58,13 @@
                 <div class="user-names">
                     <h2>{{ user.username }}</h2>
                     <p><span data-i18n="web_user_id">ID:</span> {{ user.id }}</p>
+                    {% if user_badges %}
+                    <div class="user-badges" style="display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap;">
+                        {% for b in user_badges %}
+                        <span style="font-size: 1.3rem; cursor: help; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));" title="{{ b.name }}: {{ b.description }}">{{ b.emoji }}</span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
                 </div>
             </div>
 
