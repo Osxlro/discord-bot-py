@@ -22,10 +22,11 @@ for log_file in data_dir.glob("discord.log*"):
 # Configurar el root logger a nivel INFO para capturar todo en el archivo de logs
 logging.getLogger().setLevel(logging.INFO)
 
-# Configurar el handler de consola (StreamHandler) a nivel WARNING para no saturar la consola/stderr
+# Configurar el handler de consola (StreamHandler) a nivel INFO para la fase de inicio
 import sys
+global console_handler
 console_handler = logging.StreamHandler(sys.stderr)
-console_handler.setLevel(logging.WARNING)
+console_handler.setLevel(logging.INFO)
 console_formatter = logging.Formatter(
     fmt="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S"
@@ -178,9 +179,17 @@ class BotPersonal(commands.AutoShardedBot):
             logger.error(f"❌ [Bot] Error al sincronizar: {e}")
 
     async def on_ready(self):
-        logger.info(f"🤖 [Bot] Conectado como: {self.user} (ID: {self.user.id})")
+        logger.info('------------------------------------')
+        logger.info(f'🤖 Bot conectado: {self.user}')
+        logger.info(f'🆔 ID: {self.user.id}')
+        logger.info('------------------------------------')
         settings.set_bot_icon(self.user.display_avatar.url)
         
+        # Una vez completada la fase de carga e inicio, silenciamos la consola a WARNING
+        global console_handler
+        if console_handler:
+            console_handler.setLevel(logging.WARNING)
+            
         # Intentar restaurar sesiones de música previas
         self.loop.create_task(music_service.restore_players(self))
 
