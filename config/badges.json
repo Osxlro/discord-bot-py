@@ -1,0 +1,74 @@
+[
+  {
+    "badge_id": "pioneer",
+    "emoji": "🌐",
+    "names": {
+      "es": "Pionero de la Web",
+      "en": "Web Pioneer",
+      "pt": "Pioneiro da Web",
+      "fr": "Pionnier du Web"
+    },
+    "descriptions": {
+      "es": "Por registrarse e iniciar sesión en el portal web.",
+      "en": "For registering and logging in on the web portal.",
+      "pt": "Por registrar-se e hacer login no portal web.",
+      "fr": "Pour s'être inscrit et connecté sur le portail web."
+    }
+  },
+  {
+    "badge_id": "rich",
+    "emoji": "💰",
+    "requirement": {
+      "type": "coins",
+      "value": 5000
+    },
+    "names": {
+      "es": "Capitalista",
+      "en": "Capitalist",
+      "pt": "Capitalista",
+      "fr": "Capitaliste"
+    },
+    "descriptions": {
+      "es": "Otorgado al acumular más de 5,000 monedas en tu cartera.",
+      "en": "Awarded for accumulating more than 5,000 coins in your wallet.",
+      "pt": "Concedido ao acumular mais de 5.000 moedas na sua carteira.",
+      "fr": "Attribué pour avoir accumulé plus de 5 000 pièces dans votre portefeuille."
+    }
+  },
+  {
+    "badge_id": "first_rebirth",
+    "emoji": "🌀",
+    "requirement": {
+      "type": "rebirths",
+      "value": 1
+    },
+    "names": {
+      "es": "Primer Renacimiento",
+      "en": "First Rebirth",
+      "pt": "Primeiro Renascimento",
+      "fr": "Premier Rebirth"
+    },
+    "descriptions": {
+      "es": "Otorgado al realizar tu primer renacimiento (rebirth) en el servidor.",
+      "en": "Awarded for performing your first rebirth in the server.",
+      "pt": "Concedido ao realizar seu primeiro renascimento no servidor.",
+      "fr": "Attribué pour avoir effectué votre premier rebirth sur le serveur."
+    }
+  },
+  {
+    "badge_id": "bug_hunter",
+    "emoji": "🐛",
+    "names": {
+      "es": "Cazador de Bugs",
+      "en": "Bug Hunter",
+      "pt": "Caçador de Bugs",
+      "fr": "Chasseur de Bugs"
+    },
+    "descriptions": {
+      "es": "Otorgado por reportar errores y ayudar a mejorar el bot.",
+      "en": "Awarded for reporting bugs and helping to improve the bot.",
+      "pt": "Concedido por reportar erros e ajudar a melhorar o bot.",
+      "fr": "Attribué pour avoir signalé des bogues et aidé à mejorar le bot."
+    }
+  }
+]

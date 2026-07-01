@@ -172,3 +172,24 @@ class UserRepository:
         )
         return row is not None
 
+    @classmethod
+    async def revoke_badge(cls, user_id: int, badge_id: str) -> bool:
+        """Remueve una insignia al usuario."""
+        try:
+            await database.execute(
+                "DELETE FROM user_badges WHERE user_id = ? AND badge_id = ?",
+                (user_id, badge_id)
+            )
+            return True
+        except Exception:
+            return False
+
+    @classmethod
+    async def get_total_rebirths(cls, user_id: int) -> int:
+        """Obtiene la suma total de renacimientos del usuario en todos los servidores."""
+        row = await database.fetch_one("SELECT SUM(rebirths) as total FROM guild_stats WHERE user_id = ?", (user_id,))
+        if row and row['total'] is not None:
+            return int(row['total'])
+        return 0
+
+

@@ -27,51 +27,90 @@
     <!-- Alert success/error messages -->
     {% if request.query_params.get('success') == 'purchased' %}
     <div class="stat-item" style="background: rgba(46, 204, 113, 0.1); border: 1px solid rgba(46, 204, 113, 0.3); border-radius: 12px; padding: 12px 16px; margin: 15px 0; color: #2ecc71; text-align: left; font-size: 0.9rem;">
-        ✅ ¡Compra realizada con éxito!
+        <span data-i18n="web_purchase_success_alert">✅ ¡Compra realizada con éxito!</span>
     </div>
     {% endif %}
     {% if request.query_params.get('error') == 'insufficient_coins' %}
     <div class="stat-item" style="background: rgba(237, 66, 69, 0.1); border: 1px solid rgba(237, 66, 69, 0.3); border-radius: 12px; padding: 12px 16px; margin: 15px 0; color: #ed4245; text-align: left; font-size: 0.9rem;">
-        ❌ Monedas insuficientes para realizar esta compra.
+        <span data-i18n="web_insufficient_coins_alert">❌ Monedas insuficientes para realizar esta compra.</span>
     </div>
     {% endif %}
-    {% if request.query_params.get('error') and request.query_params.get('error') != 'insufficient_coins' %}
+    {% if request.query_params.get('error') == 'already_owned' %}
     <div class="stat-item" style="background: rgba(237, 66, 69, 0.1); border: 1px solid rgba(237, 66, 69, 0.3); border-radius: 12px; padding: 12px 16px; margin: 15px 0; color: #ed4245; text-align: left; font-size: 0.9rem;">
-        ❌ Error: {{ request.query_params.get('error') }}
+        <span data-i18n="web_already_owned_alert">❌ Ya posees este artículo en tu cuenta.</span>
+    </div>
+    {% endif %}
+    {% if request.query_params.get('error') and request.query_params.get('error') != 'insufficient_coins' and request.query_params.get('error') != 'already_owned' %}
+    <div class="stat-item" style="background: rgba(237, 66, 69, 0.1); border: 1px solid rgba(237, 66, 69, 0.3); border-radius: 12px; padding: 12px 16px; margin: 15px 0; color: #ed4245; text-align: left; font-size: 0.9rem;">
+        <span data-i18n="web_error_alert">❌ Ocurrió un error al procesar tu solicitud.</span>
     </div>
     {% endif %}
 
-    <!-- SECCIÓN LOTERÍA DIARIA -->
-    <div class="card" style="margin-bottom: 30px; display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; padding: 20px; border-left: 5px solid #f1c40f; background: rgba(241, 196, 15, 0.03);">
+    <!-- BANNER DESTACADO CONFIGURABLE -->
+    {% if featured %}
+    <div class="card" style="margin-bottom: 30px; display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; padding: 20px; border-left: 5px solid {{ featured.accent_color }}; background: rgba(255, 255, 255, 0.02); backdrop-filter: blur(8px); box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);">
         <div style="display: flex; align-items: center; gap: 15px;">
-            <div style="font-size: 2.2rem; filter: drop-shadow(0 2px 5px rgba(241, 196, 15, 0.4));">🎟️</div>
+            <div style="font-size: 2.2rem; filter: drop-shadow(0 2px 5px {{ featured.accent_color }}66);">{{ featured.emoji }}</div>
             <div>
-                <h3 style="margin: 0; font-size: 1.15rem; font-weight: 700; color: #ffffff;">Sorteo de Lotería Diaria</h3>
+                <h3 style="margin: 0; font-size: 1.15rem; font-weight: 700; color: #ffffff;">{{ featured.title }}</h3>
                 <p style="margin: 3px 0 0 0; font-size: 0.88rem; color: var(--text-muted);">
-                    Costo del boleto: <strong>50</strong> coins • Total de boletos en juego: <strong>{{ total_tickets }}</strong>
-                    {% if user %} • Tus boletos: <strong>{{ user_tickets }}</strong>{% endif %}
+                    {{ featured.description }}
+                    {% if featured.type == 'raffle' %}
+                    <br>
+                    <span data-i18n="web_ticket_cost">Costo del boleto:</span> <strong>{{ featured.cost }}</strong> coins • <span data-i18n="web_total_tickets">Total de boletos en juego:</span> <strong>{{ total_tickets }}</strong>
+                    {% if user %} • <span data-i18n="web_your_tickets">Tus boletos:</span> <strong>{{ user_tickets }}</strong>{% endif %}
+                    {% else %}
+                    <br>
+                    <span data-i18n="web_item_cost">Costo:</span> <strong>{{ featured.cost }}</strong> coins
+                    {% endif %}
                 </p>
             </div>
         </div>
 
         {% if user %}
-        <form action="/shop/buy-ticket" method="POST" style="display: flex; align-items: center; gap: 10px;">
-            <select name="quantity" class="form-control" style="width: 70px; height: 38px; margin: 0; background: #0f1626;">
-                <option value="1">1</option>
-                <option value="2">2</option>
-                <option value="5">5</option>
-                <option value="10">10</option>
-            </select>
-            <button type="submit" class="btn-login" style="padding: 10px 20px; border-radius: 8px; font-weight: bold; background: #f1c40f; color: #000; border: none; box-shadow: 0 4px 10px rgba(241, 196, 15, 0.3);">Comprar Boletos</button>
-        </form>
+            {% if featured.type == 'raffle' %}
+            <form action="/shop/buy-ticket" method="POST" style="display: flex; align-items: center; gap: 10px;">
+                <select name="quantity" class="form-control" style="width: 70px; height: 38px; margin: 0; background: #0f1626;">
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="5">5</option>
+                    <option value="10">10</option>
+                </select>
+                <button type="submit" class="btn-login" style="padding: 10px 20px; border-radius: 8px; font-weight: bold; background: {{ featured.accent_color }}; color: #000; border: none; box-shadow: 0 4px 10px {{ featured.accent_color }}4d;" data-i18n="web_buy_tickets_btn">Comprar Boletos</button>
+            </form>
+            {% elif featured.type == 'badge_sale' %}
+            <form action="/shop/buy-featured-badge" method="POST" style="display: flex; align-items: center; gap: 10px;">
+                <button type="submit" class="btn-login" style="padding: 10px 20px; border-radius: 8px; font-weight: bold; background: {{ featured.accent_color }}; color: #000; border: none; box-shadow: 0 4px 10px {{ featured.accent_color }}4d;" data-i18n="web_buy_badge_btn">Adquirir Insignia</button>
+            </form>
+            {% endif %}
         {% else %}
         <a href="/auth/login" class="btn-login" style="padding: 10px 20px; border-radius: 8px;" data-i18n="web_login">Login</a>
         {% endif %}
     </div>
+    {% endif %}
+
+    <!-- Botones de Filtrado de Categorías -->
+    {% if categories %}
+    <div style="display: flex; gap: 10px; margin-bottom: 25px; flex-wrap: wrap; align-items: center; background: rgba(255,255,255,0.01); padding: 10px 15px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.05); width: fit-content;">
+        <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600; margin-right: 5px;" data-i18n="web_filter_by">Filtrar por:</span>
+        <button class="btn-filter active" data-filter="all" style="padding: 6px 14px; border-radius: 20px; border: 1px solid var(--primary-color); background: var(--primary-color); color: #060b19; cursor: pointer; transition: all 0.3s ease; font-size: 0.82rem; font-weight: 700; box-shadow: 0 0 10px rgba(0, 198, 255, 0.3);">Mostrar Todo</button>
+        {% for cat_name in categories.keys() %}
+        <button class="btn-filter" data-filter="{{ cat_name }}" style="padding: 6px 14px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.02); color: var(--text-muted); cursor: pointer; transition: all 0.3s ease; font-size: 0.82rem; font-weight: 600;">
+            {% if cat_name == 'Roles' %}
+            <span data-i18n="web_category_roles">Roles</span>
+            {% elif cat_name == 'Objetos' %}
+            <span data-i18n="web_category_items">Objetos</span>
+            {% else %}
+            <span>{{ cat_name }}</span>
+            {% endif %}
+        </button>
+        {% endfor %}
+    </div>
+    {% endif %}
 
     {% if categories %}
         {% for cat_name, items in categories.items() %}
-        <div style="margin-top: 30px;">
+        <div class="category-section" data-category="{{ cat_name }}" style="margin-top: 30px; transition: opacity 0.3s ease, transform 0.3s ease;">
             <!-- Category Title -->
             <h2 style="font-size: 1.25rem; font-weight: 800; color: #ffffff; text-align: left; border-left: 4px solid var(--primary-color); padding-left: 10px; margin-bottom: 15px;">
                 {% if cat_name == 'Roles' %}
@@ -79,7 +118,7 @@
                 {% elif cat_name == 'Objetos' %}
                 <span data-i18n="web_category_items">Objetos</span>
                 {% else %}
-                <span data-i18n="web_category_other">Otros</span>
+                <span>{{ cat_name }}</span>
                 {% endif %}
             </h2>
 
@@ -92,7 +131,7 @@
                                 <span style="font-size: 1.4rem;">{{ item.emoji }}</span>
                                 <h3 style="font-size: 1.1rem; font-weight: 700; color: #ffffff; margin: 0; max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="{{ item.name }}">{{ item.name }}</h3>
                             </div>
-                            <span style="font-size: 0.8rem; background: rgba(0, 198, 255, 0.1); border: 1px solid rgba(0, 198, 255, 0.2); color: var(--primary-color); padding: 2px 8px; border-radius: 20px; font-weight: 600;">{{ item.item_id }}</span>
+                            <span style="font-size: 0.75rem; background: rgba(0, 198, 255, 0.08); border: 1px solid rgba(0, 198, 255, 0.15); color: var(--primary-color); padding: 2px 8px; border-radius: 20px; font-weight: 600;">{{ item.item_id }}</span>
                         </div>
                         <p style="color: var(--text-muted); font-size: 0.85rem; line-height: 1.4; min-height: 40px; margin-bottom: 12px;">{{ item.description }}</p>
                     </div>
@@ -138,4 +177,50 @@
         </div>
     {% endif %}
 </div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const filterButtons = document.querySelectorAll(".btn-filter");
+    const categorySections = document.querySelectorAll(".category-section");
+
+    filterButtons.forEach(btn => {
+        btn.addEventListener("click", function() {
+            // Eliminar clases activas de todos los botones
+            filterButtons.forEach(b => {
+                b.classList.remove("active");
+                b.style.background = "rgba(255,255,255,0.02)";
+                b.style.borderColor = "rgba(255,255,255,0.08)";
+                b.style.color = "var(--text-muted)";
+                b.style.boxShadow = "none";
+            });
+
+            // Añadir clase activa al botón actual
+            this.classList.add("active");
+            this.style.background = "var(--primary-color)";
+            this.style.borderColor = "var(--primary-color)";
+            this.style.color = "#060b19";
+            this.style.boxShadow = "0 0 10px rgba(0, 198, 255, 0.3)";
+
+            const filterValue = this.getAttribute("data-filter");
+
+            categorySections.forEach(section => {
+                const sectionCategory = section.getAttribute("data-category");
+                if (filterValue === "all" || sectionCategory === filterValue) {
+                    section.style.display = "block";
+                    setTimeout(() => {
+                        section.style.opacity = "1";
+                        section.style.transform = "translateY(0)";
+                    }, 50);
+                } else {
+                    section.style.opacity = "0";
+                    section.style.transform = "translateY(10px)";
+                    setTimeout(() => {
+                        section.style.display = "none";
+                    }, 300);
+                }
+            });
+        });
+    });
+});
+</script>
 {% endblock %}

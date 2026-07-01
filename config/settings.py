@@ -253,21 +253,13 @@ BACKUP_CONFIG = {
 
 SEND_BACKUP_TO_OWNER = True  # Bandera para habilitar o desactivar el envío de backups por mensaje directo
 
+LOTTERY_CONFIG = {
+    "TICKET_COST": 50,
+    "MIN_PRIZE_POOL": 500
+}
 
-# =============================================================================
-# 7. INTEGRACIONES EXTERNAS (MINECRAFT BRIDGE) [ARCHIVADO]
-# =============================================================================
-# Servidor web local Flask/Sanic para comunicación bidireccional con plugins Spigot/Paper.
-# MINECRAFT_CONFIG = {
-#     "ENABLED": False,  # Activar el bridge de Minecraft
-#     "PORT": 5058,  # Puerto de escucha del socket/servidor
-#     "DEFAULT_NAME": "Steve",  # Fallback de nombre si falla la obtención del usuario
-#     "TOKEN": "CAMBIAME_POR_UN_TOKEN_SEGURO",  # Token de seguridad compartido con el plugin
-#     "MAX_PAYLOAD_SIZE": 51200,  # Tamaño máximo de carga (50KB)
-#     "HOST": "0.0.0.0",  # Dirección del servidor web
-#     "MAX_QUEUE_SIZE": 50,  # Límite de mensajes pendientes de sincronizar
-#     "PORT_RANGE": 3  # Puertos secundarios a probar si el principal está en uso
-# }
+
+
 
 
 # =============================================================================

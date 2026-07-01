@@ -570,4 +570,8 @@ ES = {
     "setup_label_kick_msg": "Mensaje de Expulsión",
     "setup_label_ban_msg": "Mensaje de Baneo",
     "setup_label_mention_msg": "Respuesta a Menciones",
+    
+    # --- LOTERÍA ---
+    "lottery_win_title": "🎟️ ¡Ganaste la Lotería Diaria!",
+    "lottery_win_desc": "¡Felicidades **{winner}**! Has sido seleccionado como el ganador del sorteo diario de **Friday Bot**. 🎉\n\n> 🪙 **Premio recibido:** `{prize}` coins\n> 🎟️ **Tus boletos:** {tickets}\n> 📈 **Total de boletos en juego:** {total}\n\nEl premio ha sido depositado directamente en tu cartera global. ¡Sigue participando!",
 }

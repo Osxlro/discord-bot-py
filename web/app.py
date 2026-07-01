@@ -573,7 +573,6 @@ def create_app() -> FastAPI:
         logs_channel_id: int = Form(0),
         confessions_channel_id: int = Form(0),
         birthday_channel_id: int = Form(0),
-        minecraft_channel_id: int = Form(0),
         wordday_channel_id: int = Form(0),
         autorole_id: int = Form(0),
         wordday_role_id: int = Form(0),
@@ -609,7 +608,6 @@ def create_app() -> FastAPI:
             "logs_channel_id": logs_channel_id,
             "confessions_channel_id": confessions_channel_id,
             "birthday_channel_id": birthday_channel_id,
-            "minecraft_channel_id": minecraft_channel_id,
             "wordday_channel_id": wordday_channel_id,
             "autorole_id": autorole_id,
             "wordday_role_id": wordday_role_id,
@@ -719,6 +717,39 @@ def create_app() -> FastAPI:
         lang = request.session.get("lang", "es")
         from services.features.shop_service import get_localized_field
         
+        # Leer configuracion de banner destacado
+        import os
+        import json
+        from config import settings
+        ticket_cost_val = settings.LOTTERY_CONFIG.get("TICKET_COST", 50)
+        featured = {
+            "type": "raffle",
+            "title": "Sorteo de Lotería Diaria",
+            "description": "¡Compra tus boletos hoy! El ganador se llevará el pozo completo en monedas.",
+            "emoji": "🎟️",
+            "cost": ticket_cost_val,
+            "accent_color": "#f1c40f"
+        }
+        featured_path = "./config/featured_shop.json"
+        if os.path.exists(featured_path):
+            try:
+                with open(featured_path, "r", encoding="utf-8") as f:
+                    fdata = json.load(f)
+                active = fdata.get("active_template", "raffle")
+                tpl = fdata.get("templates", {}).get(active, {})
+                if tpl:
+                    featured = {
+                        "type": tpl.get("type", "raffle"),
+                        "badge_id": tpl.get("badge_id"),
+                        "title": tpl.get(f"title_{lang}", tpl.get("title_es", "Sorteo")),
+                        "description": tpl.get(f"description_{lang}", tpl.get("description_es", "")),
+                        "emoji": tpl.get("emoji", "🎟️"),
+                        "cost": tpl.get("cost", ticket_cost_val),
+                        "accent_color": tpl.get("accent_color", "#f1c40f")
+                    }
+            except Exception as e:
+                logger.error(f"Error al parsear featured_shop.json: {e}")
+
         categories = {}
         for item in items:
             cat = item.get("category", "Otros")
@@ -738,7 +769,8 @@ def create_app() -> FastAPI:
             "user_coins": user_coins,
             "user_tickets": user_tickets,
             "total_tickets": total_tickets,
-            "categories": categories
+            "categories": categories,
+            "featured": featured
         })
         return templates.TemplateResponse(request, "shop.html", ctx)
 
@@ -777,7 +809,8 @@ def create_app() -> FastAPI:
         if quantity <= 0:
             return RedirectResponse("/shop?error=invalid_quantity", status_code=status.HTTP_303_SEE_OTHER)
             
-        ticket_cost = 50
+        from config import settings
+        ticket_cost = settings.LOTTERY_CONFIG.get("TICKET_COST", 50)
         total_cost = ticket_cost * quantity
         
         # Check coins
@@ -804,6 +837,63 @@ def create_app() -> FastAPI:
             return RedirectResponse("/shop?success=purchased", status_code=status.HTTP_303_SEE_OTHER)
         except Exception as e:
             logger.exception(f"Error al comprar boletos de loteria para {user_id}: {e}")
+            return RedirectResponse("/shop?error=db_error", status_code=status.HTTP_303_SEE_OTHER)
+
+    @app.post("/shop/buy-featured-badge")
+    async def buy_featured_badge(request: Request):
+        user = request.session.get("user")
+        if not user:
+            return RedirectResponse("/auth/login", status_code=status.HTTP_303_SEE_OTHER)
+            
+        user_id = user["id"]
+        
+        import os
+        import json
+        featured_path = "./config/featured_shop.json"
+        if not os.path.exists(featured_path):
+            return RedirectResponse("/shop?error=config_error", status_code=status.HTTP_303_SEE_OTHER)
+            
+        try:
+            with open(featured_path, "r", encoding="utf-8") as f:
+                featured_data = json.load(f)
+            active = featured_data.get("active_template", "raffle")
+            if active != "badge_sale":
+                return RedirectResponse("/shop?error=invalid_template", status_code=status.HTTP_303_SEE_OTHER)
+                
+            template = featured_data.get("templates", {}).get("badge_sale", {})
+            badge_id = template.get("badge_id")
+            cost = template.get("cost", 1000)
+            
+            if not badge_id:
+                return RedirectResponse("/shop?error=badge_not_found", status_code=status.HTTP_303_SEE_OTHER)
+                
+            # Verificar si el usuario ya tiene la insignia
+            from services.repositories.user_repository import UserRepository
+            has_badge = await UserRepository.has_badge(user_id, badge_id)
+            if has_badge:
+                return RedirectResponse("/shop?error=already_owned", status_code=status.HTTP_303_SEE_OTHER)
+                
+            # Verificar monedas
+            coins = await UserRepository.get_user_coins(user_id)
+            if coins < cost:
+                return RedirectResponse("/shop?error=insufficient_coins", status_code=status.HTTP_303_SEE_OTHER)
+                
+            # Transaccion: restar monedas y dar insignia
+            query_coins = (
+                "INSERT INTO users (user_id, coins) VALUES (?, ?) "
+                "ON CONFLICT(user_id) DO UPDATE SET coins = coins + excluded.coins"
+            )
+            query_badge = (
+                "INSERT OR IGNORE INTO user_badges (user_id, badge_id) VALUES (?, ?)"
+            )
+            queries = [
+                (query_coins, (user_id, -cost)),
+                (query_badge, (user_id, badge_id))
+            ]
+            await database.execute_transaction(queries)
+            return RedirectResponse("/shop?success=purchased", status_code=status.HTTP_303_SEE_OTHER)
+        except Exception as e:
+            logger.exception(f"Error al comprar insignia destacada para {user_id}: {e}")
             return RedirectResponse("/shop?error=db_error", status_code=status.HTTP_303_SEE_OTHER)
 
     return app

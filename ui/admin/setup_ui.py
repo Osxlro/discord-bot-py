@@ -22,7 +22,6 @@ def get_setup_info_embed(guild: discord.Guild, config: dict, lang: str) -> disco
         f"> **📜 Logs:** {fmt(config.get('logs_channel_id'), 'ch')}\n"
         f"> **🎂 Birthday:** {fmt(config.get('birthday_channel_id'), 'ch')}\n"
         f"> **📖 WordDay:** {fmt(config.get('wordday_channel_id'), 'ch')}"
-        # f"\n> **🧱 Minecraft:** {fmt(config.get('minecraft_channel_id'), 'ch')}" # (Archivado)
     )
 
     # Sección de Ajustes

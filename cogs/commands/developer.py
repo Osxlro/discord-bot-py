@@ -197,6 +197,20 @@ class Developer(commands.Cog):
             return await ctx.send(embed=embed_service.error(lang_service.get_text("title_error", lang), error, lite=True), ephemeral=True)
         await ctx.send(embed=embed, ephemeral=True)
 
+    async def devedit_badge_autocomplete(self, interaction: discord.Interaction, current: str) -> list[app_commands.Choice[str]]:
+        """Autocompleta los IDs de insignias en el comando de desarrollador."""
+        from services.features.badge_service import get_badges_catalog
+        catalog = get_badges_catalog()
+        lang = await lang_service.get_guild_lang(interaction.guild_id)
+        choices = []
+        for badge_id, b in catalog.items():
+            name = b.get("names", {}).get(lang, b.get("names", {}).get("en", badge_id))
+            emoji = b.get("emoji", "🏅")
+            display_name = f"{emoji} {name}"[:100]
+            if current.lower() in name.lower() or current.lower() in badge_id.lower():
+                choices.append(app_commands.Choice(name=display_name, value=badge_id))
+        return choices[:25]
+
     async def devedit_inventory_autocomplete(self, interaction: discord.Interaction, current: str) -> list[app_commands.Choice[str]]:
         """Autocompleta los objetos de la tienda para el comando de inventario de desarrollador."""
         from services.core import db_service
@@ -257,6 +271,121 @@ class Developer(commands.Cog):
             msg,
             lite=True
         )
+        await ctx.send(embed=embed, ephemeral=True)
+
+    @devedit_group.command(name="badge_add", description="Otorga una insignia a un usuario (Solo Owner).")
+    @app_commands.describe(
+        usuario="El usuario al que otorgar la insignia",
+        insignia="ID de la insignia a otorgar"
+    )
+    @app_commands.autocomplete(insignia=devedit_badge_autocomplete)
+    async def devedit_badge_add(self, ctx: commands.Context, usuario: discord.Member, insignia: str):
+        """Otorga una insignia a un usuario."""
+        await ctx.defer(ephemeral=True)
+        lang = await lang_service.get_guild_lang(ctx.guild.id if ctx.guild else None)
+        from services.features.badge_service import get_badges_catalog
+        catalog = get_badges_catalog()
+        if insignia not in catalog:
+            return await ctx.send(
+                embed=embed_service.error(
+                    lang_service.get_text("error_title", lang),
+                    "La insignia especificada no existe en el catálogo.",
+                    lite=True
+                ),
+                ephemeral=True
+            )
+            
+        from services.repositories.user_repository import UserRepository
+        success = await UserRepository.grant_badge(usuario.id, insignia)
+        if success:
+            emoji = catalog[insignia].get("emoji", "🏅")
+            name = catalog[insignia]["names"].get(lang, catalog[insignia]["names"].get("en", insignia))
+            embed = embed_service.success(
+                lang_service.get_text("title_exito", lang),
+                f"Insignia **{emoji} {name}** otorgada con éxito a {usuario.mention}.",
+                lite=True
+            )
+        else:
+            embed = embed_service.error(
+                lang_service.get_text("error_title", lang),
+                "No se pudo otorgar la insignia.",
+                lite=True
+            )
+        await ctx.send(embed=embed, ephemeral=True)
+
+    @devedit_group.command(name="badge_remove", description="Remueve una insignia a un usuario (Solo Owner).")
+    @app_commands.describe(
+        usuario="El usuario al que remover la insignia",
+        insignia="ID de la insignia a remover"
+    )
+    @app_commands.autocomplete(insignia=devedit_badge_autocomplete)
+    async def devedit_badge_remove(self, ctx: commands.Context, usuario: discord.Member, insignia: str):
+        """Remueve una insignia a un usuario."""
+        await ctx.defer(ephemeral=True)
+        lang = await lang_service.get_guild_lang(ctx.guild.id if ctx.guild else None)
+        from services.features.badge_service import get_badges_catalog
+        catalog = get_badges_catalog()
+        if insignia not in catalog:
+            return await ctx.send(
+                embed=embed_service.error(
+                    lang_service.get_text("error_title", lang),
+                    "La insignia especificada no existe en el catálogo.",
+                    lite=True
+                ),
+                ephemeral=True
+            )
+            
+        from services.repositories.user_repository import UserRepository
+        success = await UserRepository.revoke_badge(usuario.id, insignia)
+        if success:
+            emoji = catalog[insignia].get("emoji", "🏅")
+            name = catalog[insignia]["names"].get(lang, catalog[insignia]["names"].get("en", insignia))
+            embed = embed_service.success(
+                lang_service.get_text("title_exito", lang),
+                f"Insignia **{emoji} {name}** removida con éxito de {usuario.mention}.",
+                lite=True
+            )
+        else:
+            embed = embed_service.error(
+                lang_service.get_text("error_title", lang),
+                "No se pudo remover la insignia.",
+                lite=True
+            )
+        await ctx.send(embed=embed, ephemeral=True)
+
+    @devedit_group.command(name="featured_shop", description="Cambia el banner/plantilla destacada de la tienda (Solo Owner).")
+    @app_commands.describe(plantilla="Nombre de la plantilla a activar (raffle o badge_sale)")
+    async def devedit_featured_shop(self, ctx: commands.Context, plantilla: Literal["raffle", "badge_sale"]):
+        """Cambia la plantilla activa del banner destacado de la tienda."""
+        await ctx.defer(ephemeral=True)
+        lang = await lang_service.get_guild_lang(ctx.guild.id if ctx.guild else None)
+        
+        import os
+        import json
+        featured_path = "./config/featured_shop.json"
+        if not os.path.exists(featured_path):
+            return await ctx.send("El archivo config/featured_shop.json no existe.", ephemeral=True)
+            
+        try:
+            with open(featured_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                
+            data["active_template"] = plantilla
+            
+            with open(featured_path, "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=2, ensure_ascii=False)
+                
+            embed = embed_service.success(
+                lang_service.get_text("title_exito", lang),
+                f"Banner destacado de la tienda cambiado a: **{plantilla}**",
+                lite=True
+            )
+        except Exception as e:
+            embed = embed_service.error(
+                lang_service.get_text("error_title", lang),
+                f"Error al cambiar la plantilla: {str(e)}",
+                lite=True
+            )
         await ctx.send(embed=embed, ephemeral=True)
 
     @devedit_group.command(name="shop_add", description="Añade o edita un objeto en el catálogo de la tienda.")
@@ -375,6 +504,54 @@ class Developer(commands.Cog):
                 "Ocurrió un error al sincronizar el catálogo de la tienda. Revisa la consola/logs.",
                 lite=True
             )
+        await ctx.send(embed=embed, ephemeral=True)
+
+    @dev_group.command(name="cloudflare", description="Gestiona la caché y zonas de Cloudflare (Solo Owner).")
+    @app_commands.describe(
+        accion="Acción a realizar: list_zones o purge_cache",
+        zone_id="ID de la zona (requerido para purge_cache)"
+    )
+    async def dev_cloudflare(self, ctx: commands.Context, accion: Literal["list_zones", "purge_cache"], zone_id: str = None):
+        """Interactúa con la API de Cloudflare."""
+        await ctx.defer(ephemeral=True)
+        lang = await lang_service.get_guild_lang(ctx.guild.id if ctx.guild else None)
+        
+        # Importar dinámicamente cloudflare_tool para reusar su lógica de forma desacoplada
+        from tools import cloudflare_tool
+        
+        # Redirigir temporalmente stdout para capturar la salida
+        import sys
+        import io
+        old_stdout = sys.stdout
+        new_stdout = io.StringIO()
+        sys.stdout = new_stdout
+        
+        try:
+            if accion == "list_zones":
+                cloudflare_tool.list_zones()
+            elif accion == "purge_cache":
+                if not zone_id:
+                    sys.stdout = old_stdout
+                    return await ctx.send(
+                        embed=embed_service.error(
+                            lang_service.get_text("error_title", lang),
+                            "Debes proporcionar un `zone_id` para purgar la caché.",
+                            lite=True
+                        ),
+                        ephemeral=True
+                    )
+                cloudflare_tool.purge_cache(zone_id)
+        except Exception as e:
+            print(f"❌ Error al ejecutar Cloudflare API: {str(e)}")
+        finally:
+            sys.stdout = old_stdout
+            
+        output_text = new_stdout.getvalue()
+        
+        embed = embed_service.info(
+            "Cloudflare API Output",
+            f"```\n{output_text[:1800]}\n```"
+        )
         await ctx.send(embed=embed, ephemeral=True)
 
 async def setup(bot):

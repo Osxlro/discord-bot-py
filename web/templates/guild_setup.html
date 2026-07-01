@@ -70,16 +70,6 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="minecraft-channel" data-i18n="web_minecraft_channel">Canal de Servidor Minecraft</label>
-                    <select id="minecraft-channel" name="minecraft_channel_id" class="form-control" style="background-color: #0f1626;">
-                        <option value="0" data-i18n="web_select_disabled">Desactivado</option>
-                        {% for ch in channels %}
-                        <option value="{{ ch.id }}" {% if current_config.minecraft_channel_id == ch.id %}selected{% endif %}>#{{ ch.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <div class="form-group">
                     <label for="wordday-channel" data-i18n="web_wordday_channel">Canal de Palabra del Día</label>
                     <select id="wordday-channel" name="wordday_channel_id" class="form-control" style="background-color: #0f1626;">
                         <option value="0" data-i18n="web_select_disabled">Desactivado</option>
@@ -134,7 +124,7 @@
 
                 <!-- SUB-SECCIÓN: SISTEMA CHAOS -->
                 <div style="margin-top: 30px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 20px;">
-                    <h3 class="bento-title" style="margin-bottom: 15px;">
+                    <h3 class="bento-title" style="margin-bottom: 15px;" data-i18n="web_chaos_system">
                         <svg class="icon-svg" viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="color: #f1c40f;">
                             <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
                         </svg>
@@ -143,11 +133,11 @@
                     
                     <div class="form-group" style="display: flex; align-items: center; gap: 8px; margin-top: 15px;">
                         <input type="checkbox" id="chaos-enabled" name="chaos_enabled" value="1" {% if current_config.chaos_enabled == 1 %}checked{% endif %} style="width: 18px; height: 18px; cursor: pointer; margin: 0;">
-                        <label for="chaos-enabled" style="margin: 0; cursor: pointer; color: #ffffff;">Activar Modo Chaos</label>
+                        <label for="chaos-enabled" style="margin: 0; cursor: pointer; color: #ffffff;" data-i18n="web_chaos_enable">Activar Modo Chaos</label>
                     </div>
 
                     <div class="form-group" style="margin-top: 20px;">
-                        <label for="chaos-prob">Probabilidad del Chaos (%)</label>
+                        <label for="chaos-prob" data-i18n="web_chaos_prob">Probabilidad del Chaos (%)</label>
                         <input type="number" id="chaos-prob" name="chaos_probability" class="form-control" step="0.1" min="0.1" max="100.0" value="{{ ((current_config.chaos_probability or 0.01) * 100) | round(1) }}" style="background-color: #0f1626;">
                     </div>
                 </div>
@@ -155,7 +145,7 @@
 
             <!-- BENTO 3: MENSAJES PERSONALIZADOS DEL SERVIDOR -->
             <div class="bento-box" style="grid-column: span 2;">
-                <h3 class="bento-title">
+                <h3 class="bento-title" data-i18n="web_custom_messages">
                     <svg class="icon-svg" viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary-color);">
                         <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
                     </svg>
@@ -164,38 +154,38 @@
 
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; width: 100%;">
                     <div class="form-group">
-                        <label for="welcome-msg">Mensaje de Bienvenida</label>
-                        <textarea id="welcome-msg" name="server_welcome_msg" class="form-control" style="background-color: #0f1626; height: 80px;" placeholder="Usa {user} para mencionar. Ejemplo: ¡Bienvenido a {user}!">{{ current_config.server_welcome_msg or '' }}</textarea>
+                        <label for="welcome-msg" data-i18n="web_msg_welcome">Mensaje de Bienvenida</label>
+                        <textarea id="welcome-msg" name="server_welcome_msg" class="form-control" style="background-color: #0f1626; height: 80px;" data-i18n="web_msg_welcome_placeholder" placeholder="Usa {user} para mencionar. Ejemplo: ¡Bienvenido a {user}!">{{ current_config.server_welcome_msg or '' }}</textarea>
                     </div>
 
                     <div class="form-group">
-                        <label for="goodbye-msg">Mensaje de Despedida</label>
-                        <textarea id="goodbye-msg" name="server_goodbye_msg" class="form-control" style="background-color: #0f1626; height: 80px;" placeholder="Usa {user} para el nombre. Ejemplo: {user} abandonó el servidor.">{{ current_config.server_goodbye_msg or '' }}</textarea>
+                        <label for="goodbye-msg" data-i18n="web_msg_goodbye">Mensaje de Despedida</label>
+                        <textarea id="goodbye-msg" name="server_goodbye_msg" class="form-control" style="background-color: #0f1626; height: 80px;" data-i18n="web_msg_goodbye_placeholder" placeholder="Usa {user} para el nombre. Ejemplo: {user} abandonó el servidor.">{{ current_config.server_goodbye_msg or '' }}</textarea>
                     </div>
 
                     <div class="form-group">
-                        <label for="level-msg">Mensaje de Subida de Nivel</label>
-                        <textarea id="level-msg" name="server_level_msg" class="form-control" style="background-color: #0f1626; height: 80px;" placeholder="Usa {user} y {level}. Ejemplo: ¡{user} subió al nivel {level}!">{{ current_config.server_level_msg or '' }}</textarea>
+                        <label for="level-msg" data-i18n="web_msg_level">Mensaje de Subida de Nivel</label>
+                        <textarea id="level-msg" name="server_level_msg" class="form-control" style="background-color: #0f1626; height: 80px;" data-i18n="web_msg_level_placeholder" placeholder="Usa {user} y {level}. Ejemplo: ¡{user} subió al nivel {level}!">{{ current_config.server_level_msg or '' }}</textarea>
                     </div>
 
                     <div class="form-group">
-                        <label for="bday-msg">Mensaje de Cumpleaños</label>
-                        <textarea id="bday-msg" name="server_birthday_msg" class="form-control" style="background-color: #0f1626; height: 80px;" placeholder="Usa {user}. Ejemplo: ¡Feliz cumpleaños {user}! 🎉">{{ current_config.server_birthday_msg or '' }}</textarea>
+                        <label for="bday-msg" data-i18n="web_msg_birthday">Mensaje de Cumpleaños</label>
+                        <textarea id="bday-msg" name="server_birthday_msg" class="form-control" style="background-color: #0f1626; height: 80px;" data-i18n="web_msg_birthday_placeholder" placeholder="Usa {user}. Ejemplo: ¡Feliz cumpleaños {user}! 🎉">{{ current_config.server_birthday_msg or '' }}</textarea>
                     </div>
 
                     <div class="form-group">
-                        <label for="kick-msg">Mensaje de Expulsión (Kick)</label>
-                        <textarea id="kick-msg" name="server_kick_msg" class="form-control" style="background-color: #0f1626; height: 80px;" placeholder="Ejemplo: Has sido expulsado del servidor.">{{ current_config.server_kick_msg or '' }}</textarea>
+                        <label for="kick-msg" data-i18n="web_msg_kick">Mensaje de Expulsión (Kick)</label>
+                        <textarea id="kick-msg" name="server_kick_msg" class="form-control" style="background-color: #0f1626; height: 80px;" data-i18n="web_msg_kick_placeholder" placeholder="Ejemplo: Has sido expulsado del servidor.">{{ current_config.server_kick_msg or '' }}</textarea>
                     </div>
 
                     <div class="form-group">
-                        <label for="ban-msg">Mensaje de Ban (Baneo)</label>
-                        <textarea id="ban-msg" name="server_ban_msg" class="form-control" style="background-color: #0f1626; height: 80px;" placeholder="Ejemplo: Has sido baneado permanentemente.">{{ current_config.server_ban_msg or '' }}</textarea>
+                        <label for="ban-msg" data-i18n="web_msg_ban">Mensaje de Ban (Baneo)</label>
+                        <textarea id="ban-msg" name="server_ban_msg" class="form-control" style="background-color: #0f1626; height: 80px;" data-i18n="web_msg_ban_placeholder" placeholder="Ejemplo: Has sido baneado permanentemente.">{{ current_config.server_ban_msg or '' }}</textarea>
                     </div>
 
                     <div class="form-group" style="grid-column: span 2;">
-                        <label for="mention-msg">Respuesta al Mencionar al Bot</label>
-                        <textarea id="mention-msg" name="mention_response" class="form-control" style="background-color: #0f1626; height: 80px;" placeholder="Mensaje que responderá el bot al ser mencionado.">{{ current_config.mention_response or '' }}</textarea>
+                        <label for="mention-msg" data-i18n="web_msg_mention">Respuesta al Mencionar al Bot</label>
+                        <textarea id="mention-msg" name="mention_response" class="form-control" style="background-color: #0f1626; height: 80px;" data-i18n="web_msg_mention_placeholder" placeholder="Mensaje que responderá el bot al ser mencionado.">{{ current_config.mention_response or '' }}</textarea>
                     </div>
                 </div>
 

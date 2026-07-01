@@ -98,7 +98,7 @@
 
         <!-- BENTO 2: RECURSOS E INVENTARIO -->
         <div class="bento-box">
-            <h3 class="bento-title">
+            <h3 class="bento-title" data-i18n="web_wallet_inventory">
                 <svg class="icon-svg" viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary-color);">
                     <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
                     <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
@@ -184,7 +184,7 @@
                     </div>
                     {% endfor %}
                 {% else %}
-                    <div style="grid-column: span 2; text-align: center; padding: 40px 10px; color: var(--text-muted); font-size: 0.9rem;">
+                    <div style="grid-column: span 2; text-align: center; padding: 40px 10px; color: var(--text-muted); font-size: 0.9rem;" data-i18n="web_levels_empty">
                         No tienes niveles ni XP registrados en ningún servidor con Friday Bot.
                     </div>
                 {% endif %}
@@ -219,7 +219,7 @@
                     <line x1="12" y1="9" x2="12" y2="13"></line>
                     <line x1="12" y1="17" x2="12.01" y2="17"></line>
                 </svg>
-                <h3 style="margin: 0; font-size: 1.4rem; font-weight: 800;" data-i18n="web_danger_zone">ADVERTENCIA MUY SERIA</h3>
+                <h3 style="margin: 0; font-size: 1.4rem; font-weight: 800;" data-i18n="web_delete_warning_title">ADVERTENCIA MUY SERIA</h3>
             </div>
             <p data-i18n="web_delete_modal_desc">
                 Estás a punto de borrar definitivamente todo tu perfil de Friday Bot (incluyendo biografía, cumpleaños, monedas globales e historial).

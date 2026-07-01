@@ -568,4 +568,8 @@ EN = {
     "setup_label_kick_msg": "Kick Message",
     "setup_label_ban_msg": "Ban Message",
     "setup_label_mention_msg": "Mention Response",
+    
+    # --- LOTERÍA ---
+    "lottery_win_title": "🎟️ You Won the Daily Lottery!",
+    "lottery_win_desc": "Congratulations **{winner}**! You have been drawn as the winner of the **Friday Bot** daily raffle. 🎉\n\n> 🪙 **Prize received:** `{prize}` coins\n> 🎟️ **Your tickets:** {tickets}\n> 📈 **Total tickets in game:** {total}\n\nThe prize has been deposited directly into your global wallet. Keep participating!",
 }

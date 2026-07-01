@@ -200,7 +200,7 @@
             // Wait a moment for translations to load
             setTimeout(() => {
                 if (successParam) {
-                    let msg = "Acción realizada con éxito";
+                    let msg = window.i18n ? window.i18n.translate('web_action_success') : "Acción realizada con éxito";
                     if (successParam === 'updated') {
                         msg = window.i18n ? window.i18n.translate('web_setup_success') : "¡Configuración guardada!";
                     } else if (successParam === 'purchased') {
@@ -211,11 +211,11 @@
                     window.showToast(msg, 'success');
                 }
                 if (errorParam) {
-                    let msg = "Ocurrió un error";
+                    let msg = window.i18n ? window.i18n.translate('web_action_error') : "Ocurrió un error";
                     if (errorParam === 'insufficient_coins') {
                         msg = window.i18n ? window.i18n.translate('web_insufficient_coins') : "Monedas insuficientes.";
                     } else if (errorParam === 'forbidden') {
-                        msg = "No tienes permisos para realizar esta acción.";
+                        msg = window.i18n ? window.i18n.translate('web_forbidden_error') : "No tienes permisos para realizar esta acción.";
                     }
                     window.showToast(msg, 'error');
                 }

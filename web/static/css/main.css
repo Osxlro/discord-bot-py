@@ -1030,4 +1030,30 @@ textarea.form-control {
     color: #ed4245;
 }
 
+/* Botones de Filtrado de Categorías (Shop) */
+.btn-filter {
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.02);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+.btn-filter:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.15);
+    color: #ffffff;
+    transform: scale(1.05);
+}
+.btn-filter.active {
+    border-color: var(--primary-color);
+    background: var(--primary-color);
+    color: #060b19 !important;
+    font-weight: 700;
+    box-shadow: 0 0 12px rgba(0, 198, 255, 0.4);
+}
+
 

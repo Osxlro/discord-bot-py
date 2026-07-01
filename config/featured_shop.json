@@ -1,0 +1,34 @@
+{
+  "active_template": "raffle",
+  "templates": {
+    "raffle": {
+      "type": "raffle",
+      "title_es": "Sorteo de Lotería Diaria",
+      "title_en": "Daily Lottery Raffle",
+      "title_pt": "Sorteio de Loteria Diária",
+      "title_fr": "Tirage de la Loterie Quotidienne",
+      "description_es": "¡Compra tus boletos hoy! El ganador se llevará el pozo completo en monedas por DM.",
+      "description_en": "Buy your tickets today! The winner will take the entire coin jackpot by DM.",
+      "description_pt": "Compre seus bilhetes hoje! O vencedor levará o jackpot completo em moedas por DM.",
+      "description_fr": "Achetez vos tickets aujourd'hui ! Le gagnant remportera le jackpot de pièces par DM.",
+      "emoji": "🎟️",
+      "cost": 50,
+      "accent_color": "#f1c40f"
+    },
+    "badge_sale": {
+      "type": "badge_sale",
+      "badge_id": "bug_hunter",
+      "title_es": "Insignia Especial: Cazador de Bugs",
+      "title_en": "Special Badge: Bug Hunter",
+      "title_pt": "Insignia Especial: Caçador de Bugs",
+      "title_fr": "Insigne Spécial : Chasseur de Bugs",
+      "description_es": "¡Adquiere esta insignia exclusiva directamente para tu perfil!",
+      "description_en": "Acquire this exclusive badge directly for your profile!",
+      "description_pt": "Adquira esta insígnia exclusiva diretamente para o seu perfil!",
+      "description_fr": "Acquérez cet insigne exclusif directement pour votre profil !",
+      "emoji": "🐛",
+      "cost": 1000,
+      "accent_color": "#2ecc71"
+    }
+  }
+}
