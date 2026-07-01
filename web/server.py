@@ -69,12 +69,12 @@ class WebServer:
 
     def start(self):
         protocol = "https" if self.config.ssl_keyfile and self.config.ssl_certfile else "http"
-        logger.info(f"🌐 Iniciando servidor web en {protocol}://{self.config.host}:{self.config.port}...")
+        logger.info(f"🌐 [WebServer] Iniciando servidor web en {protocol}://{self.config.host}:{self.config.port}...")
         self.task = asyncio.create_task(self.server.serve())
 
     async def stop(self):
         if self.task:
-            logger.info("🛑 Deteniendo servidor web...")
+            logger.info("🛑 [WebServer] Deteniendo servidor web...")
             self.server.should_exit = True
             await self.server.shutdown()
             self.task.cancel()
@@ -82,4 +82,4 @@ class WebServer:
                 await self.task
             except asyncio.CancelledError:
                 pass
-            logger.info("🌐 Servidor web detenido correctamente.")
+            logger.info("🌐 [WebServer] Servidor web detenido correctamente.")

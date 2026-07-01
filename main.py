@@ -19,8 +19,19 @@ for log_file in data_dir.glob("discord.log*"):
     try: log_file.unlink()
     except Exception: pass
 
-# Configurar el logging de consola por defecto (con colores y formato bonito)
-discord.utils.setup_logging(level=logging.INFO)
+# Configurar el root logger a nivel INFO para capturar todo en el archivo de logs
+logging.getLogger().setLevel(logging.INFO)
+
+# Configurar el handler de consola (StreamHandler) a nivel WARNING para no saturar la consola/stderr
+import sys
+console_handler = logging.StreamHandler(sys.stderr)
+console_handler.setLevel(logging.WARNING)
+console_formatter = logging.Formatter(
+    fmt="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S"
+)
+console_handler.setFormatter(console_formatter)
+logging.getLogger().addHandler(console_handler)
 
 # Configurar el logger de archivo detallado en segundo plano
 file_formatter = logging.Formatter(
@@ -39,7 +50,7 @@ file_handler.setLevel(logging.INFO)
 # Añadir el file handler al logger raíz
 logging.getLogger().addHandler(file_handler)
 
-# Silenciar librerías externas ruidosas en consola
+# Silenciar librerías externas ruidosas
 logging.getLogger("discord").setLevel(logging.WARNING)
 logging.getLogger("wavelink").setLevel(logging.WARNING)
 logging.getLogger("aiohttp").setLevel(logging.WARNING)
@@ -137,11 +148,11 @@ class BotPersonal(commands.AutoShardedBot):
         return True
 
     async def _init_database(self):
-        logger.info("--- 💾 INICIANDO BASE DE DATOS ---")
+        logger.info("💾 [Bot] Iniciando base de datos...")
         await db_service.init_db()
 
     async def _load_extensions(self):
-        logger.info("--- ⚙️  CARGANDO EXTENSIONES ---")
+        logger.info("⚙️ [Bot] Cargando extensiones...")
         cogs_dir = pathlib.Path("./cogs")
         loaded_count = 0
         
@@ -155,22 +166,19 @@ class BotPersonal(commands.AutoShardedBot):
                 loaded_count += 1
             except Exception:
                 logger.exception(f'❌ Error cargando {extension_name}')
-        logger.info(f"⚙️  Se cargaron {loaded_count} extensiones de forma exitosa.")
+        logger.info(f"⚙️ [Bot] Se cargaron {loaded_count} extensiones de forma exitosa.")
 
     async def _sync_commands(self):
-        logger.info("--- 🔄 SINCRONIZANDO COMANDOS ---")
+        logger.info("🔄 [Bot] Sincronizando comandos...")
         try:
             synced = await self.tree.sync()
             self.synced_commands_cache = {cmd.name: cmd.id for cmd in synced}
-            logger.info(f"✨ Se han sincronizado {len(synced)} comandos.")
+            logger.info(f"✨ [Bot] Se han sincronizado {len(synced)} comandos.")
         except Exception as e:
-            logger.error(f"❌ Error al sincronizar: {e}")
+            logger.error(f"❌ [Bot] Error al sincronizar: {e}")
 
     async def on_ready(self):
-        logger.info('------------------------------------')
-        logger.info(f'🤖 Bot conectado: {self.user}')
-        logger.info(f'🆔 ID: {self.user.id}')
-        logger.info('------------------------------------')
+        logger.info(f"🤖 [Bot] Conectado como: {self.user} (ID: {self.user.id})")
         settings.set_bot_icon(self.user.display_avatar.url)
         
         # Intentar restaurar sesiones de música previas
@@ -195,7 +203,7 @@ async def main():
     except Exception as e:
         logger.error(f"❌ Error inesperado al iniciar el bot: {e}")
     finally:
-        logger.info("--- 🛑 APAGANDO SERVICIOS ---")
+        logger.info("🛑 [Bot] Apagando servicios...")
         await web_server.stop()
         await db_service.close_db()
         await http_client.close_session()

@@ -493,3 +493,9 @@ Para asegurar una comunicación clara y una ejecución ordenada en cada solicitu
      - **Cambios Realizados:** Explicación técnica en viñetas breves indicando qué cambió y los archivos afectados.
      - **Pruebas y Resultados:** Lista concreta de los validadores ejecutados y sus resultados de paso.
      - **Verificación Manual:** Pasos breves para probar la funcionalidad en Discord.
+      
+ 4. **Log Standards (Directriz de Logs Uniformes):**
+    - Todos los mensajes de log de la aplicación (INFO, WARNING, ERROR) deben seguir estrictamente el siguiente formato visual uniforme:
+      `"<emoji> [<NombreModulo>] <Mensaje>"` (por ejemplo: `logger.info("🧹 [DB Service] Persistencia antigua eliminada.")`).
+    - El nivel de registro en la consola de la terminal se configura en `logging.WARNING` o superior para evitar el ruido y la saturación de procesos/avisos innecesarios en entornos de hosting (como Cybrancee).
+    - Todos los detalles de nivel `logging.INFO` y superior se dirigen exclusivamente al archivo local rotativo en `data/discord.log`.
