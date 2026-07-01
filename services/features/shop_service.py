@@ -94,15 +94,25 @@ async def process_purchase(user_id: int, item_id: str, quantity: int, lang: str)
             "INSERT INTO users (user_id, coins) VALUES (?, ?) "
             "ON CONFLICT(user_id) DO UPDATE SET coins = coins + excluded.coins"
         )
-        query_inv = (
-            "INSERT INTO user_inventory (user_id, item_id, quantity) VALUES (?, ?, ?) "
-            "ON CONFLICT(user_id, item_id) DO UPDATE SET quantity = quantity + excluded.quantity"
-        )
         
-        queries = [
-            (query_coins, (user_id, -total_cost)),
-            (query_inv, (user_id, item_id, quantity))
-        ]
+        if item_id == "raffle_ticket":
+            query_target = (
+                "INSERT INTO raffle_tickets (user_id, ticket_count) VALUES (?, ?) "
+                "ON CONFLICT(user_id) DO UPDATE SET ticket_count = ticket_count + excluded.ticket_count"
+            )
+            queries = [
+                (query_coins, (user_id, -total_cost)),
+                (query_target, (user_id, quantity))
+            ]
+        else:
+            query_inv = (
+                "INSERT INTO user_inventory (user_id, item_id, quantity) VALUES (?, ?, ?) "
+                "ON CONFLICT(user_id, item_id) DO UPDATE SET quantity = quantity + excluded.quantity"
+            )
+            queries = [
+                (query_coins, (user_id, -total_cost)),
+                (query_inv, (user_id, item_id, quantity))
+            ]
         await database.execute_transaction(queries)
         
         success_msg = lang_service.get_text(

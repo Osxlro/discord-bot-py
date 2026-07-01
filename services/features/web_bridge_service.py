@@ -49,7 +49,7 @@ def get_commands_by_category(bot: commands.Bot) -> Dict[str, List[Dict[str, Any]
     # 1. Comandos tradicionales / híbridos cargados en Cogs
     for cog_name, cog in bot.cogs.items():
         # Saltarse cogs de utilidad internos o no públicos
-        if cog_name.lower() in ["developer", "healthcheck", "optimizador", "optimization", "backup"]:
+        if cog_name.lower() in ["healthcheck", "optimizador", "optimization", "backup"]:
             continue
             
         cog_commands = cog.get_commands()
@@ -63,7 +63,7 @@ def get_commands_by_category(bot: commands.Bot) -> Dict[str, List[Dict[str, Any]
             cmd_list.append({
                 "name": cmd.name,
                 "description": cmd.description or "Sin descripción.",
-                "type": "Híbrido" if isinstance(cmd, commands.HybridCommand) else "Prefijo"
+                "type": "Híbrido" if isinstance(cmd, (commands.HybridCommand, commands.HybridGroup)) else "Prefijo"
             })
             
         if cmd_list:

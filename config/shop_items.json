@@ -61,5 +61,26 @@
       "pt": "Um amuleto especial com estoque global limitado (apenas 100 unidades).",
       "fr": "Un porte-bonheur spécial à stock limité (seulement 100 unités mondiales)."
     }
+  },
+  {
+    "item_id": "raffle_ticket",
+    "emoji": "🎟️",
+    "cost": 50,
+    "category": "Lotería",
+    "availability": "permanent",
+    "purchase_limit": null,
+    "total_stock": null,
+    "names": {
+      "es": "Boleto de Lotería",
+      "en": "Raffle Ticket",
+      "pt": "Bilhete de Loteria",
+      "fr": "Ticket de Loterie"
+    },
+    "descriptions": {
+      "es": "Un boleto para participar en el sorteo de la lotería diaria.",
+      "en": "A ticket to participate in the daily lottery raffle.",
+      "pt": "Um bilhete para participar do sorteo de loteria diária.",
+      "fr": "Un ticket pour participer au tirage de la loterie quotidienne."
+    }
   }
 ]

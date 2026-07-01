@@ -11,6 +11,10 @@
     --offline-color: #e67e22;
 }
 
+html {
+    scrollbar-gutter: stable;
+}
+
 * {
     margin: 0;
     padding: 0;

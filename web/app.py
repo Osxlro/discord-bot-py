@@ -416,6 +416,10 @@ def create_app() -> FastAPI:
                 
             # 2. Obtener y resolver inventario
             inventory = await db_service.get_user_inventory(user_id)
+            inventory = dict(inventory)
+            row_tickets = await database.fetch_one("SELECT ticket_count FROM raffle_tickets WHERE user_id = ?", (user_id,))
+            if row_tickets and row_tickets["ticket_count"] > 0:
+                inventory["raffle_ticket"] = row_tickets["ticket_count"]
             shop_items = await db_service.get_all_shop_items()
             shop_map = {item["item_id"]: item for item in shop_items}
             
@@ -622,6 +626,14 @@ def create_app() -> FastAPI:
         }
         
         await db_service.update_guild_config(guild_id, updates)
+        
+        # Sincronizar en caliente el Cog de Chaos si el bot está corriendo
+        bot = getattr(request.app.state, "bot", None)
+        if bot:
+            chaos_cog = bot.get_cog("Chaos")
+            if chaos_cog:
+                chaos_cog.update_local_config(guild_id, bool(chaos_enabled), chaos_probability)
+                
         return RedirectResponse(f"/dashboard/guild/{guild_id}?success=saved", status_code=status.HTTP_303_SEE_OTHER)
 
     # --- XP LEADERBOARD ---

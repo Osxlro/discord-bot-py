@@ -561,4 +561,11 @@ EN = {
     "web_dm_notification_title": "🔔 Profile Updated from the Web",
     "web_dm_notification_desc_text": "Hello, your Friday Bot profile was recently modified via the web.\n\n> **New Biography:** {bio}\n> **Birthday:** {bday}\n> **Celebration active:** {cel}",
     "profile_field_badges": "Badges",
+    
+    # --- SETUP EXTENSION LABELS ---
+    "setup_label_level_msg": "Level Up Message",
+    "setup_label_birthday_msg": "Birthday Message",
+    "setup_label_kick_msg": "Kick Message",
+    "setup_label_ban_msg": "Ban Message",
+    "setup_label_mention_msg": "Mention Response",
 }

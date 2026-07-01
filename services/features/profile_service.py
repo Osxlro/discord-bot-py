@@ -30,6 +30,11 @@ async def handle_profile(guild, target, lang, author_id: int):
     
     # Obtener y resolver inventario
     inventory = await db_service.get_user_inventory(target.id)
+    inventory = dict(inventory)
+    from services.core import database
+    row_tickets = await database.fetch_one("SELECT ticket_count FROM raffle_tickets WHERE user_id = ?", (target.id,))
+    if row_tickets and row_tickets["ticket_count"] > 0:
+        inventory["raffle_ticket"] = row_tickets["ticket_count"]
     shop_items = await db_service.get_all_shop_items()
     shop_map = {item["item_id"]: item for item in shop_items}
     

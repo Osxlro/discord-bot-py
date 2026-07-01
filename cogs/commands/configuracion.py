@@ -112,23 +112,38 @@ class Configuracion(commands.Cog):
         tipo="El tipo de mensaje a configurar",
         texto="Contenido del mensaje (deja vacío o escribe 'reset' para desactivar)"
     )
-    async def setup_message(self, ctx: commands.Context, tipo: Literal["goodbye", "bienvenida"], texto: str = None):
+    async def setup_message(self, ctx: commands.Context, tipo: Literal["welcome", "bienvenida", "goodbye", "level", "birthday", "kick", "ban", "mention"], texto: str = None):
         """Personaliza textos y mensajes de salida del servidor."""
         lang = await lang_service.get_guild_lang(ctx.guild.id)
         
         col_map = {
+            "welcome": "server_welcome_msg",
+            "bienvenida": "server_welcome_msg",
             "goodbye": "server_goodbye_msg",
-            "bienvenida": "server_welcome_msg"
+            "level": "server_level_msg",
+            "birthday": "server_birthday_msg",
+            "kick": "server_kick_msg",
+            "ban": "server_ban_msg",
+            "mention": "mention_response"
         }
         
         label_map = {
+            "welcome": "setup_label_welcome",
+            "bienvenida": "setup_label_welcome",
             "goodbye": "goodbye_title",
-            "bienvenida": "setup_label_welcome"
+            "level": "setup_label_level_msg",
+            "birthday": "setup_label_birthday_msg",
+            "kick": "setup_label_kick_msg",
+            "ban": "setup_label_ban_msg",
+            "mention": "setup_label_mention_msg"
         }
         
         col = col_map[tipo]
         label = lang_service.get_text(label_map[tipo], lang)
         
+        if label == label_map[tipo]:
+            label = tipo.replace("_", " ").title()
+            
         val = None if not texto or texto.lower() == "reset" else texto
         display = val if val else lang_service.get_text("setup_disabled", lang)
         

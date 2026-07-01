@@ -89,19 +89,16 @@ class Developer(commands.Cog):
             view = pagination_service.Paginator(pages, ctx.author.id)
             view.message = await ctx.send(embed=pages[0], view=view, ephemeral=True)
 
-    @commands.command(name="sync", hidden=True)
+    @commands.hybrid_command(name="sync", description="Sincroniza los comandos de aplicación (Slash Commands) con Discord.", hidden=True)
     @commands.is_owner()
     async def sync(self, ctx: commands.Context):
-        """
-        Sincroniza los comandos de aplicación (Slash Commands) con Discord.
-        Útil cuando se añaden o modifican comandos nuevos.
-        """
+        """Sincroniza los comandos de aplicación (Slash Commands) con Discord."""
+        await ctx.defer(ephemeral=True)
         lang = await lang_service.get_guild_lang(ctx.guild.id if ctx.guild else None)
-        msg_obj = await ctx.send(lang_service.get_text("dev_sync_start", lang))
         
         # Ejecutar sincronización global
         content, error = await developer_service.handle_sync(self.bot, lang)
-        await msg_obj.edit(content=content or error)
+        await ctx.send(content=content or error, ephemeral=True)
 
     @commands.hybrid_command(name="botinfo", description="Panel de control e información del sistema.")
     async def botinfo(self, ctx: commands.Context):
@@ -127,43 +124,37 @@ class Developer(commands.Cog):
         embed = await developer_service.handle_db_maintenance(lang)
         await ctx.send(embed=embed)
 
-    @commands.command(name="restart", hidden=True)
+    @commands.hybrid_command(name="restart", description="Reinicia el proceso del bot de forma segura.", hidden=True)
     @commands.is_owner()
     async def restart(self, ctx: commands.Context):
-        """
-        Reinicia el proceso del bot de forma segura, cerrando la base de datos primero.
-        """
+        """Reinicia el proceso del bot de forma segura."""
         lang = await lang_service.get_guild_lang(ctx.guild.id if ctx.guild else None)
-        await ctx.send(lang_service.get_text("dev_restart_msg", lang))
+        await ctx.send(lang_service.get_text("dev_restart_msg", lang), ephemeral=True)
         # El servicio se encarga de la ejecución del sistema para el reinicio
         await developer_service.restart_bot(str(ctx.author))
 
-    @commands.command(name="shutdown", hidden=True)
+    @commands.hybrid_command(name="shutdown", description="Apaga el bot completamente.", hidden=True)
     @commands.is_owner()
     async def shutdown(self, ctx: commands.Context):
-        """
-        Apaga el bot completamente (útil si usas un gestor de procesos como PM2 o Docker).
-        """
+        """Apaga el bot completamente."""
         lang = await lang_service.get_guild_lang(ctx.guild.id if ctx.guild else None)
-        await ctx.send(lang_service.get_text("dev_shutdown_msg", lang))
+        await ctx.send(lang_service.get_text("dev_shutdown_msg", lang), ephemeral=True)
         logger.info(f"🛑 Apagado solicitado por {ctx.author}")
         await self.bot.close()
 
-    @commands.command(name="reload", hidden=True)
+    @commands.hybrid_command(name="reload", description="Recarga una extensión (Cog) específica sin reiniciar el bot.", hidden=True)
+    @app_commands.describe(extension="Nombre de la extensión a recargar (ej: cogs.commands.usuario)")
     @commands.is_owner()
     async def reload(self, ctx: commands.Context, extension: str):
-        """
-        Recarga una extensión (Cog) específica sin reiniciar el bot.
-        Uso: !reload cogs.commands.usuario
-        """
+        """Recarga una extensión (Cog) específica sin reiniciar el bot."""
         lang = await lang_service.get_guild_lang(ctx.guild.id if ctx.guild else None)
         try:
             # Intentamos recargar la extensión
             await self.bot.reload_extension(extension)
-            await ctx.send(lang_service.get_text("dev_reload_success", lang, extension=extension))
+            await ctx.send(lang_service.get_text("dev_reload_success", lang, extension=extension), ephemeral=True)
             logger.info(f"🔄 Extensión recargada manualmente: {extension}")
         except Exception as e:
-            await ctx.send(lang_service.get_text("dev_reload_error", lang, extension=extension, error=str(e)))
+            await ctx.send(lang_service.get_text("dev_reload_error", lang, extension=extension, error=str(e)), ephemeral=True)
             logger.error(f"❌ Error recargando {extension}: {e}")
 
     @commands.hybrid_group(name="devedit", description="Comandos de edición de estadísticas para desarrolladores (Solo Owner).")

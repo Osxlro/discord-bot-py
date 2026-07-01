@@ -563,4 +563,11 @@ ES = {
     "web_dm_notification_title": "🔔 Perfil Actualizado desde la Web",
     "web_dm_notification_desc_text": "Hola, tu perfil de Friday Bot ha sido modificado recientemente a través de la web.\n\n> **Nueva Biografía:** {bio}\n> **Cumpleaños:** {bday}\n> **Celebración activa:** {cel}",
     "profile_field_badges": "Insignias",
+    
+    # --- SETUP EXTENSION LABELS ---
+    "setup_label_level_msg": "Mensaje de Nivel",
+    "setup_label_birthday_msg": "Mensaje de Cumpleaños",
+    "setup_label_kick_msg": "Mensaje de Expulsión",
+    "setup_label_ban_msg": "Mensaje de Baneo",
+    "setup_label_mention_msg": "Respuesta a Menciones",
 }
